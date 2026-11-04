@@ -24,7 +24,7 @@
   meshes[12]=dual(meshes[20]);meshes[10]=dual(mesh(anti));
   const rotate=(v,x,y,z)=>{let [a,b,c]=v;[b,c]=[b*Math.cos(x)-c*Math.sin(x),b*Math.sin(x)+c*Math.cos(x)];[a,c]=[a*Math.cos(y)+c*Math.sin(y),-a*Math.sin(y)+c*Math.cos(y)];return[a*Math.cos(z)-b*Math.sin(z),a*Math.sin(z)+b*Math.cos(z),c];};
   window.PathkeeperDice=class {
-    constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.items=[{sides:20,value:20}];this.busy=false;this.startAt=performance.now();this.finishAt=null;this.frame=null;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.observer=new ResizeObserver(()=>this.draw(performance.now()));this.observer.observe(canvas);this.draw(performance.now());}
+    constructor(canvas){this.canvas=canvas;this.captionFont=getComputedStyle(canvas).font;this.ctx=canvas.getContext('2d');this.items=[{sides:20,value:20}];this.busy=false;this.startAt=performance.now();this.finishAt=null;this.frame=null;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.observer=new ResizeObserver(()=>this.draw(performance.now()));this.observer.observe(canvas);this.draw(performance.now());}
     spin(sides,count){this.items=Array.from({length:sides===100?count*2:count},(_,i)=>({sides:sides===100?10:sides,value:null,tens:sides===100&&i%2===0,units:sides===100&&i%2===1}));this.busy=true;this.finishAt=null;this.startAt=performance.now();this.animate();}
     settle(record){const result=record.result;this.items=[];
       if(record.purpose==='ability'){result.groups.forEach(group=>group.dice.forEach((value,index)=>this.items.push({sides:6,value,dropped:index===group.dropped})));}
@@ -49,7 +49,7 @@
           ctx.save();ctx.translate(...center);ctx.fillStyle=item.dropped?'#d6bc9178':'#fff7e7';ctx.font=`600 ${Math.max(9,radius*(face.index===front ? 0.5 : 0.27))}px Georgia`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(label),0,0);ctx.restore();
         });
       });
-      ctx.fillStyle='#dbc08d';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText(this.busy?'ROLLING…':'PATHKEEPER · YOUR TABLE, YOUR DICE',width/2,height-8);
+      ctx.fillStyle='#dbc08d';ctx.font=this.captionFont;ctx.textAlign='center';ctx.fillText(this.busy?'ROLLING…':'PATHKEEPER · YOUR TABLE, YOUR DICE',width/2,height-8);
     }
   };
 })();

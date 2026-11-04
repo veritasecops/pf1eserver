@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% from 'components.html' import icon %}
-{% block extra_head %}<link rel="stylesheet" href="/static/character-wizard.css">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/character-wizard.css?v=20261104-readability-2">{% endblock %}
 {% block content %}
 <div class="pw-root" data-character-wizard data-csrf="{{ csrf }}">
   <a class="text-button back-link" href="/characters">{{ icon('back') }}Characters</a>
@@ -18,7 +18,7 @@
     <aside class="pw-aside">
       <section class="pw-dice-tray"><div class="pw-dice-title"><span>{{ icon('spark') }}DICE TRAY</span><span class="pw-live-dot"></span></div>
         <canvas id="pw-dice-canvas" aria-hidden="true"></canvas>
-        <div class="pw-dice-result" id="pw-dice-result" role="status" aria-live="polite"><strong>Ready to roll</strong><small>Choose your dice below.</small></div>
+        <div class="pw-dice-result" id="pw-dice-result" role="status" aria-live="polite"><strong>Ready to roll</strong><span class="secondary-text">Choose your dice below.</span></div>
         <div class="pw-dice-types" id="pw-dice-types" aria-label="Dice types">{% for sides in [4,6,8,10,12,20,100] %}<button type="button" data-die="{{ sides }}" aria-pressed="{{ 'true' if sides == 20 else 'false' }}">d{{ sides }}</button>{% endfor %}</div>
         <div class="pw-dice-controls"><label>Dice<input type="number" id="pw-dice-count" value="1" min="1" max="20" aria-label="Number of dice"></label><label>Modifier<input type="number" id="pw-dice-modifier" value="0" min="-1000" max="1000" aria-label="Dice modifier"></label></div>
         <button class="button primary full-button" type="button" id="pw-roll">Roll 1d20</button><p class="pw-percentile-note">d100 uses tens and units dice. 00 + 0 means 100.</p>
@@ -31,4 +31,4 @@
   <script type="application/json" id="pw-bootstrap">{{ boot|tojson }}</script>
 </div>
 {% endblock %}
-{% block page_scripts %}<script src="/static/dice-tray.js" defer></script><script src="/static/character-wizard.js" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/dice-tray.js?v=20261104-readability-2" defer></script><script src="/static/character-wizard.js?v=20261104-readability-2" defer></script>{% endblock %}
