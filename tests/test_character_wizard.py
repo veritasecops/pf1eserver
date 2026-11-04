@@ -226,7 +226,7 @@ def test_creation_sheet_math_persistence_and_idempotent_completion(env):
     assert finish(env,c,draft_id,saved.json()["version"]).json() == completed.json()
     path=completed.json()["location"]
     page=c.get(path)
-    assert page.status_code == 200 and "Seren Ashfall" in page.text and "Deluxe Character Sheet" in page.text
+    assert page.status_code == 200 and "Seren Ashfall" in page.text and 'aria-label="Combat and identity"' in page.text
     assert f'href="/characters/drafts/{draft_id}"' not in c.get("/characters").text
     assert c.get(f"/characters/drafts/{draft_id}").headers["location"] == path
     with Session(engine()) as db:
