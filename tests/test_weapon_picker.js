@@ -42,3 +42,7 @@ test('free selections are allowed at zero balance and unselected special prices 
   assert.equal(result.remaining,0);
   assert.deepEqual(result.errors,[]);
 });
+test('character sheet row limits allow more copies but cap new weapon types',()=>{
+  assert.equal(total({quantities:{longsword:1,dagger:1},maxNewWeapons:1}).errors.length,1);
+  assert.deepEqual(total({quantities:{longsword:1,dagger:1},owned:{longsword:2},maxNewWeapons:1}).errors,[]);
+});

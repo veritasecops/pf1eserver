@@ -11,8 +11,11 @@
   let failed = null;
   let blocked = false;
   let attempts = 0;
+  let currentSave = null;
+  let saveError = '';
 
   const showError = message => {
+    saveError = message;
     errors.textContent = message;
     errors.hidden = false;
   };
@@ -43,7 +46,7 @@
   };
   const saveId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
 
-  const save = async () => {
+  const runSave = async () => {
     clearTimeout(timer);
     if (!dirty || saving || blocked) return;
     if (!failed && !form.checkValidity()) {
@@ -102,6 +105,7 @@
       failed = null;
       attempts = 0;
       errors.hidden = true;
+      saveError = '';
       for (const oldError of document.querySelectorAll('.deluxe-errors:not(#sheet-autosave-errors)')) oldError.hidden = true;
       if (job.revision === revision) {
         applyTotals(result);
@@ -122,6 +126,39 @@
     } finally {
       clearTimeout(timeout);
       saving = false;
+    }
+  };
+
+  const save = () => {
+    if (saving) return;
+    currentSave = runSave();
+    return currentSave;
+  };
+  window.PathkeeperSheet = {
+    get hasPending() { return dirty || saving; },
+    async flush() {
+      clearTimeout(timer);
+      if (blocked) throw new Error('Reload the character before purchasing.');
+      if (!form.checkValidity()) throw new Error('Complete the required sheet fields before purchasing.');
+      do {
+        if (saving) await currentSave; else await save();
+        if (blocked || failed || saveError) throw new Error(saveError || 'Save the sheet before purchasing.');
+      } while (dirty || saving);
+    },
+    applyPurchase(result) {
+      for (const [name,value] of Object.entries(result.purchase_fields)) {
+        const input = form.elements.namedItem(name);
+        if (input) input.value = value;
+      }
+      form.elements.namedItem('version').value = String(result.version);
+      const deleteVersion = document.querySelector('#delete-character input[name="version"]');
+      if (deleteVersion) deleteVersion.value = String(result.version);
+      applyTotals(result);
+      dirty = false;
+      failed = null;
+      saveError = '';
+      errors.hidden = true;
+      status.textContent = 'All changes saved';
     }
   };
 

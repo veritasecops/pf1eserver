@@ -9,7 +9,7 @@
     const amount = Number(match[1]) * 100 + Number((match[2] || '').padEnd(2,'0'));
     return Number.isSafeInteger(amount) && amount <= 100000000 ? amount : null;
   }
-  function summarize({equipment, quantities, prices, owned, budget}) {
+  function summarize({equipment, quantities, prices, owned, budget, maxNewWeapons}) {
     let units = 0, total = 0;
     const errors = [], selected = {}, agreed = {};
     for (const [id,raw] of Object.entries(quantities)) {
@@ -28,6 +28,8 @@
         if (item.cost === null) agreed[id] = price;
       }
     }
+    const newWeapons=Object.keys(selected).filter(id=>equipment[id].kind==='weapon'&&!(owned[id]>0)).length;
+    if (maxNewWeapons !== undefined && newWeapons > maxNewWeapons) errors.push(`Choose at most ${maxNewWeapons} new weapon types; the sheet has six weapon rows.`);
     if (total > budget) errors.push('This selection exceeds the available treasure. Reduce the quantities.');
     return {units,total,remaining:budget-total,errors,quantities:selected,prices:agreed};
   }
@@ -88,7 +90,7 @@
       this.dialog.querySelector('[name="weapon-search"]').focus({preventScroll:true});
     }
     summary() {
-      return summarize({equipment:this.options.equipment,quantities:this.quantities,prices:this.prices,owned:this.options.owned,budget:this.options.budget});
+      return summarize({equipment:this.options.equipment,quantities:this.quantities,prices:this.prices,owned:this.options.owned,budget:this.options.budget,maxNewWeapons:this.options.maxNewWeapons});
     }
     renderResults() {
       const query = this.dialog.querySelector('[name="weapon-search"]').value.trim().toLocaleLowerCase();

@@ -27,6 +27,7 @@ def calculated_fields(character, values):
     for skill in SKILLS:
         for key in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):
             locked.update({f'skill.{key}.total',f'skill.{key}.ability'})
+    locked.update(f'weapon.{row}.{part}' for row in range(6) for part in ('name','quantity','attack','critical','type','range','ammunition','damage'))
     locked.update(f'spell.{level}.known' for level in range(10))
     # These are calculated by the first-level wizard. At later levels they need
     # manual advancement because hit-die rolls and class progression aren't recorded.
@@ -121,4 +122,5 @@ def recalculate(character, values):
     write('skill_points.total',None if base is None or intelligence is None or misc is None else max(Decimal(1),base+intelligence)+misc)
     for level in range(10):
         write(f'spell.{level}.known',len([line for line in values.get(f'spell.{level}.list','').splitlines() if line.strip()]))
-    return values
+    from .character_weapons import apply_inventory
+    return apply_inventory(character,values)

@@ -32,9 +32,10 @@ function harness() {
     'sheet-character-name': { textContent: 'Hero' },
     'print-sheet': { addEventListener: () => {} }
   };
+  const browserWindow = { addEventListener: (name, fn) => { windows[name] = fn; } };
   vm.runInNewContext(fs.readFileSync('static/deluxe-sheet.js', 'utf8'), {
     document: { getElementById: id => nodes[id], querySelector: () => null, querySelectorAll: () => [] },
-    window: { addEventListener: (name, fn) => { windows[name] = fn; } },
+    window: browserWindow,
     FormData: class {
       constructor() { this.values = Object.fromEntries(Object.entries(fields).map(([key,field]) => [key,field.value])); }
     },
@@ -61,7 +62,7 @@ function harness() {
     windows.beforeunload(event);
     return event.prevented;
   }
-  return { fields, status, errors, retry, calls, listeners, change, run, response, unsaved };
+  return { fields, status, errors, retry, calls, listeners, change, run, response, unsaved, sheet:browserWindow.PathkeeperSheet };
 }
 
 test('autosaves are serialized and an older response cannot replace newer typing', async () => {
@@ -123,4 +124,33 @@ test('conflicts keep edits on the page and stop further automatic writes', async
   h.change('20');
   assert.equal(h.calls.length, 1);
   assert.match(h.status.textContent, /changed elsewhere/);
+});
+
+test('purchase flush waits for in-flight saves and then saves newer edits', async () => {
+  const h = harness();
+  h.change('18');
+  const first = h.run(400);
+  h.change('20');
+  let finished = false;
+  const flush = h.sheet.flush().then(() => { finished = true; });
+  assert.equal(finished,false);
+  h.calls[0].resolve(h.response(2,'4','4'));
+  await first;
+  await Promise.resolve();
+  assert.equal(h.calls.length,2);
+  assert.equal(h.calls[1].options.body.values['ability.dex.score'],'20');
+  assert.equal(finished,false);
+  h.calls[1].resolve(h.response(3,'5','5'));
+  await flush;
+  assert.equal(h.sheet.hasPending,false);
+  assert.equal(h.fields.version.value,'3');
+});
+
+test('purchase flush rejects conflicts instead of opening with unsaved edits', async () => {
+  const h=harness();
+  h.change('18');
+  const flush=h.sheet.flush();
+  h.calls[0].resolve({ok:false,status:409,redirected:false,headers:{get:()=> 'application/json'},json:async()=>({detail:'Character changed elsewhere.'})});
+  await assert.rejects(flush,/changed elsewhere/);
+  assert.equal(h.sheet.hasPending,true);
 });

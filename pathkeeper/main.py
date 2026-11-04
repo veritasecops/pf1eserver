@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from . import character_weapons
 from . import account_email, administration, catalog_admin, auth, character_wizard, email_admin, portraits, workspace
 from .config import ROOT, settings
 from .database import engine
@@ -44,7 +45,7 @@ async def handle_redirect(request, error):
 
 @app.exception_handler(HTTPException)
 async def handle_http_error(request, error):
-    if request.url.path.startswith("/api/"):
+    if request.url.path.startswith("/api/") or request.url.path.startswith("/characters/") and request.url.path.endswith("/weapons"):
         return JSONResponse({"detail": error.detail}, error.status_code)
     ctx = getattr(request.state, "context", None)
     if not ctx:
@@ -77,6 +78,7 @@ app.include_router(administration.router)
 app.include_router(catalog_admin.router)
 app.include_router(email_admin.router)
 app.include_router(character_wizard.router)
+app.include_router(character_weapons.router)
 app.include_router(workspace.router)
 app.include_router(portraits.router)
 

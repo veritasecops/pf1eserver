@@ -381,7 +381,8 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    character.play_data = {"calculation_version":1, **{key:value for key,value in values.items()
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase") if key in (character.play_data or {})}
+    character.play_data = {"calculation_version":1, **metadata, **{key:value for key,value in values.items()
                            if key not in core | {"player"} and value != base[key]}}
     for key in core:
         setattr(character, key, int(values[key]) if key == "level" else values[key])

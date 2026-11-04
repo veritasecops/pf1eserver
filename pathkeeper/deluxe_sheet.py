@@ -7,7 +7,7 @@ from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, RACES, SKILLS
 from .sheet_calculations import calculated_fields, recalculate
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
 
-WEAPON_COLUMNS = [('name','Weapon'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
+WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
 ARMOR_COLUMNS = [('name','Item'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
 GEAR_COLUMNS = [('name','Item'),('weight','Weight')]
 FACTION_COLUMNS = [('type','Type'),('value','Value')]
@@ -141,6 +141,7 @@ def baseline(character, owner, campaign=None, gm=None):
         data[f'gear.{i}.weight'] = str(item['weight']*item['quantity']*(.5 if small and item['kind'] in {'weapon','armor','shield'} else 1)) if item.get('weight') is not None else item.get('weight_text','Special')
     for i,item in enumerate([e for e in equipment if e['kind'] == 'weapon'][:6]):
         data[f'weapon.{i}.name'] = item['name']
+        data[f'weapon.{i}.quantity'] = str(item['quantity'])
         for part,source in [('critical','critical'),('type','damage_type'),('range','range')]:
             data[f'weapon.{i}.{part}'] = item.get(source,'')
         data[f'weapon.{i}.notes'] = '\n'.join(value for value in [item.get('special',''),item.get('notes','')] if value and value!='—')
@@ -179,6 +180,9 @@ def sheet_values(character, owner, campaign=None, gm=None):
                 values['ac.misc'] = str(old_misc-dodge)
         except InvalidOperation:
             pass
+    for row in range(6):
+        if values.get(f'weapon.{row}.name') and not values.get(f'weapon.{row}.quantity'):
+            values[f'weapon.{row}.quantity'] = '1'
     # These fields have a single source of truth in the character record.
     values.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes,player=owner.name)
     alignment = values['alignment']

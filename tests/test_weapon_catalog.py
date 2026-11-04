@@ -98,6 +98,7 @@ def test_new_sheet_seeds_weapon_stats_and_live_links_follow_admin_edits(env):
     assert form.values['weapon.0.range']=='—'
     original=table_weapons()['longsword']['url']
     assert original in page.text
+    original_attack=form.values['weapon.0.attack']
     form.values['weapon.0.attack']='99'
     assert env.post(client,path+'/play-sheet',form.values).status_code==303
     admin=env.login(env.admin)
@@ -106,15 +107,16 @@ def test_new_sheet_seeds_weapon_stats_and_live_links_follow_admin_edits(env):
     changed=client.get(path)
     assert updated in changed.text
     edited=SheetForm(changed.text)
-    assert edited.values['weapon.0.attack']=='99'
+    assert edited.values['weapon.0.attack']==original_attack
     edited.values['weapon.0.name']='Rapier'
     response=client.post(path+'/play-sheet',data=edited.values,headers={'Accept':'application/json','X-Sheet-Save-Id':'a'*32})
     assert response.status_code==200
-    assert response.json()['weapon_links']['0']['url']==table_weapons()['rapier']['url']
+    assert response.json()['weapon_links']['0']['url']==updated
+    assert response.json()['values']['weapon.0.name']=='Longsword'
     current=SheetForm(client.get(path).text)
     current.values['weapon.0.name']='A custom weapon'
     response=client.post(path+'/play-sheet',data=current.values,headers={'Accept':'application/json','X-Sheet-Save-Id':'b'*32})
-    assert response.status_code==200 and '0' not in response.json()['weapon_links']
+    assert response.status_code==200 and response.json()['weapon_links']['0']['url']==updated
 
 
 def test_migration_enriches_catalog_without_rewriting_characters_or_admin_overrides(env,isolated_database):
