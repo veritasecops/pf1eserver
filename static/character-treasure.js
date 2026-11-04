@@ -18,6 +18,11 @@
   const dialog=document.getElementById('add-treasure-dialog');
   if (!form||!treasure||!dialog) return;
   const inputs=Object.fromEntries(Object.keys(factors).map(coin=>[coin,form.elements.namedItem('money.'+coin)]));
+  const triggers=document.querySelectorAll('[data-open-treasure]');
+  let opener=document.getElementById('open-treasure');
+  for (const trigger of triggers) trigger.addEventListener('click',()=>{opener=trigger;treasure.showModal();});
+  document.getElementById('close-treasure').addEventListener('click',()=>treasure.close());
+  treasure.addEventListener('close',()=>opener.focus());
   const add=document.getElementById('add-treasure');
   const undo=document.getElementById('undo-treasure');
   const addForm=document.getElementById('add-treasure-form');
@@ -27,6 +32,7 @@
   const amounts=()=>Object.fromEntries(Object.entries(inputs).map(([coin,input])=>[coin,input.value]));
   function refresh() {
     const result=balance(amounts());
+    document.getElementById('open-treasure').setAttribute('aria-label',result.error?'Open treasure, check coin amounts':'Open treasure, '+result.gp.toLocaleString(undefined,{maximumFractionDigits:2})+' gp on hand');
     document.getElementById('treasure-total').textContent=result.error?'Check coin amounts':result.gp.toLocaleString(undefined,{maximumFractionDigits:2})+' gp';
     const validation=document.getElementById('treasure-validation');
     validation.textContent=result.error||'';
@@ -81,11 +87,9 @@
   const dock=document.querySelector('.character-sheet-dock');
   if (dock && typeof ResizeObserver!=='undefined') {
     const observer=new ResizeObserver(()=>{
-      const pinned=getComputedStyle(dock).display==='contents'?treasure:dock;
-      document.documentElement.style.setProperty('--sheet-dock-height',Math.ceil(pinned.getBoundingClientRect().height+16)+'px');
+      document.documentElement.style.setProperty('--sheet-dock-height',Math.ceil(dock.getBoundingClientRect().height+16)+'px');
     });
     observer.observe(dock);
-    observer.observe(treasure);
   }
   refresh();
 })();
