@@ -2,6 +2,7 @@ import secrets
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
@@ -313,10 +314,8 @@ def render_character(ctx, character, values=None, errors=()):
     return response
 
 
-@router.post("/characters/{character_id}/play-sheet")
-async def character_play_sheet(character_id: int, request: Request, db: Session = Depends(get_db)):
-    ctx = context(request, db)
-    character = get_character(ctx, character_id)
+async def read_play_sheet(ctx, character):
+    db = ctx.db
     form = await read_form(ctx, max_fields=1024)
     verify_version(form, character)
     owner = db.get(User, character.owner_id)
@@ -325,11 +324,31 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     current = sheet_values(character, owner, campaign, gm)
     locked = calculated_fields(character, current)
     values, errors = parse_sheet(form, {key:current[key] for key in locked})
+    if not errors:
+        recalculate(character, values)
+    return values, errors, baseline(character, owner, campaign, gm)
+
+
+@router.post("/characters/{character_id}/play-sheet/calculate")
+async def character_play_sheet_calculate(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = get_character(ctx, character_id)
+    values, errors, _ = await read_play_sheet(ctx, character)
+    if errors:
+        return JSONResponse({"errors":errors},status_code=422)
+    locked = calculated_fields(character, values)
+    return JSONResponse({"values":{key:values[key] for key in locked},"readonly":sorted(locked)},
+                        headers={"Cache-Control":"no-store"})
+
+
+@router.post("/characters/{character_id}/play-sheet")
+async def character_play_sheet(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = get_character(ctx, character_id)
+    values, errors, base = await read_play_sheet(ctx, character)
     if errors:
         return render_character(ctx, character, values, errors)
-    recalculate(character, values)
     # Store only overrides so untouched wizard values continue to follow their source.
-    base = baseline(character, owner, campaign, gm)
     core = {"name", "ancestry", "class_name", "level", "notes"}
     character.play_data = {"calculation_version":1, **{key:value for key,value in values.items()
                            if key not in core | {"player"} and value != base[key]}}

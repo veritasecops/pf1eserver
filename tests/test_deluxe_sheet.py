@@ -303,3 +303,41 @@ def test_racial_summary_is_not_added_and_cleanup_preserves_custom_features(env):
     form = SheetForm(client.get(f'/characters/{character.id}').text)
     assert summary not in [value for key,value in form.values.items() if key.startswith('feature.')]
     assert form.values['feature.9'] == 'Custom racial ability'
+
+
+def test_live_calculation_matches_save_without_persisting_edits(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    form = SheetForm(client.get(path).text)
+    form.values.update({'ability.str.score':'18','skill.climb.ranks':'2','skill.climb.misc':'1',
+                        'ability.dex.temp_score':'16','initiative.misc':'4','name':'Unsaved hero'})
+    preview = client.post(path+'/play-sheet/calculate',
+                          files=[(key,(None,str(value))) for key,value in form.values.items()])
+    assert preview.status_code == 200
+    assert preview.headers['cache-control'] == 'no-store'
+    calculated = preview.json()
+    assert calculated['values']['skill.climb.total'] == '10'
+    assert calculated['values']['initiative.total'] == '7'
+    assert 'skill.climb.ranks' not in calculated['readonly']
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        assert record.version == character.version and record.name == character.name
+        assert record.play_data is None
+        assert not db.scalar(select(AuditEvent).where(AuditEvent.event == 'character.play_sheet_saved'))
+    assert env.post(client,path+'/play-sheet',form.values).status_code == 303
+    saved = SheetForm(client.get(path).text)
+    assert all(saved.values[key] == value for key,value in calculated['values'].items())
+
+
+def test_live_calculation_requires_access_csrf_valid_inputs_and_current_version(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    values = SheetForm(client.get(path).text).values
+    preview = path+'/play-sheet/calculate'
+    assert env.post(client,preview,{**values,'csrf':'wrong'},use_csrf=False).status_code == 403
+    assert env.post(client,preview,{**values,'version':'99'}).status_code == 409
+    invalid = env.post(client,preview,{**values,'ability.str.score':'invalid'})
+    assert invalid.status_code == 422 and invalid.json()['errors']
+    assert env.post(env.login(env.player2),preview,values).status_code == 404
