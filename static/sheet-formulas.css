@@ -1,0 +1,4 @@
+[data-sheet-formula] { cursor:help; }
+.sheet-formula-tooltip { position:fixed; inset:auto; margin:0; z-index:1000; width:max-content; max-width:min(390px,calc(100vw - 16px)); max-height:calc(100dvh - 16px); overflow:auto; box-sizing:border-box; padding:13px 16px; border:1px solid #a57b43; border-radius:5px; background:#39251b; color:#fff5dc; font:400 1rem/1.5 Georgia,serif; text-align:left; text-transform:none; letter-spacing:normal; white-space:normal; box-shadow:0 5px 18px #21130c55; }
+.sheet-formula-tooltip[hidden] { display:none; }
+@media print { .sheet-formula-tooltip { display:none!important; } }

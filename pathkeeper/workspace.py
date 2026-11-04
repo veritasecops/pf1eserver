@@ -20,6 +20,7 @@ from .weapons import sheet_weapon_links
 from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
+from .sheet_formulas import sheet_formulas
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
 
 router = APIRouter()
@@ -349,7 +350,7 @@ async def character_play_sheet_calculate(character_id: int, request: Request, db
     if errors:
         return JSONResponse({"errors":errors},status_code=422)
     locked = calculated_fields(character, values)
-    return JSONResponse({"values":{key:values[key] for key in locked},"readonly":sorted(locked)},
+    return JSONResponse({"values":{key:values[key] for key in locked},"readonly":sorted(locked),"formulas":sheet_formulas(character,values)},
                         headers={"Cache-Control":"no-store"})
 
 
@@ -407,7 +408,7 @@ def autosave_response(ctx, character):
     values = sheet_values(character,owner,campaign,gm)
     locked = calculated_fields(character,values)
     return JSONResponse({'version':character.version,'name':character.name,
-                         'values':{key:values[key] for key in locked},'readonly':sorted(locked),
+                         'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values),
                          'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
                          'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db))},
                         headers={'Cache-Control':'no-store'})

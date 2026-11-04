@@ -37,6 +37,7 @@
     const locked = new Set(result.readonly);
     for (const input of form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"])')) {
       input.readOnly = locked.has(input.name);
+      if (result.formulas) window.PathkeeperFormulas?.update(input,result.formulas[input.name]);
       if (locked.has(input.name)) input.value = result.values[input.name];
     }
     document.getElementById('sheet-character-name').textContent = result.name;
