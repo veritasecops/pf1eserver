@@ -201,7 +201,7 @@ class CharacterDraft(Base):
     editing_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
     existing_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     data: Mapped[dict] = mapped_column(JSON)
-    step: Mapped[int] = mapped_column(Integer, default=0)
+    step: Mapped[int] = mapped_column(Integer, default=1)
     version: Mapped[int] = mapped_column(Integer, default=1)
     completed_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
     finalized_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

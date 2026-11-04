@@ -1,6 +1,6 @@
 ## Open and resume the wizard
 
-Select **Add character** in Characters, the workspace, or a campaign. Your unfinished creation draft resumes automatically. The wizard creates a first-level PC and follows the main d20PFSRD creation outline: dice, sheet, abilities, race, class, skills, feats, HP, equipment, combat, description, and starting spells, followed by review. Third-party class links are excluded.
+Select **Add character** in Characters, the workspace, or a campaign. Your unfinished creation draft resumes automatically. The wizard creates a first-level PC in twelve steps: character sheet, race, class, ability scores, skills, feats, HP, equipment, combat, description, starting spells, and review. The dice tray is available throughout the wizard. Third-party class links are excluded.
 
 Your draft saves after changes and when switching steps. **Draft saved** confirms persistence. **Save & exit** returns to Characters; Add character resumes the draft later. A draft becomes a character only after **Create character** on Review. There is one active creation draft per user; separate editing drafts may exist for saved sheets.
 

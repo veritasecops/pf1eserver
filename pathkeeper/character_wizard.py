@@ -46,9 +46,9 @@ def roll_history(db, draft_id):
 def display_wizard(ctx, draft):
     options = character_options(ctx)
     rolls = roll_history(ctx.db, draft.id)
-    boot = {"draft_id":draft.id,"version":draft.version,"data":draft.data,"step":draft.step,"rolls":list(rolls.values()),
+    boot = {"draft_id":draft.id,"version":draft.version,"data":draft.data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
             "computed":calculate(draft.data,rolls),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
-            "steps":STEPS,"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
+            "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":CLASSES,"skills":SKILLS,"feats":FEATS,"equipment":EQUIPMENT,"alignments":ALIGNMENTS,
             "point_cost":POINT_COST,"spell_suggestions":SPELL_SUGGESTIONS,"monk_bonus":MONK_BONUS,
             "owners":[{"id":owner.id,"name":owner.name} for owner in options["owners"]],
@@ -111,7 +111,7 @@ async def save(draft_id: str,request: Request,db: Session = Depends(get_db)):
     ctx = context(request,db)
     draft = get_draft(ctx,draft_id,True)
     form,data = await saved_form(ctx,draft)
-    draft.data,draft.step,draft.updated_at = data,integer(form,"step",0,len(STEPS)-1),utcnow()
+    draft.data,draft.step,draft.updated_at = data,integer(form,"step",0,max(STEPS)) or next(iter(STEPS)),utcnow()
     commit(db)
     return {"version":draft.version,"computed":calculate(data,roll_history(db,draft.id))}
 

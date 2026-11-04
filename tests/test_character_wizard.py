@@ -62,6 +62,38 @@ def test_wizard_ability_assignment_order_is_explicit_despite_sorted_json(env):
     assert boot["ability_order"]==["str","dex","con","int","wis","cha"]
 
 
+def test_wizard_starts_at_sheet_with_abilities_fourth_and_no_dice_step(env):
+    client,draft_id,version,data = start(env)
+    page = client.get("/characters/new")
+    boot = json.loads(re.search(r'<script type="application/json" id="pw-bootstrap">(.*?)</script>',page.text,re.S).group(1))
+    assert boot["step"] == boot["step_order"][0]
+    assert [boot["steps"][str(key)] for key in boot["step_order"]] == [
+        "Character sheet", "Race", "Class", "Ability scores", "Skill ranks", "Feats",
+        "Hit points", "Equipment", "Combat values", "Description", "Starting spells", "Review",
+    ]
+    # A save from an already-open legacy Dice page resumes at Character sheet.
+    assert save(env,client,draft_id,version,data,step=0).status_code == 200
+    with Session(engine()) as db:
+        assert db.get(CharacterDraft,draft_id).step == boot["step_order"][0]
+
+
+@pytest.mark.parametrize("saved_step,title,number", [
+    (0,"Character sheet",1), (2,"Ability scores",4), (3,"Race",2), (4,"Class",3), (12,"Review",12),
+])
+def test_reordered_wizard_resumes_existing_drafts_at_the_same_section(env,saved_step,title,number):
+    client,draft_id,_,_ = start(env)
+    with Session(engine()) as db:
+        draft = db.get(CharacterDraft,draft_id)
+        draft.step = saved_step
+        draft.data = {**draft.data,"name":"Keep my draft"}
+        db.commit()
+    page = client.get("/characters/new")
+    boot = json.loads(re.search(r'<script type="application/json" id="pw-bootstrap">(.*?)</script>',page.text,re.S).group(1))
+    assert boot["steps"][str(boot["step"])] == title
+    assert boot["step_order"].index(boot["step"]) + 1 == number
+    assert boot["data"]["name"] == "Keep my draft"
+
+
 @pytest.mark.parametrize("account",["player2","gm","admin"])
 def test_other_accounts_cannot_read_save_roll_or_finalize_private_draft(env,account):
     _,draft_id,version,data = start(env)
