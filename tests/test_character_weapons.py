@@ -80,7 +80,7 @@ def test_existing_legacy_weapon_and_notes_are_preserved_when_buying_more(env):
 
 @pytest.mark.parametrize('quantities,prices',[
     ({'longbow':2},{}), ({'dagger':-1},{}), ({'dagger':True},{}), ({'dagger':101},{}),
-    ({'dagger':1.5},{}), ({'leather':1},{}), ({'missing':1},{}),
+    ({'dagger':1.5},{}), ({'backpack':1},{}), ({'missing':1},{}),
     ({'longsword':1},{'longsword':1}), ({'shield-light':1},{}),
     ({'shield-light':1},{'shield-light':True}),
     ({'dagger':1,'quarterstaff':1,'club':1,'longspear':1,'sickle':1,'shortspear':1,'javelin':1},{}),

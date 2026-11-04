@@ -8,7 +8,7 @@ from .sheet_calculations import calculated_fields, recalculate
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
 
 WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
-ARMOR_COLUMNS = [('name','Item'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
+ARMOR_COLUMNS = [('name','Item'),('quantity','Quantity'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
 GEAR_COLUMNS = [('name','Item'),('weight','Weight')]
 FACTION_COLUMNS = [('type','Type'),('value','Value')]
 SAVES = [('fortitude','Fortitude','con'),('reflex','Reflex','dex'),('will','Will','wis')]
@@ -123,7 +123,7 @@ def baseline(character, owner, campaign=None, gm=None):
     data['cmd.dex'] = mods.get('dex',0)
     data['cmd.misc'] = values.get('cmd',10)-10-values.get('bab',0)-mods.get('str',0)-mods.get('dex',0)+int(small)
     armor,shield = (EQUIPMENT.get(inputs.get(key),{}) for key in ('armor','shield'))
-    dex = min(mods.get('dex',0),armor.get('max_dex',100))
+    dex = min(mods.get('dex',0),armor.get('max_dex',100),shield.get('max_dex',100))
     dodge = effect_total(values.get('feats',[]) + [{'name':name} for name in values.get('automatic_feats',[])],catalog,'dodge')
     data['ac.dodge'] = dodge
     for key,value in [('armor',armor.get('armor',0)),('shield',shield.get('shield',0)),('dex',dex),('size',int(small)),('natural',0),('deflection',0),('misc',values.get('ac',10)-10-armor.get('armor',0)-shield.get('shield',0)-dex-int(small)-dodge)]: data['ac.'+key] = value
@@ -150,8 +150,9 @@ def baseline(character, owner, campaign=None, gm=None):
             data[f'weapon.{i}.attack'] = values.get('weapon_attack','')
             modifier = values.get('damage_modifier',0)
             data[f'weapon.{i}.damage'] = str(values.get('weapon_damage',''))+(f'{modifier:+d}' if modifier else '')
+    from .armor import armor_fields
     for i,item in enumerate([e for e in equipment if e['kind'] in {'armor','shield'}][:6]):
-        for part,value in [('name',item['name']),('type',item.get('category',item['kind'])),('bonus',item.get('armor',item.get('shield',''))),('max_dex',item.get('max_dex','')),('penalty',item.get('acp','')),('weight',item['weight']*(.5 if small else 1))]: data[f'armor.{i}.{part}'] = value
+        for part,value in armor_fields(item,item['quantity'],data.get('size','')).items(): data[f'armor.{i}.{part}']=value
     cp = values.get('remaining_cp',0)
     data['money.gp'],cp = divmod(cp,100)
     data['money.sp'],data['money.cp'] = divmod(cp,10)
@@ -183,6 +184,9 @@ def sheet_values(character, owner, campaign=None, gm=None):
     for row in range(6):
         if values.get(f'weapon.{row}.name') and not values.get(f'weapon.{row}.quantity'):
             values[f'weapon.{row}.quantity'] = '1'
+    for row in range(6):
+        if values.get(f'armor.{row}.name') and not values.get(f'armor.{row}.quantity'):
+            values[f'armor.{row}.quantity']='1'
     # These fields have a single source of truth in the character record.
     values.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes,player=owner.name)
     alignment = values['alignment']

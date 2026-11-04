@@ -68,7 +68,7 @@ def test_additional_purchases_add_quantities_and_removal_restores_balance(env):
 
 @pytest.mark.parametrize('quantities,prices',[
     ({'longbow':3},{}), ({'dagger':0},{}), ({'dagger':-1},{}), ({'dagger':True},{}),
-    ({'dagger':1.5},{}), ({'dagger':101},{}), ({'leather':1},{}), ({'not-a-weapon':1},{}),
+    ({'dagger':1.5},{}), ({'dagger':101},{}), ({'backpack':1},{}), ({'not-a-weapon':1},{}),
     ({'longsword':1},{'longsword':1}), ({'shield-light':1},{}),
     ({'shield-light':1},{'shield-light':-1}), ({'shield-light':1},{'shield-light':True}),
     ({'shield-light':1},{'shield-light':1.5}), ({},{}),

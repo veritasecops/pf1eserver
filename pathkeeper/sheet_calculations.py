@@ -28,6 +28,7 @@ def calculated_fields(character, values):
         for key in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):
             locked.update({f'skill.{key}.total',f'skill.{key}.ability'})
     locked.update(f'weapon.{row}.{part}' for row in range(6) for part in ('name','quantity','attack','critical','type','range','ammunition','damage'))
+    locked.update(f'armor.{row}.{part}' for row in range(6) for part in ('name','quantity','type','bonus','max_dex','penalty','failure','weight'))
     locked.update(f'spell.{level}.known' for level in range(10))
     # These are calculated by the first-level wizard. At later levels they need
     # manual advancement because hit-die rolls and class progression aren't recorded.

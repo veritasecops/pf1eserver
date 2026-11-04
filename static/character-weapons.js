@@ -3,7 +3,7 @@
   const button=document.getElementById('add-sheet-weapons');
   const dialog=document.getElementById('sheet-weapon-picker');
   if (!form || !button || !dialog) return;
-  const endpoint=form.action.replace(/\/play-sheet$/,'')+'/weapons';
+  const endpoint=form.action.replace(/\/play-sheet$/,'')+'/equipment';
   const picker=new PathkeeperWeaponPicker(dialog);
   const showError=message=>{
     const panel=document.getElementById('sheet-autosave-errors');

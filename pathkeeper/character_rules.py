@@ -195,7 +195,7 @@ def calculate(data, rolls, catalog=None):
     for slot in ("armor","shield","weapon"):
         if data[slot] and not data["equipment"].get(data[slot]): error(8, f"Add the equipped {slot} to inventory first.")
     armor, shield, weapon = (EQUIPMENT.get(data[key],{}) for key in ("armor","shield","weapon"))
-    dex_ac = min(modifiers["dex"], armor.get("max_dex",100))
+    dex_ac = min(modifiers["dex"], armor.get("max_dex",100), shield.get("max_dex",100))
     acp = armor.get("acp",0) + shield.get("acp",0)
     small = race["size"] == "Small"
     dodge = effects("dodge")
@@ -240,7 +240,7 @@ def calculate(data, rolls, catalog=None):
         if scores[caster] < 11: warnings.append(f"{ABILITIES[caster]} is below 11; you cannot cast first-level spells using the normal class rules.")
         warnings.append("Confirm spell names, class lists, opposition schools, domain/mystery additions, and prepared spells with your GM.")
     speed = race["speed"] + (10 if data["class_id"] == "barbarian" and armor.get("category") != "heavy" else 0)
-    if armor.get("category") in {"medium","heavy"} and data["race"] != "dwarf": speed = {20:15,30:20,40:30}.get(speed,speed)
+    if armor.get("category") in {"medium","heavy"} and data["race"] != "dwarf": speed = armor.get("speed_"+str(speed)) or {20:15,30:20,40:30}.get(speed,speed)
     cantrip_count = 4 if data["class_id"] in {"bard","sorcerer","summoner","inquisitor","oracle","omdura"} else None
     if cantrip_count is not None and len(data["cantrips"]) != cantrip_count: error(11, "Record four different starting cantrips or orisons.")
     if len(set(name.casefold() for name in data["cantrips"])) != len(data["cantrips"]): error(11,"Do not repeat cantrip or orison names.")

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% from 'components.html' import icon %}
-{% block extra_head %}<link rel="stylesheet" href="/static/searchable-select.css?v=20261104-weapon-links-1"><link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/character-wizard.css?v=20261104-equipment-flow-1"><link rel="stylesheet" href="/static/weapon-picker.css?v=20261104-2">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/searchable-select.css?v=20261104-weapon-links-1"><link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/character-wizard.css?v=20261104-equipment-flow-1"><link rel="stylesheet" href="/static/weapon-picker.css?v=20261104-equipment-2">{% endblock %}
 {% block content %}
 <div class="pw-root" data-character-wizard data-csrf="{{ csrf }}">
   <a class="text-button back-link" href="/characters">{{ icon('back') }}Characters</a>
@@ -33,4 +33,4 @@
   <script type="application/json" id="pw-bootstrap">{{ boot|tojson }}</script>
 </div>
 {% endblock %}
-{% block page_scripts %}<script src="/static/character-portrait.js?v=20261104-header-pencil-1" defer></script><script src="/static/dice-tray.js?v=20261104-readability-2" defer></script><script src="/static/searchable-select.js?v=20261104-weapon-links-1" defer></script><script src="/static/weapon-picker.js?v=20261104-2" defer></script><script src="/static/character-wizard.js?v=20261104-equipment-block-1" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/character-portrait.js?v=20261104-header-pencil-1" defer></script><script src="/static/dice-tray.js?v=20261104-readability-2" defer></script><script src="/static/searchable-select.js?v=20261104-weapon-links-1" defer></script><script src="/static/weapon-picker.js?v=20261104-equipment-2" defer></script><script src="/static/character-wizard.js?v=20261104-equipment-2" defer></script>{% endblock %}

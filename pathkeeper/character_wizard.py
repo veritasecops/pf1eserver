@@ -133,8 +133,10 @@ async def save(draft_id: str,request: Request,db: Session = Depends(get_db)):
     return {"version":draft.version,"computed":calculate(data,roll_history(db,draft.id),load_catalog(db))}
 
 
+@router.post("/api/character-drafts/{draft_id}/equipment")
 @router.post("/api/character-drafts/{draft_id}/weapons")
 async def buy_weapons(draft_id: str, request: Request, db: Session = Depends(get_db)):
+    from .armor import purchasable
     ctx = context(request,db)
     draft = get_draft(ctx,draft_id,True)
     form = await read_form(ctx)
@@ -151,7 +153,7 @@ async def buy_weapons(draft_id: str, request: Request, db: Session = Depends(get
     prices = {key:bounded_int(value,0,100000000,'Agreed weapon price') for key,value in prices.items()}
     catalog_record = db.scalar(select(RuleCatalog).where(RuleCatalog.id==1).with_for_update())
     if integer(form,'catalog_version',0,2**31-1) != (catalog_record.version if catalog_record else 0):
-        raise HTTPException(409,'Weapon prices or rules changed. Reload the wizard before buying.')
+        raise HTTPException(409,'Equipment prices or rules changed. Reload the wizard before buying.')
     catalog = load_catalog(db)
     entries = equipment(catalog)
     data = clean(draft.data,ctx.user.id,catalog)
@@ -159,11 +161,11 @@ async def buy_weapons(draft_id: str, request: Request, db: Session = Depends(get
     if data['wealth_method']=='rolled':
         roll = rolls.get(data['wealth_roll'])
         if not roll or roll['purpose']!='wealth' or roll['result'].get('class_id')!=data['class_id']:
-            raise HTTPException(422,'Roll starting wealth for the selected class before buying weapons.')
+            raise HTTPException(422,'Roll starting wealth for the selected class before buying equipment.')
     for key,quantity in quantities.items():
         item = entries.get(key,{})
-        if not item or not (item.get('kind')=='weapon' or item.get('category')=='ammunition') or not item.get('enabled',True):
-            raise HTTPException(422,'Choose available weapons or ammunition from the catalog.')
+        if not item or not purchasable(item) or not item.get('enabled',True):
+            raise HTTPException(422,'Choose available weapons, armor, shields, or armor extras from the catalog.')
         quantity = bounded_int(quantity,1,100,'Weapon quantity')
         data['equipment'][key] = bounded_int(data['equipment'].get(key,0)+quantity,1,100,'Total equipment quantity')
         if item['cost'] is None:
@@ -175,11 +177,11 @@ async def buy_weapons(draft_id: str, request: Request, db: Session = Depends(get
             elif key not in prices: raise HTTPException(422,f"Enter the agreed unit price for {item['name']}.")
             else: data['equipment_prices'][key] = bounded_int(prices[key],0,100000000,'Agreed weapon price')
         elif key in prices:
-            raise HTTPException(422,'Published weapon prices are calculated by the server.')
+            raise HTTPException(422,'Published equipment prices are calculated by the server.')
     computed = calculate(data,rolls,catalog)
-    if computed['remaining_cp'] < 0: raise HTTPException(422,'These weapons exceed the character’s remaining treasure. Reduce quantities or adjust starting wealth.')
+    if computed['remaining_cp'] < 0: raise HTTPException(422,'This equipment exceeds the character’s remaining treasure. Reduce quantities or adjust starting wealth.')
     draft.data,draft.updated_at = data,utcnow()
-    audit(db,ctx.user,'character.weapons_added',f'Added {sum(quantities.values())} weapon/ammunition units to a character draft.')
+    audit(db,ctx.user,'character.weapons_added',f'Added {sum(quantities.values())} equipment units to a character draft.')
     commit(db)
     return {'version':draft.version,'data':data,'computed':computed}
 

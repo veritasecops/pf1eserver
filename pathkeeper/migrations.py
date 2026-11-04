@@ -108,4 +108,13 @@ def migrate(admin_engine):
             record.data = updated
             db.add(SchemaMigration(version=10, name="simple_martial_exotic_weapon_tables_and_links"))
             db.commit()
-    print("Database migrations applied through 010 (expanded weapon tables and links).")
+        if not db.get(SchemaMigration, 11):
+            from copy import deepcopy
+            from .rule_catalog import default_catalog
+            record=db.get(RuleCatalog,1)
+            updated=deepcopy(record.data)
+            updated['armor']={**default_catalog()['armor'],**updated.get('armor',{})}
+            record.data=updated
+            db.add(SchemaMigration(version=11,name="armor_shield_catalog_and_equipment_picker"))
+            db.commit()
+    print("Database migrations applied through 011 (armor and equipment catalog).")

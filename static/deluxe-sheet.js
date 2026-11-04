@@ -20,17 +20,19 @@
     errors.hidden = false;
   };
   const applyTotals = result => {
-    if (result.weapon_links) {
-      for (const link of form.querySelectorAll('[data-weapon-reference]')) {
-        const row = link.dataset.weaponReference;
-        const reference = result.weapon_links[row];
-        const name = form.elements.namedItem(`weapon.${row}.name`)?.value.trim();
+    for (const kind of ['weapon','armor']) {
+    if (result[kind+'_links']) {
+      for (const link of form.querySelectorAll(`[data-${kind}-reference]`)) {
+        const row = link.dataset[kind+'Reference'];
+        const reference = result[kind+'_links'][row];
+        const name = form.elements.namedItem(`${kind}.${row}.name`)?.value.trim();
         link.hidden = !reference || reference.name !== name;
         if (!link.hidden) {
           link.href = reference.url;
           link.setAttribute('aria-label', `Reference for ${reference.name}`);
         } else link.removeAttribute('href');
       }
+    }
     }
     const locked = new Set(result.readonly);
     for (const input of form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"])')) {

@@ -17,6 +17,7 @@ from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .rule_catalog import character_catalog, load_catalog
 from .weapons import sheet_weapon_links
+from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
@@ -316,6 +317,7 @@ def render_character(ctx, character, values=None, errors=()):
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       header_background_url=header_background_url(ctx.db,character),default_header_background=DEFAULT_HEADER_BACKGROUND,
                       can_edit_header_background=ctx.user.id == character.owner_id,
+                      armor_links=sheet_armor_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
                       weapon_links=sheet_weapon_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
                       **view_context(character, owner, campaign, gm, values, errors))
     if errors:
@@ -406,6 +408,7 @@ def autosave_response(ctx, character):
     locked = calculated_fields(character,values)
     return JSONResponse({'version':character.version,'name':character.name,
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),
+                         'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
                          'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db))},
                         headers={'Cache-Control':'no-store'})
 

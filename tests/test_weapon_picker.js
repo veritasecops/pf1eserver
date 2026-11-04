@@ -34,7 +34,7 @@ test('special prices, over-budget selections and inventory limits prevent submis
   assert.equal(total({quantities:{longsword:'10'}}).errors.length,1);
   assert.equal(total({quantities:{dagger:'2'},owned:{dagger:99}}).errors.length,1);
   assert.equal(total({quantities:{dagger:'1.5'}}).errors.length,1);
-  assert.equal(total({quantities:{leather:'1'}}).errors.length,1);
+  assert.deepEqual(total({quantities:{leather:'1'}}).errors,[]);
 });
 test('free selections are allowed at zero balance and unselected special prices do not block the cart',()=>{
   const result=total({equipment:{...equipment,staff:{name:'Staff',kind:'weapon',cost:0}},quantities:{staff:1,shield:0},budget:0});
@@ -45,4 +45,13 @@ test('free selections are allowed at zero balance and unselected special prices 
 test('character sheet row limits allow more copies but cap new weapon types',()=>{
   assert.equal(total({quantities:{longsword:1,dagger:1},maxNewWeapons:1}).errors.length,1);
   assert.deepEqual(total({quantities:{longsword:1,dagger:1},owned:{longsword:2},maxNewWeapons:1}).errors,[]);
+});
+
+test('mixed armor and weapon carts share treasure and enforce separate row limits',()=>{
+  const catalog={...equipment,mail:{kind:'armor',name:'Mail',cost:5000},buckler:{kind:'shield',name:'Buckler',cost:500},extra:{kind:'gear',category:'extra',name:'Spikes',cost:1000}};
+  const result=total({equipment:catalog,quantities:{mail:1,dagger:1,buckler:2,extra:1},maxNewArmor:2,maxNewWeapons:0});
+  assert.equal(result.total,7200);
+  assert.equal(result.errors.length,1);
+  assert.deepEqual(total({equipment:catalog,quantities:{mail:1,buckler:1},maxNewArmor:1,owned:{mail:1}}).errors,[]);
+  assert.equal(total({equipment:catalog,quantities:{mail:1,buckler:1},maxNewArmor:1}).errors.length,1);
 });
