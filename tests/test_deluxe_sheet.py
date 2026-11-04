@@ -67,7 +67,7 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     assert form.options['alignment'] == ['',*ALIGNMENTS]
     for key,meta in FIELDS.items():
         if key in form.readonly: continue
-        form.values[key] = 'CG' if key == 'alignment' else '1' if meta['kind'] == 'checkbox' else '3' if meta['kind'] == 'number' else f'Edited {key}'
+        form.values[key] = 'atheism' if key == 'deity' else 'CG' if key == 'alignment' else '1' if meta['kind'] == 'checkbox' else '3' if meta['kind'] == 'number' else f'Edited {key}'
     response = env.post(client,f'/characters/{character.id}/play-sheet',form.values)
     assert response.status_code == 303
     saved = SheetForm(client.get(response.headers['location']).text)

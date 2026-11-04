@@ -29,6 +29,7 @@ for key,label in [('name','Character name'),('alignment','Alignment'),('player',
     register(key,label,maximum=150 if key == 'name' else 100 if key in {'class_name','ancestry'} else 200)
 register('level','Level','number')
 FIELDS['alignment']['kind'] = 'select'
+FIELDS['deity']['kind'] = 'deity'
 for ability,label in ABILITIES.items():
     for part,title in [('score','Ability score'),('mod','Ability modifier'),('temp_score','Temporary score'),('temp_mod','Temporary modifier')]:
         register(f'ability.{ability}.{part}',f'{label}: {title}','number')
@@ -195,7 +196,7 @@ def sheet_values(character, owner, campaign=None, gm=None):
     return recalculate(character, values)
 
 
-def parse_sheet(form, locked=None, catalog=None):
+def parse_sheet(form, locked=None, catalog=None, deity_catalog=None, current_deity=''):
     from .rule_catalog import default_catalog
     FIELDS = fields_for(catalog or default_catalog())
     locked = locked or {}
@@ -219,6 +220,10 @@ def parse_sheet(form, locked=None, catalog=None):
             errors.append(f'{meta["label"]}: use {meta["maximum"]} characters or fewer.')
         elif meta['kind'] == 'checkbox' and value not in {'','1'}:
             errors.append(f'{meta["label"]}: invalid checkbox.')
+        elif meta['kind'] == 'deity':
+            from .deities import choose_deity
+            try: values[key]=choose_deity(value,deity_catalog if deity_catalog is not None else (catalog or default_catalog()).get('deities',{}),current_deity)
+            except HTTPException as error: errors.append(error.detail)
         elif meta['kind'] == 'select' and value and value not in ALIGNMENTS:
             errors.append('Alignment: choose an alignment from the list.')
         elif meta['kind'] == 'number' and value:
@@ -239,14 +244,17 @@ def parse_sheet(form, locked=None, catalog=None):
     return values,errors
 
 
-def view_context(character, owner, campaign=None, gm=None, values=None, errors=()):
+def view_context(character, owner, campaign=None, gm=None, values=None, errors=(), deity_catalog=None):
     cls = next((c for c in CLASSES.values() if c['name'].casefold() == character.class_name.casefold()),{})
     values = values if values is not None else sheet_values(character,owner,campaign,gm)
     catalog = character_catalog(character)
+    from .deities import deity_choices
+    choices,selected=deity_choices(deity_catalog if deity_catalog is not None else catalog.get('deities',{}),values.get('deity',''))
+    values={**values,'deity':selected}
     from .treasure import COIN_TYPES, treasure
     try: treasure_gp=format(Decimal(treasure(values))/100,'.2f').rstrip('0').rstrip('.')
     except HTTPException: treasure_gp=None
-    return dict(sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
+    return dict(deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog,(character.sheet_data or {}).get('input',{}).get('class_id','')) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

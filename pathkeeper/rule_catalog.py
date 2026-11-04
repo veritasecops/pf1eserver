@@ -31,7 +31,8 @@ def default_catalog(legacy=False):
     armor={key:{**deepcopy(value),'enabled':True} for key,value in EQUIPMENT.items() if value['kind'] in {'armor','shield'}} if legacy else deepcopy(table_armor())
     for key,item in armor.items():
         if key in EQUIPMENT: item['aliases']=list(dict.fromkeys([*item.get('aliases',[]),EQUIPMENT[key]['name']]))
-    return {'feats':feats, 'skills':skills, 'weapons':weapons, 'armor':armor}
+    from .deities import table_deities
+    return {'feats':feats, 'skills':skills, 'weapons':weapons, 'armor':armor,'deities':deepcopy(table_deities())}
 
 
 def load_catalog(db):

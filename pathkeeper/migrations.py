@@ -117,4 +117,13 @@ def migrate(admin_engine):
             record.data=updated
             db.add(SchemaMigration(version=11,name="armor_shield_catalog_and_equipment_picker"))
             db.commit()
-    print("Database migrations applied through 011 (armor and equipment catalog).")
+        if not db.get(SchemaMigration, 12):
+            from copy import deepcopy
+            from .deities import table_deities
+            record=db.get(RuleCatalog,1)
+            updated=deepcopy(record.data)
+            updated['deities']={**deepcopy(table_deities()),**updated.get('deities',{})}
+            record.data=updated
+            db.add(SchemaMigration(version=12,name="deity_and_belief_catalog"))
+            db.commit()
+    print("Database migrations applied through 012 (deity and belief catalog).")

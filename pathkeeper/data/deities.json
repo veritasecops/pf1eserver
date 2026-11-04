@@ -1,0 +1,1831 @@
+{
+  "abadar": {
+    "name": "Abadar",
+    "url": "https://pathfinderwiki.com/wiki/Abadar",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia",
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "achaekek": {
+    "name": "Achaekek",
+    "url": "https://pathfinderwiki.com/wiki/Achaekek",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "adanye": {
+    "name": "Adanye",
+    "url": "https://pathfinderwiki.com/wiki/Adanye",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "ah-pook": {
+    "name": "Ah Pook",
+    "url": "https://pathfinderwiki.com/wiki/Ah_Pook",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "alseta": {
+    "name": "Alseta",
+    "url": "https://pathfinderwiki.com/wiki/Alseta",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "angazhan": {
+    "name": "Angazhan",
+    "url": "https://pathfinderwiki.com/wiki/Angazhan",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "anubis": {
+    "name": "Anubis",
+    "url": "https://pathfinderwiki.com/wiki/Anubis",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "apep": {
+    "name": "Apep",
+    "url": "https://pathfinderwiki.com/wiki/Apep",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "arazni": {
+    "name": "Arazni",
+    "url": "https://pathfinderwiki.com/wiki/Arazni",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "aroden": {
+    "name": "Aroden",
+    "url": "https://pathfinderwiki.com/wiki/Aroden",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "arundhat": {
+    "name": "Arundhat",
+    "url": "https://pathfinderwiki.com/wiki/Arundhat",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "ashukharma": {
+    "name": "Ashukharma",
+    "url": "https://pathfinderwiki.com/wiki/Ashukharma",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "asmodeus": {
+    "name": "Asmodeus",
+    "url": "https://pathfinderwiki.com/wiki/Asmodeus",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "atheism": {
+    "name": "Atheism",
+    "url": "https://pathfinderwiki.com/wiki/Atheism",
+    "enabled": true,
+    "sections": [
+      "Atheism"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "baekho": {
+    "name": "Baekho",
+    "url": "https://pathfinderwiki.com/wiki/Baekho",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "balumbdar": {
+    "name": "Balumbdar",
+    "url": "https://pathfinderwiki.com/wiki/Balumbdar",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "bastet": {
+    "name": "Bastet",
+    "url": "https://pathfinderwiki.com/wiki/Bastet",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "bes": {
+    "name": "Bes",
+    "url": "https://pathfinderwiki.com/wiki/Bes",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "besmara": {
+    "name": "Besmara",
+    "url": "https://pathfinderwiki.com/wiki/Besmara",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "brigh": {
+    "name": "Brigh",
+    "url": "https://pathfinderwiki.com/wiki/Brigh",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "calistria": {
+    "name": "Calistria",
+    "url": "https://pathfinderwiki.com/wiki/Calistria",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "camazotz": {
+    "name": "Camazotz",
+    "url": "https://pathfinderwiki.com/wiki/Camazotz",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "casandalee": {
+    "name": "Casandalee",
+    "url": "https://pathfinderwiki.com/wiki/Casandalee",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "cayden-cailean": {
+    "name": "Cayden Cailean",
+    "url": "https://pathfinderwiki.com/wiki/Cayden_Cailean",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "chaldira-zuzaristan": {
+    "name": "Chaldira Zuzaristan",
+    "url": "https://pathfinderwiki.com/wiki/Chaldira_Zuzaristan",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "chamidu": {
+    "name": "Chamidu",
+    "url": "https://pathfinderwiki.com/wiki/Chamidu",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "chohar": {
+    "name": "Chohar",
+    "url": "https://pathfinderwiki.com/wiki/Chohar",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "cihua-coatl": {
+    "name": "Cihua Coatl",
+    "url": "https://pathfinderwiki.com/wiki/Cihua_Coatl",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "cloud-sisters": {
+    "name": "Cloud Sisters",
+    "url": "https://pathfinderwiki.com/wiki/Cloud_Sisters",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "daikitsu": {
+    "name": "Daikitsu",
+    "url": "https://pathfinderwiki.com/wiki/Daikitsu",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "desna": {
+    "name": "Desna",
+    "url": "https://pathfinderwiki.com/wiki/Desna",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Thassilon",
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "dhalavei": {
+    "name": "Dhalavei",
+    "url": "https://pathfinderwiki.com/wiki/Dhalavei",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "dhavala": {
+    "name": "Dhavala",
+    "url": "https://pathfinderwiki.com/wiki/Dhavala",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "dhuangir": {
+    "name": "Dhuangir",
+    "url": "https://pathfinderwiki.com/wiki/Dhuangir",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "dinehdal": {
+    "name": "Dinehdal",
+    "url": "https://pathfinderwiki.com/wiki/Dinehdal",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "diomazul": {
+    "name": "Diomazul",
+    "url": "https://pathfinderwiki.com/wiki/Diomazul",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "embaral": {
+    "name": "Embaral",
+    "url": "https://pathfinderwiki.com/wiki/Embaral",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "erastil": {
+    "name": "Erastil",
+    "url": "https://pathfinderwiki.com/wiki/Erastil",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "fumeiyoshi": {
+    "name": "Fumeiyoshi",
+    "url": "https://pathfinderwiki.com/wiki/Fumeiyoshi",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "gaelata": {
+    "name": "Gaelata",
+    "url": "https://pathfinderwiki.com/wiki/Gaelata",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "general-susumu": {
+    "name": "General Susumu",
+    "url": "https://pathfinderwiki.com/wiki/General_Susumu",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "genzaeri": {
+    "name": "Genzaeri",
+    "url": "https://pathfinderwiki.com/wiki/Genzaeri",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "ghlaunder": {
+    "name": "Ghlaunder",
+    "url": "https://pathfinderwiki.com/wiki/Ghlaunder",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "gozreh": {
+    "name": "Gozreh",
+    "url": "https://pathfinderwiki.com/wiki/Gozreh",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "grandmother-spider": {
+    "name": "Grandmother Spider",
+    "url": "https://pathfinderwiki.com/wiki/Grandmother_Spider",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "grask-uldeth": {
+    "name": "Grask Uldeth",
+    "url": "https://pathfinderwiki.com/wiki/Grask_Uldeth",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "groetus": {
+    "name": "Groetus",
+    "url": "https://pathfinderwiki.com/wiki/Groetus",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "gruhastha": {
+    "name": "Gruhastha",
+    "url": "https://pathfinderwiki.com/wiki/Gruhastha",
+    "enabled": true,
+    "sections": [
+      "Ascended deities",
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "hanspur": {
+    "name": "Hanspur",
+    "url": "https://pathfinderwiki.com/wiki/Hanspur",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "hathor": {
+    "name": "Hathor",
+    "url": "https://pathfinderwiki.com/wiki/Hathor",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "hei-feng": {
+    "name": "Hei Feng",
+    "url": "https://pathfinderwiki.com/wiki/Hei_Feng",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "horus": {
+    "name": "Horus",
+    "url": "https://pathfinderwiki.com/wiki/Horus",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "iggeret": {
+    "name": "Iggeret",
+    "url": "https://pathfinderwiki.com/wiki/Iggeret",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "iomedae": {
+    "name": "Iomedae",
+    "url": "https://pathfinderwiki.com/wiki/Iomedae",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "irori": {
+    "name": "Irori",
+    "url": "https://pathfinderwiki.com/wiki/Irori",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "Ascended deities",
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia",
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "isis": {
+    "name": "Isis",
+    "url": "https://pathfinderwiki.com/wiki/Isis",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "izuyaku": {
+    "name": "Izuyaku",
+    "url": "https://pathfinderwiki.com/wiki/Izuyaku",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "janasini": {
+    "name": "Janasini",
+    "url": "https://pathfinderwiki.com/wiki/Janasini",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "janpati": {
+    "name": "Janpati",
+    "url": "https://pathfinderwiki.com/wiki/Janpati",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "jin-li": {
+    "name": "Jin Li",
+    "url": "https://pathfinderwiki.com/wiki/Jin_Li",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "jukha": {
+    "name": "Jukha",
+    "url": "https://pathfinderwiki.com/wiki/Jukha",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "jyotah": {
+    "name": "Jyotah",
+    "url": "https://pathfinderwiki.com/wiki/Jyotah",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "kaikyton": {
+    "name": "Kaikyton",
+    "url": "https://pathfinderwiki.com/wiki/Kaikyton",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "kaldemash": {
+    "name": "Kaldemash",
+    "url": "https://pathfinderwiki.com/wiki/Kaldemash",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "kalekot": {
+    "name": "Kalekot",
+    "url": "https://pathfinderwiki.com/wiki/Kalekot",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "kazutal": {
+    "name": "Kazutal",
+    "url": "https://pathfinderwiki.com/wiki/Kazutal",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "khepri": {
+    "name": "Khepri",
+    "url": "https://pathfinderwiki.com/wiki/Khepri",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "kitumu": {
+    "name": "Kitumu",
+    "url": "https://pathfinderwiki.com/wiki/Kitumu",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "kofusachi": {
+    "name": "Kofusachi",
+    "url": "https://pathfinderwiki.com/wiki/Kofusachi",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "kurgess": {
+    "name": "Kurgess",
+    "url": "https://pathfinderwiki.com/wiki/Kurgess",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "lady-jingxi": {
+    "name": "Lady Jingxi",
+    "url": "https://pathfinderwiki.com/wiki/Lady_Jingxi",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "lady-nanbyo": {
+    "name": "Lady Nanbyo",
+    "url": "https://pathfinderwiki.com/wiki/Lady_Nanbyo",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "lady-of-the-north-star": {
+    "name": "Lady of the North Star",
+    "url": "https://pathfinderwiki.com/wiki/Lady_of_the_North_Star",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "lahkgya": {
+    "name": "Lahkgya",
+    "url": "https://pathfinderwiki.com/wiki/Lahkgya",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "lamashtu": {
+    "name": "Lamashtu",
+    "url": "https://pathfinderwiki.com/wiki/Lamashtu",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "lao-shu-po": {
+    "name": "Lao Shu Po",
+    "url": "https://pathfinderwiki.com/wiki/Lao_Shu_Po",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "lauta": {
+    "name": "Lauta",
+    "url": "https://pathfinderwiki.com/wiki/Lauta",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "likha": {
+    "name": "Likha",
+    "url": "https://pathfinderwiki.com/wiki/Likha",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "lissala": {
+    "name": "Lissala",
+    "url": "https://pathfinderwiki.com/wiki/Lissala",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Thassilon"
+    ],
+    "aliases": []
+  },
+  "lubaiko": {
+    "name": "Lubaiko",
+    "url": "https://pathfinderwiki.com/wiki/Lubaiko",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "luhar": {
+    "name": "Luhar",
+    "url": "https://pathfinderwiki.com/wiki/Luhar",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "ma-at": {
+    "name": "Ma'at",
+    "url": "https://pathfinderwiki.com/wiki/Ma%27at",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "mahja-firehair": {
+    "name": "Mahja Firehair",
+    "url": "https://pathfinderwiki.com/wiki/Mahja_Firehair",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "matravash": {
+    "name": "Matravash",
+    "url": "https://pathfinderwiki.com/wiki/Matravash",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "mazludeh": {
+    "name": "Mazludeh",
+    "url": "https://pathfinderwiki.com/wiki/Mazludeh",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "milani": {
+    "name": "Milani",
+    "url": "https://pathfinderwiki.com/wiki/Milani",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "moorya": {
+    "name": "Moorya",
+    "url": "https://pathfinderwiki.com/wiki/Moorya",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "mrtyu": {
+    "name": "Mrtyu",
+    "url": "https://pathfinderwiki.com/wiki/Mrtyu",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "mugura-and-nrithu": {
+    "name": "Mugura and Nrithu",
+    "url": "https://pathfinderwiki.com/wiki/Mugura_and_Nrithu",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "nalinivati": {
+    "name": "Nalinivati",
+    "url": "https://pathfinderwiki.com/wiki/Nalinivati",
+    "enabled": true,
+    "sections": [
+      "Ascended deities",
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "neith": {
+    "name": "Neith",
+    "url": "https://pathfinderwiki.com/wiki/Neith",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "nephthys": {
+    "name": "Nephthys",
+    "url": "https://pathfinderwiki.com/wiki/Nephthys",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "nethys": {
+    "name": "Nethys",
+    "url": "https://pathfinderwiki.com/wiki/Nethys",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "nightripper": {
+    "name": "Nightripper",
+    "url": "https://pathfinderwiki.com/wiki/Nightripper",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "nivi-rhombodazzle": {
+    "name": "Nivi Rhombodazzle",
+    "url": "https://pathfinderwiki.com/wiki/Nivi_Rhombodazzle",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "nocticula": {
+    "name": "Nocticula",
+    "url": "https://pathfinderwiki.com/wiki/Nocticula",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "norgorber": {
+    "name": "Norgorber",
+    "url": "https://pathfinderwiki.com/wiki/Norgorber",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "Ascended deities",
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "obari": {
+    "name": "Obari",
+    "url": "https://pathfinderwiki.com/wiki/Obari",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "omrataji": {
+    "name": "Omrataji",
+    "url": "https://pathfinderwiki.com/wiki/Omrataji",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "osiris": {
+    "name": "Osiris",
+    "url": "https://pathfinderwiki.com/wiki/Osiris",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "paambudevi": {
+    "name": "Paambudevi",
+    "url": "https://pathfinderwiki.com/wiki/Paambudevi",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "pahti-coatl": {
+    "name": "Pahti Coatl",
+    "url": "https://pathfinderwiki.com/wiki/Pahti_Coatl",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "pehla": {
+    "name": "Pehla",
+    "url": "https://pathfinderwiki.com/wiki/Pehla",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "pharasma": {
+    "name": "Pharasma",
+    "url": "https://pathfinderwiki.com/wiki/Pharasma",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Thassilon",
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "phi-deva": {
+    "name": "Phi Deva",
+    "url": "https://pathfinderwiki.com/wiki/Phi_Deva",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "ptah": {
+    "name": "Ptah",
+    "url": "https://pathfinderwiki.com/wiki/Ptah",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "purnallo": {
+    "name": "Purnállo",
+    "url": "https://pathfinderwiki.com/wiki/Purn%C3%A1llo",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "pyasa": {
+    "name": "Pyasa",
+    "url": "https://pathfinderwiki.com/wiki/Pyasa",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "qi-zhong": {
+    "name": "Qi Zhong",
+    "url": "https://pathfinderwiki.com/wiki/Qi_Zhong",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "quldari": {
+    "name": "Quldari",
+    "url": "https://pathfinderwiki.com/wiki/Quldari",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "ra": {
+    "name": "Ra",
+    "url": "https://pathfinderwiki.com/wiki/Ra",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "ragdya": {
+    "name": "Ragdya",
+    "url": "https://pathfinderwiki.com/wiki/Ragdya",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "raumya": {
+    "name": "Raumya",
+    "url": "https://pathfinderwiki.com/wiki/Raumya",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "ravithra": {
+    "name": "Ravithra",
+    "url": "https://pathfinderwiki.com/wiki/Ravithra",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "rovagug": {
+    "name": "Rovagug",
+    "url": "https://pathfinderwiki.com/wiki/Rovagug",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "sardevi": {
+    "name": "Sardevi",
+    "url": "https://pathfinderwiki.com/wiki/Sardevi",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "sarenrae": {
+    "name": "Sarenrae",
+    "url": "https://pathfinderwiki.com/wiki/Sarenrae",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "sekhmet": {
+    "name": "Sekhmet",
+    "url": "https://pathfinderwiki.com/wiki/Sekhmet",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "selket": {
+    "name": "Selket",
+    "url": "https://pathfinderwiki.com/wiki/Selket",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "set": {
+    "name": "Set",
+    "url": "https://pathfinderwiki.com/wiki/Set",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "shelyn": {
+    "name": "Shelyn",
+    "url": "https://pathfinderwiki.com/wiki/Shelyn",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia",
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "shimye-magalla": {
+    "name": "Shimye-Magalla",
+    "url": "https://pathfinderwiki.com/wiki/Shimye-Magalla",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "shizuru": {
+    "name": "Shizuru",
+    "url": "https://pathfinderwiki.com/wiki/Shizuru",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "sivanah": {
+    "name": "Sivanah",
+    "url": "https://pathfinderwiki.com/wiki/Sivanah",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "sobek": {
+    "name": "Sobek",
+    "url": "https://pathfinderwiki.com/wiki/Sobek",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "srikalis-sritaming-and-sribaril": {
+    "name": "Srikalis, Sritaming, and Sribaril",
+    "url": "https://pathfinderwiki.com/wiki/Srikalis,_Sritaming,_and_Sribaril",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "sun-wukong": {
+    "name": "Sun Wukong",
+    "url": "https://pathfinderwiki.com/wiki/Sun_Wukong",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "surpa": {
+    "name": "Surpa",
+    "url": "https://pathfinderwiki.com/wiki/Surpa",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "suyuddha": {
+    "name": "Suyuddha",
+    "url": "https://pathfinderwiki.com/wiki/Suyuddha",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "thoth": {
+    "name": "Thoth",
+    "url": "https://pathfinderwiki.com/wiki/Thoth",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "three-sisters": {
+    "name": "Three Sisters",
+    "url": "https://pathfinderwiki.com/wiki/Three_Sisters",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "tlehar": {
+    "name": "Tlehar",
+    "url": "https://pathfinderwiki.com/wiki/Tlehar",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "tolte-coatl": {
+    "name": "Tolte Coatl",
+    "url": "https://pathfinderwiki.com/wiki/Tolte_Coatl",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "topimanu": {
+    "name": "Topimanu",
+    "url": "https://pathfinderwiki.com/wiki/Topimanu",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "torag": {
+    "name": "Torag",
+    "url": "https://pathfinderwiki.com/wiki/Torag",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "tsukiyo": {
+    "name": "Tsukiyo",
+    "url": "https://pathfinderwiki.com/wiki/Tsukiyo",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "uirch": {
+    "name": "Uirch",
+    "url": "https://pathfinderwiki.com/wiki/Uirch",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "ulvedro": {
+    "name": "Ulvedro",
+    "url": "https://pathfinderwiki.com/wiki/Ulvedro",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "urgathoa": {
+    "name": "Urgathoa",
+    "url": "https://pathfinderwiki.com/wiki/Urgathoa",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "uvuko": {
+    "name": "Uvuko",
+    "url": "https://pathfinderwiki.com/wiki/Uvuko",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "vasaghati": {
+    "name": "Vasaghati",
+    "url": "https://pathfinderwiki.com/wiki/Vasaghati",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "vevelor": {
+    "name": "Vevelor",
+    "url": "https://pathfinderwiki.com/wiki/Vevelor",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "vibhishah": {
+    "name": "Vibhishah",
+    "url": "https://pathfinderwiki.com/wiki/Vibhishah",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "vineshvakhi": {
+    "name": "Vineshvakhi",
+    "url": "https://pathfinderwiki.com/wiki/Vineshvakhi",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "vineshwaran": {
+    "name": "Vineshwaran",
+    "url": "https://pathfinderwiki.com/wiki/Vineshwaran",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "viritash": {
+    "name": "Viritash",
+    "url": "https://pathfinderwiki.com/wiki/Viritash",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "vritra": {
+    "name": "Vritra",
+    "url": "https://pathfinderwiki.com/wiki/Vritra",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "vudravati": {
+    "name": "Vudravati",
+    "url": "https://pathfinderwiki.com/wiki/Vudravati",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Vudra"
+    ],
+    "aliases": []
+  },
+  "wadjet": {
+    "name": "Wadjet",
+    "url": "https://pathfinderwiki.com/wiki/Wadjet",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Osirion"
+    ],
+    "aliases": []
+  },
+  "walkena": {
+    "name": "Walkena",
+    "url": "https://pathfinderwiki.com/wiki/Walkena",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Mwangi Expanse"
+    ],
+    "aliases": []
+  },
+  "wulgren": {
+    "name": "Wulgren",
+    "url": "https://pathfinderwiki.com/wiki/Wulgren",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "xanderghul": {
+    "name": "Xanderghul",
+    "url": "https://pathfinderwiki.com/wiki/Xanderghul",
+    "enabled": true,
+    "sections": [
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "yaezhing": {
+    "name": "Yaezhing",
+    "url": "https://pathfinderwiki.com/wiki/Yaezhing",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "yahuima": {
+    "name": "Yahuima",
+    "url": "https://pathfinderwiki.com/wiki/Yahuima",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Arcadia"
+    ],
+    "aliases": []
+  },
+  "yamatsumi": {
+    "name": "Yamatsumi",
+    "url": "https://pathfinderwiki.com/wiki/Yamatsumi",
+    "enabled": true,
+    "sections": [
+      "In other regions"
+    ],
+    "regions": [
+      "Tian Xia"
+    ],
+    "aliases": []
+  },
+  "zon-kuthon": {
+    "name": "Zon-Kuthon",
+    "url": "https://pathfinderwiki.com/wiki/Zon-Kuthon",
+    "enabled": true,
+    "sections": [
+      "In the Inner Sea Region"
+    ],
+    "regions": [],
+    "aliases": []
+  },
+  "zyphus": {
+    "name": "Zyphus",
+    "url": "https://pathfinderwiki.com/wiki/Zyphus",
+    "enabled": true,
+    "sections": [
+      "Other deities of the Inner Sea region",
+      "Ascended deities"
+    ],
+    "regions": [],
+    "aliases": []
+  }
+}

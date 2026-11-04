@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from .character_rules import bounded_int, calculate, clean, defaults
 from .database import commit, get_db
 from .rule_catalog import load_catalog, equipment, class_skills
+from .deities import deity_choices, choose_deity
 from .models import Character, CharacterDraft, DiceRoll, RuleCatalog, utcnow
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, SPELL_SUGGESTIONS, STEPS
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
@@ -50,9 +51,11 @@ def display_wizard(ctx, draft):
     rolls = roll_history(ctx.db, draft.id)
     data = {**draft.data,"owner_id":ctx.user.id} if draft.mode == "create" else draft.data
     catalog = load_catalog(ctx.db)
+    deities,selected_deity=deity_choices(catalog.get('deities',{}),data.get('deity',''))
+    data={**data,'deity':selected_deity}
     catalog_record = ctx.db.get(RuleCatalog,1)
     image_url = portrait_url(ctx.db,draft)
-    boot = {"catalog_version":catalog_record.version if catalog_record else 0,"portrait_url":image_url,"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
+    boot = {"deities":deities,"catalog_version":catalog_record.version if catalog_record else 0,"portrait_url":image_url,"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
             "computed":calculate(data,rolls,load_catalog(ctx.db)),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":{key:{**cls,"skills":class_skills(catalog,key)} for key,cls in CLASSES.items()},"skills":catalog["skills"],"feats":catalog["feats"],"equipment":equipment(catalog),"alignments":ALIGNMENTS,
@@ -95,6 +98,7 @@ async def edit_sheet(character_id: int,request: Request,db: Session = Depends(ge
     draft = db.scalar(select(CharacterDraft).where(CharacterDraft.actor_id == ctx.user.id,CharacterDraft.editing_id == character.id,CharacterDraft.finalized_at.is_(None)).order_by(CharacterDraft.updated_at.desc()).limit(1))
     if not draft:
         data = dict(character.sheet_data["input"])
+        data["deity"]=(character.play_data or {}).get("deity",data.get("deity",""))
         data.update(name=character.name,notes=character.notes,owner_id=character.owner_id,campaign_id=character.campaign_id)
         draft = CharacterDraft(id=secrets.token_hex(16),actor_id=ctx.user.id,mode="edit",editing_id=character.id,
                                existing_version=character.version,data=data,portrait=character.portrait)
@@ -120,7 +124,9 @@ async def saved_form(ctx,draft):
     except (ValueError,TypeError): raise HTTPException(422,"The character draft could not be read.") from None
     if draft.mode == "create" and isinstance(payload,dict):
         payload["owner_id"] = ctx.user.id
-    return form,clean(payload,ctx.user.id,load_catalog(ctx.db))
+    data=clean(payload,ctx.user.id,load_catalog(ctx.db))
+    data['deity']=choose_deity(data['deity'],load_catalog(ctx.db).get('deities',{}),draft.data.get('deity',''))
+    return form,data
 
 
 @router.post("/api/character-drafts/{draft_id}/save")
@@ -255,6 +261,8 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     if not existing or draft.portrait_changed:
         character.portrait = draft.portrait
     draft.portrait = None
+    if existing and "deity" in (character.play_data or {}):
+        character.play_data={key:value for key,value in character.play_data.items() if key!="deity"}
     character.sheet_data = {"schema":1,"catalog":load_catalog(db),"input":data,"computed":computed,"rolls":selected,"source":OUTLINE}
     db.add(character)
     db.flush()

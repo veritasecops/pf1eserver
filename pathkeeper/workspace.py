@@ -320,7 +320,7 @@ def render_character(ctx, character, values=None, errors=()):
                       can_edit_header_background=ctx.user.id == character.owner_id,
                       armor_links=sheet_armor_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
                       weapon_links=sheet_weapon_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
-                      **view_context(character, owner, campaign, gm, values, errors))
+                      **view_context(character, owner, campaign, gm, values, errors,deity_catalog=load_catalog(ctx.db).get('deities',{})))
     if errors:
         response.status_code = 422
     return response
@@ -336,7 +336,7 @@ async def read_play_sheet(ctx, character, form=None):
     gm = db.get(User, campaign.owner_id) if campaign else None
     current = sheet_values(character, owner, campaign, gm)
     locked = calculated_fields(character, current)
-    values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character))
+    values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),load_catalog(db).get('deities',{}),current.get('deity',''))
     if not errors:
         recalculate(character, values)
     return values, errors, baseline(character, owner, campaign, gm)

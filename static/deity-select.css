@@ -1,0 +1,3 @@
+.deity-reference { display:inline-block; margin-top:5px; font-size:.9375rem; text-decoration:underline; }
+.deity-reference[hidden] { display:none; }
+@media print { .deity-reference { display:none!important; } }

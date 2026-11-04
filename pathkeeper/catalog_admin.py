@@ -16,7 +16,7 @@ from .security import administrator, audit, context, field, integer, read_form
 from .ui import redirect, render
 
 router = APIRouter(prefix='/administration/catalog')
-KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor'}
+KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','deities':'Deities'}
 
 
 def record_for(ctx, lock=False):
@@ -121,6 +121,17 @@ def parse_entry(form,kind,key,catalog):
         classes=form.getlist('classes')
         if set(classes)-set(CLASSES): raise HTTPException(422,'Choose valid classes.')
         item.update(ability=ability,classes=sorted(set(classes)),armor=form.get('armor')=='on',trained=form.get('trained')=='on',bonus=number('bonus'))
+    elif kind=='deities':
+        existing=catalog.get('deities',{}).get(key,{})
+        item['url']=field(form,'url',1000)
+        if not safe_weapon_url(item['url']): raise HTTPException(422,'Description link must be an HTTP or HTTPS URL without credentials or spaces.')
+        item['aliases']=list(existing.get('aliases',[]))
+        if existing and existing['name']!=item['name']: item['aliases']=list(dict.fromkeys([*item['aliases'],existing['name']]))
+        item['sections']=existing.get('sections',[])
+        item['regions']=existing.get('regions',[])
+        for other,entry in catalog.get('deities',{}).items():
+            if other!=key and item['name'].casefold() in {name.casefold() for name in [entry['name'],*entry.get('aliases',[])]}:
+                raise HTTPException(422,'A deity with that name or alias already exists.')
     elif kind=='armor':
         category=str(form.get('category',''))
         if category not in ARMOR_CATEGORIES: raise HTTPException(422,'Choose an armor category.')
@@ -184,7 +195,7 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         raise HTTPException(422,'Use a stable lowercase identifier with letters, numbers and single hyphens, without a -2 ending.')
     if new and any(existing.casefold()==key.casefold() for existing in record.data[kind]): raise HTTPException(409,'That catalog identifier already exists.')
     if not new and key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
-    if new and len(record.data[kind]) >= (75 if kind=='skills' else 1000 if kind in {'weapons','armor'} else 200): raise HTTPException(422,'The skill catalog supports 75 entries; feats support 200 and weapons support 1000.')
+    if new and len(record.data[kind]) >= (75 if kind=='skills' else 1000 if kind in {'weapons','armor','deities'} else 200): raise HTTPException(422,'The skill catalog supports 75 entries; feats support 200 and weapons support 1000.')
     if new and kind in {'weapons','armor'}:
         from .pf1_data import EQUIPMENT
         if key in EQUIPMENT or key in record.data.get('armor' if kind=='weapons' else 'weapons',{}): raise HTTPException(409,'That identifier is already used by equipment.')
