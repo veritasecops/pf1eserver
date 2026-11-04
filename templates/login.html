@@ -27,6 +27,7 @@
       </form>
       {% endblock %}
       {% block auth_after %}
+      <p class="login-switch"><a class="text-button" href="/forgot-password">Forgot your password?</a></p>
       <div class="login-security">{{ icon('shield') }}Authenticator verification follows if enabled.</div>
       <div class="login-switch">New to the table? <a class="text-button" href="/signup{% if next_path != '/' %}?next={{ next_path|urlencode }}{% endif %}">Create a Player account</a></div>
       <p class="account-note">Need Game Master access or account recovery?<br>Contact an Admin.</p>

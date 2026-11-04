@@ -1,0 +1,26 @@
+[Unit]
+Description=Pathkeeper transactional email outbox
+After=network-online.target mariadb.service
+Wants=network-online.target
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=pf1eserver
+Group=pf1eserver
+WorkingDirectory=/opt/pf1eserver
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/pf1eserver/.venv/bin/python -m pathkeeper.mail_worker
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=45
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pf1eserver/storage
+
+[Install]
+WantedBy=multi-user.target

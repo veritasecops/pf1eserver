@@ -6,6 +6,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .database import commit, get_db
 from .models import AuditEvent, Campaign, Character, Guard, RecoveryCode, User
+from .notifications import account_email, email_ready, invalidate_tokens
 from .security import (ROLES, administrator, audit, context, email_field, field, hash_password,
                        protect_last_admin, read_form, reauthenticate, revoke_sessions)
 from .ui import redirect, render
@@ -68,11 +69,14 @@ async def create_user(request: Request, db: Session = Depends(get_db)):
     account = User(name=field(form, "name", 100), email=email_field(form), role=role,
                    password_hash=await run_in_threadpool(hash_password, str(form.get("password", ""))),
                    active=form.get("active") == "on", must_change_password=True,
+                   email_verification_required=email_ready(db),
                    totp_required=role == "admin" or form.get("totp_required") == "on")
     db.add(account)
     audit(db, admin, "user.created", f"Created {account.email} as {ROLES[role]}.")
+    db.flush()
+    emailed = account_email(db, account, "setup", admin.id)
     commit(db)
-    return redirect(ctx, f"/administration/users/{account.id}", "Account created. Share the temporary password privately; the user must replace it at sign-in.")
+    return redirect(ctx, f"/administration/users/{account.id}", "Account created. A password setup email has been queued." if emailed else "Account created. Share the temporary password privately; the user must replace it at sign-in.")
 
 
 @router.get("/users/{user_id}")
@@ -106,10 +110,19 @@ async def update_user(user_id: int, request: Request, db: Session = Depends(get_
     if role == "player" and db.scalar(select(func.count()).select_from(Campaign).where(Campaign.owner_id == target.id)):
         raise HTTPException(409, "Transfer or delete this user's campaigns before changing their role to Player.")
     target.name = field(form, "name", 100)
-    target.email = email_field(form)
+    new_email = email_field(form)
+    email_changed = new_email != target.email
+    target.email = new_email
     target.role = role
     target.active = active
     target.totp_required = role == "admin" or form.get("totp_required") == "on"
+    if email_changed:
+        target.email_verified_at = None
+        target.email_verification_required = email_ready(db)
+        invalidate_tokens(db, target.id)
+        account_email(db, target, actor_id=ctx.user.id)
+    if not active:
+        invalidate_tokens(db, target.id)
     revoke_sessions(db, target.id, ctx.session.token_hash if target.id == ctx.user.id and active else None)
     audit(db, ctx.user, "user.updated", f"Updated {target.email}: {ROLES[role]}, {'active' if active else 'disabled'}.")
     if target.id == ctx.user.id and not active:
@@ -132,6 +145,8 @@ async def reset_password(user_id: int, request: Request, db: Session = Depends(g
         raise HTTPException(404, "User not found.")
     target.password_hash = await run_in_threadpool(hash_password, str(form.get("new_password", "")))
     target.must_change_password = True
+    invalidate_tokens(db, target.id, ("reset", "setup"))
+    account_email(db, target, "reset", ctx.user.id)
     revoke_sessions(db, target.id)
     audit(db, ctx.user, "user.password_reset", f"Reset the password for {target.email}; their authenticator remains enabled if previously configured.")
     if target.id == ctx.user.id:

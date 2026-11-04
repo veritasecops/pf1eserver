@@ -10,11 +10,12 @@ from starlette.concurrency import run_in_threadpool
 from .database import commit, get_db
 from .email_delivery import DeliverySettings, send_email
 from .models import EmailConfiguration, EmailDelivery, utcnow
+from .notifications import normalize_base_url
 from .security import administrator, audit, context, encrypt, field, integer, read_form, reauthenticate, throttle
 from .ui import redirect, render
 
 router = APIRouter(prefix="/administration/email")
-PUBLIC_FIELDS = ("enabled", "provider", "sender_name", "sender_email", "reply_to", "smtp_host",
+PUBLIC_FIELDS = ("enabled", "provider", "public_base_url", "sender_name", "sender_email", "reply_to", "smtp_host",
                  "smtp_port", "smtp_security", "smtp_username", "version")
 
 
@@ -59,6 +60,7 @@ def valid_host(value):
 
 def validate_settings(form, record):
     values = {"enabled": form.get("enabled") == "on", "provider": field(form, "provider", 10),
+              "public_base_url": normalize_base_url(field(form, "public_base_url", 300, False)),
               "sender_name": field(form, "sender_name", 100), "sender_email": email_address(field(form, "sender_email", 190, False)),
               "reply_to": email_address(field(form, "reply_to", 190, False)),
               "smtp_host": valid_host(field(form, "smtp_host", 253, False)),
@@ -81,6 +83,8 @@ def validate_settings(form, record):
             raise HTTPException(422, "The Brevo API key must contain visible ASCII characters without spaces.")
         secrets[name] = encrypt(value) if value else None if clear else existing
     if values["enabled"]:
+        if not values["public_base_url"]:
+            raise HTTPException(422, "Set the Application Base URL before enabling email delivery.")
         if not values["sender_email"]:
             raise HTTPException(422, "A sender email is required to enable delivery.")
         if values["provider"] == "brevo" and not secrets["brevo_key"]:

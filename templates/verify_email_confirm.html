@@ -1,0 +1,5 @@
+{% extends 'login.html' %}
+{% block auth_heading %}Confirm your email.{% endblock %}
+{% block auth_intro %}Confirm that you received this link at your account email address.{% endblock %}
+{% block auth_form %}<form method="post" action="/verify-email/{{ token }}" class="stack">{{ csrf_input(csrf) }}<button class="button primary full-button" type="submit">Verify email address {{ icon('check') }}</button></form>{% endblock %}
+{% block auth_after %}<p class="account-note">Opening a link does not use it. Select Verify email address to confirm.</p>{% endblock %}

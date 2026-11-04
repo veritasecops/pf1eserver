@@ -1,0 +1,5 @@
+{% extends 'login.html' %}
+{% block auth_heading %}{{ title }}.{% endblock %}
+{% block auth_intro %}{{ message }}{% endblock %}
+{% block auth_form %}<a class="button primary full-button" href="{{ continue_path|default('/') }}">Continue {{ icon('arrow') }}</a>{% endblock %}
+{% block auth_after %}<a class="text-button" href="/login">Sign in</a>{% endblock %}

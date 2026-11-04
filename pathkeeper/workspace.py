@@ -10,6 +10,7 @@ from .models import Campaign, Character, Invitation, Membership, User, utcnow
 from .security import (audit, authenticated, can_manage_campaign, context, digest, email_field,
                        field, get_campaign, get_character, integer, is_member, read_form)
 from .ui import redirect, render
+from .notifications import application_link, invitation_email
 
 router = APIRouter()
 
@@ -143,12 +144,17 @@ async def invite_create(campaign_id: int, request: Request, db: Session = Depend
     campaign = get_campaign(ctx, campaign_id, manage=True)
     form = await read_form(ctx)
     email = email_field(form)
+    from .security import throttle
+    throttle("campaign-invitation", str(ctx.user.id), 20, 60)
     token = secrets.token_urlsafe(32)
     invitation = Invitation(campaign_id=campaign.id, created_by=ctx.user.id, email=email, token_hash=digest(token), expires_at=utcnow() + timedelta(days=7))
     db.add(invitation)
     audit(db, ctx.user, "invitation.created", f"Created a seven-day invitation for {email} to {campaign.name}.")
+    db.flush()
+    emailed = invitation_email(db, invitation, campaign, token, ctx.user)
     commit(db)
-    return render(ctx, "invitation_created.html", title="Invitation ready", campaign=campaign, invitation=invitation, invitation_path=f"/join/{token}")
+    return render(ctx, "invitation_created.html", title="Invitation ready", campaign=campaign, invitation=invitation,
+                  invitation_path=f"/join/{token}", invitation_url=application_link(db, f"/join/{token}"), emailed=emailed)
 
 
 @router.post("/invitations/{invitation_id}/revoke")

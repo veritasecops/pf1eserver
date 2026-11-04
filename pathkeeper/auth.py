@@ -16,6 +16,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .database import commit, get_db
 from .models import RecoveryCode, User, utcnow
+from .notifications import account_email, email_ready, invalidate_tokens, password_notice
 from .security import (DUMMY_HASH, PASSWORDS, audit, authenticated, context, decrypt, email_field,
                        encrypt, field, hash_password, make_recovery_codes, password_ok,
                        read_form, reauthenticate, request_ip, revoke_sessions, rotate,
@@ -66,12 +67,14 @@ async def signup(request: Request, db: Session = Depends(get_db)):
         return failure(error.detail, error.status_code)
     # Public fields cannot choose roles, disabled state, or security requirements.
     account = User(name=name, email=email, password_hash=encoded, role="player", active=True,
-                   must_change_password=False, totp_required=False, last_login=utcnow())
+                   must_change_password=False, totp_required=False, last_login=utcnow(),
+                   email_verification_required=email_ready(db))
     try:
         db.add(account)
         db.flush()
         rotate(ctx, account)
         audit(db, account, "user.signed_up", "Created a Player account through public sign-up.")
+        account_email(db, account)
         commit(db)
     except IntegrityError:
         db.rollback()
@@ -162,7 +165,8 @@ async def account_update(request: Request, db: Session = Depends(get_db)):
     account = authenticated(ctx)
     form = await read_form(ctx)
     email = email_field(form)
-    if email != account.email:
+    email_changed = email != account.email
+    if email_changed:
         await reauthenticate(ctx, form)
         revoke_sessions(db, account.id, ctx.session.token_hash)
     account.name = field(form, "name", 100)
@@ -174,6 +178,11 @@ async def account_update(request: Request, db: Session = Depends(get_db)):
     except ZoneInfoNotFoundError:
         raise HTTPException(422, "Choose a valid time zone.") from None
     account.timezone = zone
+    if email_changed:
+        account.email_verified_at = None
+        account.email_verification_required = email_ready(db)
+        invalidate_tokens(db, account.id)
+        account_email(db, account)
     audit(db, account, "profile.updated", "Updated their profile.")
     return redirect(ctx, "/account", "Your profile has been saved.")
 
@@ -195,9 +204,11 @@ async def password_update(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(422, "The new passwords do not match.")
     account.password_hash = await run_in_threadpool(hash_password, str(form.get("new_password", "")))
     account.must_change_password = False
+    invalidate_tokens(db, account.id, ("reset", "setup"))
     revoke_sessions(db, account.id, ctx.session.token_hash)
     rotate(ctx, account, mfa=ctx.session.mfa_verified)
     audit(db, account, "password.changed", "Changed their password and revoked other sessions.")
+    password_notice(db, account)
     return redirect(ctx, ctx.session.next_path, "Password changed. Other devices have been signed out.")
 
 

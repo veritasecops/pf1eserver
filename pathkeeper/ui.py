@@ -19,7 +19,8 @@ def render(ctx, template, **values):
     user = ctx.user if ctx.session.phase == "authenticated" else None
     return templates.TemplateResponse(request=ctx.request, name=template, context={
         "user": user, "csrf": ctx.session.csrf, "flash": message,
-        "limited": bool(user and (user.must_change_password or (user.totp_required and not user.totp_enabled))),
+        "limited": bool(user and (user.must_change_password or (user.totp_required and not user.totp_enabled)
+                                  or user.email_verification_required and not user.email_verified_at)),
         "path": ctx.request.url.path, "next_path": ctx.session.next_path, **values})
 
 

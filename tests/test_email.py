@@ -13,12 +13,13 @@ from sqlalchemy.orm import Session
 
 from pathkeeper.database import engine
 from pathkeeper.email_delivery import DeliveryResult, DeliverySettings, send_email
-from pathkeeper.models import AuditEvent, EmailConfiguration, EmailDelivery, SchemaMigration, User
+from pathkeeper.models import AccountToken, AuditEvent, EmailConfiguration, EmailDelivery, EmailOutbox, SchemaMigration, User
 from pathkeeper.security import decrypt, encrypt
 
 
 def form(**extra):
     return {"version": 1, "enabled": "on", "provider": "brevo", "sender_name": "Pathkeeper",
+            "public_base_url": "https://table.example.com",
             "sender_email": "keeper@example.com", "reply_to": "support@example.com",
             "brevo_key": "fixture-api-secret", "smtp_host": "", "smtp_port": 587,
             "smtp_security": "starttls", "smtp_username": "", **extra}
@@ -261,7 +262,7 @@ def test_email_migration_is_idempotent_and_preserves_existing_data(env, isolated
 
 def test_upgrade_from_pre_email_schema_preserves_users(env, isolated_database):
     from pathkeeper.migrations import migrate
-    for model in (EmailDelivery, EmailConfiguration, SchemaMigration):
+    for model in (EmailOutbox, AccountToken, EmailDelivery, EmailConfiguration, SchemaMigration):
         model.__table__.drop(isolated_database)
     # Use the default root connection isolation, just like the deployment CLI.
     migrate(isolated_database)

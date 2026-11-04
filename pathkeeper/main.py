@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from . import administration, auth, email_admin, workspace
+from . import account_email, administration, auth, email_admin, workspace
 from .config import ROOT, settings
 from .database import engine
 from .security import COOKIE, RedirectTo, context
@@ -30,7 +30,7 @@ async def response_security(request, call_next):
                             path="/", httponly=True, samesite="lax", secure=settings().secure_cookies)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Referrer-Policy"] = "no-referrer" if request.url.path.startswith(("/reset-password/", "/verify-email/", "/join/")) else "same-origin"
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
     if not request.url.path.startswith("/static/"):
         response.headers["Cache-Control"] = "no-store"
@@ -72,6 +72,7 @@ def health():
 
 app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="static")
 app.include_router(auth.router)
+app.include_router(account_email.router)
 app.include_router(administration.router)
 app.include_router(email_admin.router)
 app.include_router(workspace.router)

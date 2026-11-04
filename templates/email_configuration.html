@@ -11,6 +11,7 @@
     <form action="/administration/email" method="post" class="stack" autocomplete="off" data-email-settings>
       {{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ config.version }}">
       <label class="check"><input type="checkbox" name="enabled" {% if config.enabled %}checked{% endif %}>Enable email delivery</label>
+      {{ field('Application Base URL', 'public_base_url', config.public_base_url, 'url', help='The address users open, such as https://table.example.com. Every emailed link uses this address.', attrs='maxlength="300"') }}
       <label class="field"><span>Delivery provider</span><select name="provider" id="email-provider"><option value="brevo" {% if config.provider == 'brevo' %}selected{% endif %}>Brevo API</option><option value="smtp" {% if config.provider == 'smtp' %}selected{% endif %}>SMTP Relay</option></select><small>Switching providers preserves each provider's saved credentials.</small></label>
       <div class="form-divider">Sender identity</div>
       <div class="form-grid">
@@ -51,7 +52,7 @@
     <div class="inline-note">{{ icon('shield') }}API keys and relay passwords are encrypted. Keep the instance encryption key with your backups.</div>
   </aside>
 </div>
-<section class="card section-space"><div class="card-heading"><div><h2>Recent email activity</h2><p>Latest 25 attempts. All times are UTC. Messages and credentials are never stored in this history.</p></div></div>
+<section class="card section-space"><div class="card-heading"><div><h2>Recent email activity</h2><p>Latest 25 attempts, including account and invitation emails. All times are UTC. Messages and credentials are never stored in this history.</p></div></div>
   {% if deliveries %}<div class="table-scroll"><table><thead><tr><th>When</th><th>Recipient</th><th>Provider</th><th>Result</th><th>Details</th></tr></thead><tbody>{% for delivery in deliveries %}<tr><td class="nowrap muted">{{ delivery.created_at.strftime('%b %d, %H:%M:%S') }}</td><td>{{ delivery.recipient }}</td><td>{{ 'Brevo' if delivery.provider == 'brevo' else 'SMTP' }}</td><td><span class="delivery-status delivery-{{ delivery.status }}">{{ delivery.status|capitalize }}</span></td><td class="wrappable">{{ delivery.detail }}{% if delivery.message_id %}<small class="message-id">{{ delivery.message_id }}</small>{% endif %}<small>Settings version {{ delivery.configuration_version }}</small></td></tr>{% endfor %}</tbody></table></div>
   {% else %}{{ empty('No email activity yet.', 'Save your provider settings, then send a test message.', 'mail') }}{% endif %}
 </section>

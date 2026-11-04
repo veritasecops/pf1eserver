@@ -34,6 +34,8 @@ class User(Base):
     timezone: Mapped[str] = mapped_column(String(80), default="UTC")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    email_verification_required: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class WebSession(Base):
@@ -131,6 +133,7 @@ class EmailConfiguration(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     provider: Mapped[str] = mapped_column(String(10), default="brevo")
+    public_base_url: Mapped[str] = mapped_column(String(300), default="")
     sender_name: Mapped[str] = mapped_column(String(100), default="Pathkeeper")
     sender_email: Mapped[str] = mapped_column(String(190), default="")
     reply_to: Mapped[str] = mapped_column(String(190), default="")
@@ -166,3 +169,24 @@ class SchemaMigration(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     applied_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class AccountToken(Base):
+    __tablename__ = "account_tokens"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(190))
+    purpose: Mapped[str] = mapped_column(String(15))
+    password_digest: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class EmailOutbox(Base):
+    __tablename__ = "email_outbox"
+    delivery_id: Mapped[int] = mapped_column(ForeignKey("email_deliveries.id", ondelete="CASCADE"), primary_key=True)
+    subject: Mapped[str] = mapped_column(String(200))
+    encrypted_body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    token_hash: Mapped[str | None] = mapped_column(ForeignKey("account_tokens.token_hash", ondelete="SET NULL"), nullable=True)
+    invitation_id: Mapped[int | None] = mapped_column(ForeignKey("invitations.id", ondelete="SET NULL"), nullable=True)

@@ -126,6 +126,8 @@ def authenticated(ctx: Context, allow_setup=False) -> User:
             raise RedirectTo("/account/password")
         if (ctx.user.totp_required or ctx.user.role == "admin") and not ctx.user.totp_enabled:
             raise RedirectTo("/account/security")
+        if ctx.user.email_verification_required and not ctx.user.email_verified_at:
+            raise RedirectTo("/account/verify-email")
     return ctx.user
 
 

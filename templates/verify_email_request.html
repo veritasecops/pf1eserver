@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% from 'components.html' import icon, csrf_input %}
+{% block content %}<div class="page-heading"><div><span class="overline">YOUR ACCOUNT EMAIL</span><h1>{{ 'Email verified' if verified else 'Check your inbox.' }}</h1><p>{{ user.email }}</p></div></div>
+<section class="card padded narrow stack">
+{% if verified %}<h2>Your email address is verified.</h2><a class="button primary" href="/">Continue to your workspace {{ icon('arrow') }}</a>
+{% else %}<h2>Confirm your email address.</h2><p>Open the verification email and select its link. On the confirmation page, select Verify email address. The link expires after 24 hours.</p><p class="hint">Check your spam folder. A new request replaces the previous verification link. If your address is incorrect, contact an Admin.</p>
+<form method="post" action="/account/verify-email">{{ csrf_input(csrf) }}<button class="button primary" type="submit" {% if not delivery_ready %}disabled{% endif %}>{{ icon('mail') }}Resend verification email</button></form>
+{% if not delivery_ready %}<p class="hint">Email delivery is unavailable. Contact an Admin for help.</p>{% endif %}{% endif %}
+</section>{% endblock %}
