@@ -15,6 +15,7 @@ from .security import (audit, authenticated, can_delete_character, can_manage_ca
 from .ui import redirect, render
 from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
+from .rule_catalog import character_catalog
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
@@ -330,7 +331,7 @@ async def read_play_sheet(ctx, character, form=None):
     gm = db.get(User, campaign.owner_id) if campaign else None
     current = sheet_values(character, owner, campaign, gm)
     locked = calculated_fields(character, current)
-    values, errors = parse_sheet(form, {key:current[key] for key in locked})
+    values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character))
     if not errors:
         recalculate(character, values)
     return values, errors, baseline(character, owner, campaign, gm)

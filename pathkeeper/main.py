@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from . import account_email, administration, auth, character_wizard, email_admin, portraits, workspace
+from . import account_email, administration, catalog_admin, auth, character_wizard, email_admin, portraits, workspace
 from .config import ROOT, settings
 from .database import engine
 from .security import COOKIE, RedirectTo, context
@@ -74,6 +74,7 @@ app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="static")
 app.include_router(auth.router)
 app.include_router(account_email.router)
 app.include_router(administration.router)
+app.include_router(catalog_admin.router)
 app.include_router(email_admin.router)
 app.include_router(character_wizard.router)
 app.include_router(workspace.router)

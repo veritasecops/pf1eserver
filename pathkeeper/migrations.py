@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Character, CharacterDraft, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, SchemaMigration
+from .models import AccountToken, Character, CharacterDraft, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration
 
 
 def remove_manual_class_fields(db):
@@ -50,7 +50,7 @@ def remove_automatic_racial_summaries(db):
 def migrate(admin_engine):
     # MariaDB DDL commits separately. Complete all DDL before opening a read
     # transaction, so snapshot isolation cannot retain pre-DDL table definitions.
-    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll):
+    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog):
         model.__table__.create(admin_engine, checkfirst=True)
     additions = {
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
@@ -93,4 +93,10 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 8):
             db.add(SchemaMigration(version=8, name="owner_editable_character_header_backgrounds"))
             db.commit()
-    print("Database migrations applied through 008 (owner-editable character header backgrounds).")
+        if not db.get(SchemaMigration, 9):
+            from .rule_catalog import default_catalog
+            if not db.get(RuleCatalog, 1):
+                db.add(RuleCatalog(id=1, data=default_catalog()))
+            db.add(SchemaMigration(version=9, name="editable_feat_skill_and_weapon_catalog"))
+            db.commit()
+    print("Database migrations applied through 009 (editable rules catalog).")

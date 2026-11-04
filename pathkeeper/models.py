@@ -227,3 +227,13 @@ class DiceRoll(Base):
     result: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     __table_args__ = (UniqueConstraint("draft_id", "request_id", name="uq_draft_roll_request"),)
+
+
+class RuleCatalog(Base):
+    __tablename__ = "rule_catalog"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    data: Mapped[dict] = mapped_column(JSON)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    __mapper_args__ = {"version_id_col": version}

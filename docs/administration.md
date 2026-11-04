@@ -37,3 +37,17 @@ There is no in-app undo. Disabling is the appropriate choice when you want to su
 ## Activity log
 
 The Admin-only Activity log shows the latest 100 security and management events. It records actions without passwords, TOTP secrets, recovery codes, or readable invitation tokens. Deleting an account retains audit descriptions while removing the deleted actor reference.
+
+## Rules catalog
+
+Administrators can open **Administration → Rules catalog** (`/administration/catalog`) to search, add, edit, and archive the feat, skill, and weapon lists used by the character wizard. All writes require an authenticated Admin and CSRF protection, use a catalog version to prevent overwriting another administrator's changes, and record an audit event. Migration 009 creates the versioned database catalog using the existing built-in values.
+
+Feat forms expose combat and first-level monk eligibility, ability/BAB/feat prerequisites, skill or weapon selection, repeatability by distinct choice, numerical HP/initiative/save/dodge/skill/weapon-attack modifiers, and the finesse effect. Conditional rules belong in the description and require manual handling during play. The same feat and choice do not stack. Prerequisite cycles and incompatible selection modifiers are rejected.
+
+Skill forms expose the governing ability, armor-check-penalty flag, trained-only marker, catalog bonus, and each class's fixed class-skill membership. Every class may rank every available skill; investing at least one rank grants +3 for a class skill. Racial and size bonuses remain part of race rules and are described alongside the editor. The trained marker does not simulate individual skill actions. Skills support 75 entries; feats and weapons support 200 each.
+
+Weapon forms expose copper-piece cost, pound weight, Medium/Small damage dice, proficiency group, ranged/bow/two-handed/finesse flags. Proficiency, critical hits, range, and situational combat effects remain manual. Weapon entries are also available in the equipment catalog and selected-weapon feat lists.
+
+Stable identifiers cannot be renamed or deleted. Archive an entry to stop offering it for new selections. An unfinished draft using an archived entry must replace it before completion. Reload open wizards after catalog edits so their lists match the server's current rules.
+
+When a character is completed, its rules catalog is saved with the creation snapshot. Existing character sheets keep their original modifiers and skill definitions, including during autosave and live recalculation. Older characters without an explicit catalog retain the original built-in rules. Reopening and completing the creation wizard intentionally applies the current catalog. Catalog edits do not silently rewrite existing characters or their manual sheet edits.

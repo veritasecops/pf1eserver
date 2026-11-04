@@ -24,7 +24,10 @@ def bounded_int(value, low, high, name):
     return value
 
 
-def clean(payload, owner_id):
+def clean(payload, owner_id, catalog=None):
+    from .rule_catalog import default_catalog, equipment
+    catalog = catalog or default_catalog()
+    SKILLS, EQUIPMENT = catalog['skills'], equipment(catalog)
     if not isinstance(payload, dict):
         raise HTTPException(422, "Enter a character draft object.")
     data = defaults(owner_id)
@@ -85,7 +88,11 @@ def clean(payload, owner_id):
     return data
 
 
-def calculate(data, rolls):
+def calculate(data, rolls, catalog=None):
+    from .rule_catalog import default_catalog, equipment, effect_total, class_skills as skill_list
+    catalog = catalog or default_catalog()
+    FEATS, SKILLS, EQUIPMENT = catalog['feats'], catalog['skills'], equipment(catalog)
+    MONK_BONUS = [name for name,meta in FEATS.items() if meta.get('monk')]
     errors, warnings = [], []
     def error(step, message): errors.append({"step":step,"message":message})
     race, cls = RACES[data["race"]], CLASSES.get(data["class_id"])
@@ -131,13 +138,14 @@ def calculate(data, rolls):
     for entry in feat_entries:
         name, choice = entry["name"].strip(), entry.get("choice","").strip()
         metadata = FEATS.get(name)
-        identity = (name,choice if name in {"Skill Focus","Weapon Focus"} else "")
+        identity = (name,choice if (metadata or {}).get("repeatable") else "")
         if identity in seen or name in automatic: error(6, f"{name} is already included; choose another feat.")
         seen.add(identity)
         monk_bonus = bonus == "monk" and entry == data["bonus_feat"]
         if not metadata:
             warnings.append(f"Confirm {name} and its prerequisites with your GM; custom feat effects are recorded but not calculated.")
             continue
+        if not metadata.get("enabled",True): error(6, f"{name} is archived; choose another feat.")
         if not monk_bonus:
             for ability in ABILITIES:
                 if modifiers is not None and scores[ability] < metadata.get(ability,0): error(6, f"{name} needs {ABILITIES[ability]} {metadata[ability]}.")
@@ -149,11 +157,19 @@ def calculate(data, rolls):
         error(6, "A fighter's class bonus feat must be a combat feat.")
     if bonus == "monk" and data["bonus_feat"].get("name") not in MONK_BONUS: error(6, "Choose one of the first-level monk bonus feats.")
     if bonus in {"teamwork","technique"}: warnings.append(f"Confirm the class {bonus} feat and its prerequisites with your GM.")
-    hp = max(1, (cls["hd"] if cls else 0) + modifiers["con"]) + (data["favored_bonus"] == "hp") + (3 if "Toughness" in feat_names else 0)
+    effects = lambda target, choice=None: effect_total(feat_entries + [{"name":name} for name in automatic], catalog, target, choice)
+    hp = max(1, (cls["hd"] if cls else 0) + modifiers["con"]) + (data["favored_bonus"] == "hp") + effects("hp")
     skill_budget = max(1,(cls["ranks"] if cls else 0) + modifiers["int"]) + (data["race"] == "human") + (data["favored_bonus"] == "skill")
+    for key,ranks in data['skills'].items():
+        if ranks and not SKILLS[key].get('enabled',True): error(5,f"{SKILLS[key]['name']} is archived; remove its rank.")
+    for entry in feat_entries:
+        choice = entry.get('choice','')
+        kind = FEATS.get(entry.get('name'),{}).get('choice')
+        if kind == 'skill' and choice in SKILLS and not SKILLS[choice].get('enabled',True): error(6,'Choose an available skill for the feat.')
+        if kind == 'weapon' and choice in EQUIPMENT and not EQUIPMENT[choice].get('enabled',True): error(6,'Choose an available weapon for the feat.')
     ranks_used = sum(data["skills"].values())
     if ranks_used != skill_budget: error(5, f"Allocate exactly {skill_budget} skill ranks; {ranks_used} are assigned.")
-    class_skills = set(cls["skills"] if cls else [])
+    class_skills = set(skill_list(catalog,data["class_id"]))
     gold = (cls["wealth_dice"] * 3500 if cls else 0)
     if data["wealth_method"] == "rolled":
         wealth = rolls.get(data["wealth_roll"])
@@ -164,6 +180,8 @@ def calculate(data, rolls):
         gold = data["manual_gold"]
         warnings.append("Manual starting wealth requires your GM's approval.")
     equipment = [{"id":key,"quantity":quantity,**EQUIPMENT[key]} for key,quantity in data["equipment"].items() if quantity]
+    for item in equipment:
+        if not item.get("enabled",True): error(8,f"{item['name']} is archived; remove it from starting equipment.")
     spent = sum(item["cost"]*item["quantity"] for item in equipment) + data["extra_spending"]
     if spent > gold: error(8, "Equipment costs exceed starting wealth.")
     for slot in ("armor","shield","weapon"):
@@ -172,26 +190,25 @@ def calculate(data, rolls):
     dex_ac = min(modifiers["dex"], armor.get("max_dex",100))
     acp = armor.get("acp",0) + shield.get("acp",0)
     small = race["size"] == "Small"
-    dodge = int("Dodge" in feat_names)
+    dodge = effects("dodge")
     monk_ac = modifiers["wis"] if data["class_id"] == "monk" and not armor and not shield else 0
     ac = 10 + armor.get("armor",0) + shield.get("shield",0) + dex_ac + small + dodge + monk_ac
     skill_totals = {}
     for key, metadata in SKILLS.items():
         ranks = data["skills"].get(key,0)
-        bonus_value = 0
+        bonus_value = metadata.get("bonus",0)
         if key == "perception" and data["race"] in {"elf","half-elf","gnome","halfling"}: bonus_value += 2
         if key == "intimidate" and data["race"] == "half-orc": bonus_value += 2
         if key in {"acrobatics","climb"} and data["race"] == "halfling": bonus_value += 2
         if key == "stealth" and small: bonus_value += 4
         if key == "fly" and small: bonus_value += 2
-        if key in {"perception","sense-motive"} and "Alertness" in feat_names: bonus_value += 2
-        if any(entry["name"] == "Skill Focus" and entry.get("choice") == key for entry in feat_entries): bonus_value += 3
+        bonus_value += effects("skill:"+key) + effects("selected_skill",key)
         skill_totals[key] = ranks + modifiers[metadata["ability"]] + (3 if ranks and key in class_skills else 0) + bonus_value + (acp if metadata["armor"] else 0)
-    saves = {key:(cls["saves"][index] if cls else 0) + modifiers[ability] + (data["race"] == "halfling") + (2 if feat in feat_names else 0)
+    saves = {key:(cls["saves"][index] if cls else 0) + modifiers[ability] + (data["race"] == "halfling") + effects(key)
              for index,(key,ability,feat) in enumerate((("fortitude","con","Great Fortitude"),("reflex","dex","Lightning Reflexes"),("will","wis","Iron Will")))}
-    initiative = modifiers["dex"] + (4 if "Improved Initiative" in feat_names else 0)
-    attack_mod = modifiers["dex"] if weapon.get("ranged") or weapon.get("finesse") and "Weapon Finesse" in feat_names else modifiers["str"]
-    weapon_focus = int(any(entry["name"] == "Weapon Focus" and entry.get("choice") == data["weapon"] for entry in feat_entries))
+    initiative = modifiers["dex"] + effects("initiative")
+    attack_mod = modifiers["dex"] if weapon.get("ranged") or weapon.get("finesse") and any(FEATS.get(name,{}).get("finesse") for name in feat_names) else modifiers["str"]
+    weapon_focus = effects("selected_weapon",data["weapon"])
     damage_mod = 0 if weapon.get("ranged") else modifiers["str"]
     if weapon.get("bow"): damage_mod = min(0,modifiers["str"])
     if weapon.get("two_handed") and damage_mod > 0: damage_mod = floor(damage_mod*1.5)

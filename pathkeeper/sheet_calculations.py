@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from math import floor
 
 from .pf1_data import ABILITIES, CLASSES, SKILLS
+from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
 
 
 def class_record(character):
@@ -10,6 +11,7 @@ def class_record(character):
 
 
 def calculated_fields(character, values):
+    SKILLS = character_catalog(character)["skills"]
     locked = {'player','class_name','initiative.total','initiative.dex','cmb.total','cmd.total',
               'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int'}
     for ability in ABILITIES:
@@ -39,6 +41,8 @@ SIZE_MODIFIERS = {'fine':8,'diminutive':4,'tiny':2,'small':1,'medium':0,'large':
 
 def recalculate(character, values):
     """Recompute from editable components; a missing essential input stays blank."""
+    catalog = character_catalog(character)
+    SKILLS = catalog["skills"]
     def number(key, default=None):
         value = values.get(key,'')
         if value == '': return default
@@ -73,7 +77,7 @@ def recalculate(character, values):
         con = modifier('con')
         inputs = snapshot.get('input',{})
         feats = snapshot['computed'].get('feats',[])
-        extra_hp = int(inputs.get('favored_bonus') == 'hp') + (3 if any(feat.get('name') == 'Toughness' for feat in feats) else 0)
+        extra_hp = int(inputs.get('favored_bonus') == 'hp') + effect_total(feats + [{'name':name} for name in snapshot['computed'].get('automatic_feats',[])],catalog,'hp')
         write('hp.total',None if con is None else max(Decimal(1),Decimal(cls['hd'])+con)+extra_hp)
         write('bab',snapshot['computed'].get('bab',cls['bab']))
         write('skill_points.base',cls['ranks'])
@@ -105,7 +109,7 @@ def recalculate(character, values):
     parts = [number(part,Decimal(0)) for part in ac_parts if part not in {'ac.dex','ac.dodge'}]
     ac_dex = number('ac.dex',Decimal(0))
     write('ac.flat',None if ac_dex is None or any(p is None for p in parts) else Decimal(10)+sum(parts)+min(Decimal(0),ac_dex))
-    class_skills = set(cls.get('skills',[]))
+    class_skills = set(skill_list(catalog,snapshot.get('input',{}).get('class_id',''))) if snapshot else set(cls.get('skills',[]))
     for key,meta in SKILLS.items():
         for row in (key,key+'-2') if key in {'craft','perform','profession'} else (key,):
             write(f'skill.{row}.ability',modifier(meta['ability']))

@@ -82,3 +82,5 @@ Step six opens a dropdown list for each feat name and any required skill or weap
 Selecting a feat that needs no additional choice hides the optional choice field. Changing feats clears the previous feat's skill or weapon choice. Existing custom feats remain available, and typing an unlisted name offers a GM-approved custom selection where the class permits it. Custom effects and unsupported prerequisites still require GM review. Selections save with the draft.
 
 Use the arrow keys to move through results, Enter to select, and Escape to close a dropdown. Searching does not alter the saved selection.
+
+Administrators maintain the feat, skill, and weapon choices under **Administration → Rules catalog**. Reload the wizard after a catalog change. Server-side calculations use the same metadata shown in that editor. Completing the wizard saves a rules snapshot with the character, so later catalog edits do not alter an existing play sheet.

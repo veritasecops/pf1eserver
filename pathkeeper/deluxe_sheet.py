@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, RACES, SKILLS
 from .sheet_calculations import calculated_fields, recalculate
+from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
 
 WEAPON_COLUMNS = [('name','Weapon'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
 ARMOR_COLUMNS = [('name','Item'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
@@ -66,8 +67,29 @@ for level in range(10):
     for slot in range(4 if level == 0 else 8): register(f'spell.{level}.used.{slot}',f'Level {level}: slot {slot+1} used','checkbox')
 
 
+def skill_rows(catalog):
+    rows = sorted(catalog['skills'].items(),key=lambda pair:pair[1]['name'])
+    for key in ('craft','perform','profession'):
+        if key in catalog['skills']:
+            index = next(i for i,(name,_) in enumerate(rows) if name == key)
+            rows.insert(index+1,(key+'-2',catalog['skills'][key]))
+    return rows
+
+
+def fields_for(catalog):
+    fields = {key:value for key,value in FIELDS.items() if not key.startswith('skill.')}
+    for key,meta in skill_rows(catalog):
+        for part,title in [('total','Total'),('ability','Ability modifier'),('ranks','Ranks'),('misc','Miscellaneous modifier')]:
+            fields[f'skill.{key}.{part}'] = {'label':meta['name']+': '+title,'kind':'number','maximum':200}
+        if key.removesuffix('-2') in {'craft','perform','profession'}:
+            fields[f'skill.{key}.specialty'] = {'label':meta['name']+' specialty','kind':'text','maximum':200}
+    return fields
+
+
 def baseline(character, owner, campaign=None, gm=None):
     """Seed existing creation data without changing a saved creation snapshot."""
+    catalog = character_catalog(character)
+    FIELDS, SKILL_ROWS, EQUIPMENT = fields_for(catalog), skill_rows(catalog), catalog_equipment(catalog)
     data = {key:'' for key in FIELDS}
     data.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes,
                 player=owner.name,campaign=campaign.name if campaign else '',gm=gm.name if gm else '')
@@ -101,7 +123,7 @@ def baseline(character, owner, campaign=None, gm=None):
     data['cmd.misc'] = values.get('cmd',10)-10-values.get('bab',0)-mods.get('str',0)-mods.get('dex',0)+int(small)
     armor,shield = (EQUIPMENT.get(inputs.get(key),{}) for key in ('armor','shield'))
     dex = min(mods.get('dex',0),armor.get('max_dex',100))
-    dodge = int(any(entry.get('name') == 'Dodge' for entry in values.get('feats',[])))
+    dodge = effect_total(values.get('feats',[]) + [{'name':name} for name in values.get('automatic_feats',[])],catalog,'dodge')
     data['ac.dodge'] = dodge
     for key,value in [('armor',armor.get('armor',0)),('shield',shield.get('shield',0)),('dex',dex),('size',int(small)),('natural',0),('deflection',0),('misc',values.get('ac',10)-10-armor.get('armor',0)-shield.get('shield',0)-dex-int(small)-dodge)]: data['ac.'+key] = value
     for key,meta in SKILL_ROWS:
@@ -109,7 +131,7 @@ def baseline(character, owner, campaign=None, gm=None):
         rank = 0 if second else inputs.get('skills',{}).get(key,0)
         mod = mods.get(meta['ability'],0)
         total = mod if second else values.get('skill_totals',{}).get(key,mod)
-        data.update({f'skill.{key}.total':total,f'skill.{key}.ability':mod,f'skill.{key}.ranks':rank,f'skill.{key}.misc':total-mod-rank-(3 if rank and key in cls.get('skills',[]) else 0)})
+        data.update({f'skill.{key}.total':total,f'skill.{key}.ability':mod,f'skill.{key}.ranks':rank,f'skill.{key}.misc':total-mod-rank-(3 if rank and key in class_skills(catalog,inputs.get('class_id','')) else 0)})
     feats = [entry['name']+(f" ({entry['choice']})" if entry.get('choice') else '') for entry in values.get('feats',[])] + values.get('automatic_feats',[])
     for i,feat in enumerate(feats[:56]): data[f'feature.{i}'] = feat
     equipment = values.get('equipment',[])
@@ -140,6 +162,7 @@ def baseline(character, owner, campaign=None, gm=None):
 
 
 def sheet_values(character, owner, campaign=None, gm=None):
+    FIELDS = fields_for(character_catalog(character))
     values = baseline(character,owner,campaign,gm)
     saved = character.play_data or {}
     values.update({key:value for key,value in saved.items() if key in FIELDS})
@@ -159,7 +182,9 @@ def sheet_values(character, owner, campaign=None, gm=None):
     return recalculate(character, values)
 
 
-def parse_sheet(form, locked=None):
+def parse_sheet(form, locked=None, catalog=None):
+    from .rule_catalog import default_catalog
+    FIELDS = fields_for(catalog or default_catalog())
     locked = locked or {}
     unknown = set(form)-{'csrf','version'}-set(FIELDS)
     missing = {key for key,meta in FIELDS.items() if meta['kind'] != 'checkbox'}-set(form)-set(locked)
@@ -201,7 +226,8 @@ def parse_sheet(form, locked=None):
 def view_context(character, owner, campaign=None, gm=None, values=None, errors=()):
     cls = next((c for c in CLASSES.values() if c['name'].casefold() == character.class_name.casefold()),{})
     values = values if values is not None else sheet_values(character,owner,campaign,gm)
-    return dict(deluxe=values,sheet_fields=FIELDS,readonly_fields=calculated_fields(character,values),
-                abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=SKILL_ROWS,class_skills=cls.get('skills',[]),trained_only=TRAINED_ONLY,
+    catalog = character_catalog(character)
+    return dict(deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
+                abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog,(character.sheet_data or {}).get('input',{}).get('class_id','')) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from .character_rules import calculate, clean, defaults
 from .database import commit, get_db
+from .rule_catalog import load_catalog, equipment, class_skills
 from .models import Character, CharacterDraft, DiceRoll, utcnow
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, SPELL_SUGGESTIONS, STEPS
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
@@ -48,12 +49,13 @@ def display_wizard(ctx, draft):
     options = character_options(ctx,include_owners=False)
     rolls = roll_history(ctx.db, draft.id)
     data = {**draft.data,"owner_id":ctx.user.id} if draft.mode == "create" else draft.data
+    catalog = load_catalog(ctx.db)
     image_url = portrait_url(ctx.db,draft)
     boot = {"portrait_url":image_url,"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
-            "computed":calculate(data,rolls),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
+            "computed":calculate(data,rolls,load_catalog(ctx.db)),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
-            "classes":CLASSES,"skills":SKILLS,"feats":FEATS,"equipment":EQUIPMENT,"alignments":ALIGNMENTS,
-            "point_cost":POINT_COST,"spell_suggestions":SPELL_SUGGESTIONS,"monk_bonus":MONK_BONUS,
+            "classes":{key:{**cls,"skills":class_skills(catalog,key)} for key,cls in CLASSES.items()},"skills":catalog["skills"],"feats":catalog["feats"],"equipment":equipment(catalog),"alignments":ALIGNMENTS,
+            "point_cost":POINT_COST,"spell_suggestions":SPELL_SUGGESTIONS,"monk_bonus":[name for name,meta in catalog["feats"].items() if meta.get("monk") and meta.get("enabled",True)],
             "campaigns":[{"id":campaign.id,"name":campaign.name} for campaign in options["campaigns"]]}
     return render(ctx,"character_wizard.html",title="Character creation",draft=draft,boot=boot,outline=OUTLINE,
                   portrait_url=image_url,portrait_endpoint=f"/api/character-drafts/{draft.id}/portrait")
@@ -117,7 +119,7 @@ async def saved_form(ctx,draft):
     except (ValueError,TypeError): raise HTTPException(422,"The character draft could not be read.") from None
     if draft.mode == "create" and isinstance(payload,dict):
         payload["owner_id"] = ctx.user.id
-    return form,clean(payload,ctx.user.id)
+    return form,clean(payload,ctx.user.id,load_catalog(ctx.db))
 
 
 @router.post("/api/character-drafts/{draft_id}/save")
@@ -127,7 +129,7 @@ async def save(draft_id: str,request: Request,db: Session = Depends(get_db)):
     form,data = await saved_form(ctx,draft)
     draft.data,draft.step,draft.updated_at = data,integer(form,"step",0,max(STEPS)) or next(iter(STEPS)),utcnow()
     commit(db)
-    return {"version":draft.version,"computed":calculate(data,roll_history(db,draft.id))}
+    return {"version":draft.version,"computed":calculate(data,roll_history(db,draft.id),load_catalog(db))}
 
 
 @router.post("/api/character-drafts/{draft_id}/roll")
@@ -181,8 +183,8 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
         return {"location":f"/characters/{draft.completed_id}"}
     if integer(form,"version",1,2**31-1) != draft.version: raise HTTPException(409,"This draft changed. Reload before creating the character.")
     rolls = roll_history(db,draft.id)
-    data = clean(draft.data,ctx.user.id)
-    computed = calculate(data,rolls)
+    data = clean(draft.data,ctx.user.id,load_catalog(db))
+    computed = calculate(data,rolls,load_catalog(ctx.db))
     if computed["errors"]: return JSONResponse({"detail":"Complete the highlighted steps.","errors":computed["errors"]},422)
     existing = get_character(ctx,draft.editing_id) if draft.mode == "edit" else None
     if existing and existing.version != draft.existing_version: raise HTTPException(409,"The character changed after this draft began. Start a fresh editing draft.")
@@ -199,7 +201,7 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     if not existing or draft.portrait_changed:
         character.portrait = draft.portrait
     draft.portrait = None
-    character.sheet_data = {"schema":1,"input":data,"computed":computed,"rolls":selected,"source":OUTLINE}
+    character.sheet_data = {"schema":1,"catalog":load_catalog(db),"input":data,"computed":computed,"rolls":selected,"source":OUTLINE}
     db.add(character)
     db.flush()
     draft.finalized_at,draft.completed_id,draft.updated_at = utcnow(),character.id,utcnow()

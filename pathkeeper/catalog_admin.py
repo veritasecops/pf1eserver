@@ -1,0 +1,162 @@
+"""Administrator forms for the supported first-level rule catalog."""
+import re
+from copy import deepcopy
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from .database import get_db
+from .models import Guard, RuleCatalog, utcnow
+from .pf1_data import ABILITIES, CLASSES
+from .rule_catalog import EFFECTS, default_catalog
+from .security import administrator, audit, context, field, integer, read_form
+from .ui import redirect, render
+
+router = APIRouter(prefix='/administration/catalog')
+KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons'}
+
+
+def record_for(ctx, lock=False):
+    if lock:
+        ctx.db.execute(select(Guard).where(Guard.id == 1).with_for_update())
+    query = select(RuleCatalog).where(RuleCatalog.id == 1)
+    if lock: query = query.with_for_update().execution_options(populate_existing=True)
+    record = ctx.db.scalar(query)
+    if not record:
+        record = RuleCatalog(id=1,data=default_catalog())
+        ctx.db.add(record)
+        ctx.db.flush()
+    return record
+
+
+def kind_check(kind):
+    if kind not in KINDS: raise HTTPException(404,'Catalog not found.')
+
+
+def editor(ctx, record, kind, key, item, errors=(), new=False):
+    response = render(ctx,'catalog_edit.html',title='Add catalog entry' if new else 'Edit '+item.get('name',key),
+                      kinds=KINDS,kind=kind,key=key,item=item,new=new,version=record.version,
+                      abilities=ABILITIES,classes=CLASSES,skills=record.data['skills'],feats=record.data['feats'],
+                      effects=EFFECTS,errors=errors)
+    if errors: response.status_code=422
+    return response
+
+
+@router.get('')
+async def catalog_page(request: Request, db: Session = Depends(get_db)):
+    ctx=context(request,db)
+    administrator(ctx)
+    record=record_for(ctx)
+    kind=request.query_params.get('kind','feats')
+    kind_check(kind)
+    search=request.query_params.get('q','').strip()[:100]
+    items=[(key,item) for key,item in record.data[kind].items() if search.casefold() in item.get('name',key).casefold()]
+    items.sort(key=lambda pair:pair[1].get('name',pair[0]).casefold())
+    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,version=record.version)
+
+
+@router.get('/{kind}/new')
+async def new_entry(kind: str, request: Request, db: Session = Depends(get_db)):
+    ctx=context(request,db)
+    administrator(ctx)
+    kind_check(kind)
+    return editor(ctx,record_for(ctx),kind,'',{'enabled':True,'ability':'str','kind':'weapon'},new=True)
+
+
+@router.get('/{kind}/{key}')
+async def edit_entry(kind: str, key: str, request: Request, db: Session = Depends(get_db)):
+    ctx=context(request,db)
+    administrator(ctx)
+    kind_check(kind)
+    record=record_for(ctx)
+    if key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
+    return editor(ctx,record,kind,key,record.data[kind][key])
+
+
+def parse_entry(form,kind,key,catalog):
+    item={'enabled':form.get('enabled')=='on'}
+    item['name']=key if kind=='feats' else field(form,'name',100)
+    def number(name,low=-100,high=100,decimal=False):
+        raw=str(form.get(name,'0')).strip() or '0'
+        if decimal:
+            from decimal import Decimal, InvalidOperation
+            try:
+                value=Decimal(raw)
+                if not value.is_finite() or not low<=value<=high or value.as_tuple().exponent < -2: raise ValueError
+                return float(value)
+            except (ValueError,InvalidOperation): raise HTTPException(422,f'{name}: enter a number from {low} to {high}, with at most two decimal places.') from None
+        return integer({name:raw},name,low,high)
+    if kind=='feats':
+        item.update(hint=field(form,'hint',1000,required=False),combat=form.get('combat')=='on',
+                    monk=form.get('monk')=='on',repeatable=form.get('repeatable')=='on',finesse=form.get('finesse')=='on')
+        choice=str(form.get('choice',''))
+        if choice not in {'','skill','weapon'}: raise HTTPException(422,'Choose a valid selection type.')
+        item['choice']=choice
+        item['bab']=number('bab',0,40)
+        for ability in ABILITIES: item[ability]=number(ability,0,40)
+        requires=str(form.get('requires',''))
+        if requires and (requires not in catalog['feats'] or requires==key): raise HTTPException(422,'Choose another existing prerequisite feat.')
+        visited={key}
+        dependency=requires
+        while dependency:
+            if dependency in visited: raise HTTPException(422,'Feat prerequisites cannot form a cycle.')
+            visited.add(dependency)
+            dependency=catalog['feats'].get(dependency,{}).get('requires','')
+        item['requires']=requires
+        item['effects']={target:number('effect.'+target) for target in [*EFFECTS,*('skill:'+skill for skill in catalog['skills'])]}
+        item['effects']={key:value for key,value in item['effects'].items() if value}
+        if item['effects'].get('selected_skill') and choice!='skill': raise HTTPException(422,'A selected-skill bonus requires a skill selection.')
+        if item['effects'].get('selected_weapon') and choice!='weapon': raise HTTPException(422,'A selected-weapon bonus requires a weapon selection.')
+        if item['repeatable'] and not choice: raise HTTPException(422,'Repeatable feats require a skill or weapon choice; copies with the same choice do not stack.')
+    elif kind=='skills':
+        ability=str(form.get('ability',''))
+        if ability not in ABILITIES: raise HTTPException(422,'Choose a valid skill ability.')
+        classes=form.getlist('classes')
+        if set(classes)-set(CLASSES): raise HTTPException(422,'Choose valid classes.')
+        item.update(ability=ability,classes=sorted(set(classes)),armor=form.get('armor')=='on',trained=form.get('trained')=='on',bonus=number('bonus'))
+    else:
+        item.update(kind='weapon',cost=number('cost',0,100000000),weight=number('weight',0,100000,True),
+                    group=field(form,'group',100),damage=field(form,'damage',40),small_damage=field(form,'small_damage',40))
+        for part in ('damage','small_damage'):
+            if not re.fullmatch(r'[1-9][0-9]?d(?:2|3|4|6|8|10|12|20)(?:[+-][0-9]{1,3})?',item[part]): raise HTTPException(422,'Use damage dice such as 1d8 or 2d6+1.')
+        for flag in ('ranged','bow','two_handed','finesse'): item[flag]=form.get(flag)=='on'
+        if item['bow'] and not item['ranged']: raise HTTPException(422,'A bow must be a ranged weapon.')
+    return item
+
+
+@router.post('/{kind}')
+async def save_entry(kind: str, request: Request, db: Session = Depends(get_db)):
+    ctx=context(request,db)
+    administrator(ctx)
+    kind_check(kind)
+    form=await read_form(ctx,max_fields=200)
+    record=record_for(ctx,True)
+    if integer(form,'version',1,2**31-1)!=record.version: raise HTTPException(409,'The catalog changed in another window. Reload before saving.')
+    new=form.get('new')=='1'
+    key=field(form,'key',100 if kind=='feats' else 60)
+    if key.casefold()=='new': raise HTTPException(422,'Choose an identifier other than new.')
+    if kind=='feats' and any(char in key for char in '/\\?#'):
+        raise HTTPException(422,'Feat names cannot contain slashes, question marks or hash signs.')
+    if kind!='feats' and (not re.fullmatch(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*',key) or key.endswith('-2')):
+        raise HTTPException(422,'Use a stable lowercase identifier with letters, numbers and single hyphens, without a -2 ending.')
+    if new and any(existing.casefold()==key.casefold() for existing in record.data[kind]): raise HTTPException(409,'That catalog identifier already exists.')
+    if not new and key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
+    if new and len(record.data[kind]) >= (75 if kind=='skills' else 200): raise HTTPException(422,'The skill catalog supports 75 entries; the other catalogs support 200.')
+    if new and kind=='weapons':
+        from .pf1_data import EQUIPMENT
+        if key in EQUIPMENT: raise HTTPException(409,'That identifier is already used by equipment.')
+    try:
+        item=parse_entry(form,kind,key,record.data)
+    except HTTPException as error:
+        if error.status_code!=422: raise
+        item={**record.data[kind].get(key,{}),**{k:str(v) for k,v in form.items() if k not in {'csrf','version'}}}
+        item.update(enabled=form.get('enabled')=='on',effects={target:form.get('effect.'+target,0) for target in [*EFFECTS,*('skill:'+s for s in record.data['skills'])]},classes=form.getlist('classes'))
+        for flag in ('combat','monk','repeatable','finesse','armor','trained','ranged','bow','two_handed'): item[flag]=form.get(flag)=='on'
+        return editor(ctx,record,kind,key,item,[error.detail],new)
+    updated=deepcopy(record.data)
+    updated[kind][key]=item
+    record.data=updated
+    record.updated_at,record.updated_by=utcnow(),ctx.user.id
+    audit(db,ctx.user,'catalog.created' if new else 'catalog.updated',f'{"Added" if new else "Updated"} {kind}: {key}.')
+    return redirect(ctx,f'/administration/catalog?kind={kind}','Catalog saved. Reload open wizards to use the updated rules. Existing character snapshots retain their rules.')
