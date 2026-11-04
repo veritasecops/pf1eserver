@@ -138,8 +138,8 @@ def administrator(ctx):
     return account
 
 
-async def read_form(ctx):
-    form = await ctx.request.form(max_files=0, max_fields=80, max_part_size=65536)
+async def read_form(ctx, max_fields=80):
+    form = await ctx.request.form(max_files=0, max_fields=max_fields, max_part_size=65536)
     supplied = str(form.get("csrf", ""))
     if not hmac.compare_digest(supplied.encode(), ctx.session.csrf.encode()):
         raise HTTPException(403, "Your session changed. Reload the form and try again.")

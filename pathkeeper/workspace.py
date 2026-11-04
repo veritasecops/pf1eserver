@@ -12,6 +12,7 @@ from .security import (audit, authenticated, can_delete_character, can_manage_ca
 from .ui import redirect, render
 from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
+from .deluxe_sheet import baseline, parse_sheet, view_context
 
 router = APIRouter()
 
@@ -296,10 +297,44 @@ async def character_create(request: Request, db: Session = Depends(get_db)):
 async def character_page(character_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     character = get_character(ctx, character_id)
-    return render(ctx, "character.html", title=character.name, character=character,
-                  owner=db.get(User, character.owner_id), campaign=db.get(Campaign, character.campaign_id) if character.campaign_id else None,
-                  sheet=character.sheet_data, sheet_abilities=ABILITIES, sheet_skills=SKILLS,
-                  can_delete=can_delete_character(ctx.user, character))
+    return render_character(ctx, character)
+
+
+def render_character(ctx, character, values=None, errors=()):
+    owner = ctx.db.get(User, character.owner_id)
+    campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
+    gm = ctx.db.get(User, campaign.owner_id) if campaign else None
+    response = render(ctx, "character.html", title=character.name, character=character, owner=owner, campaign=campaign,
+                      can_delete=can_delete_character(ctx.user, character),
+                      **view_context(character, owner, campaign, gm, values, errors))
+    if errors:
+        response.status_code = 422
+    return response
+
+
+@router.post("/characters/{character_id}/play-sheet")
+async def character_play_sheet(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = get_character(ctx, character_id)
+    form = await read_form(ctx, max_fields=1024)
+    verify_version(form, character)
+    values, errors = parse_sheet(form)
+    if errors:
+        return render_character(ctx, character, values, errors)
+    # Store only overrides so untouched wizard values continue to follow their source.
+    owner = db.get(User, character.owner_id)
+    campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
+    gm = db.get(User, campaign.owner_id) if campaign else None
+    base = baseline(character, owner, campaign, gm)
+    core = {"name", "ancestry", "class_name", "level", "notes"}
+    character.play_data = {key:value for key,value in values.items() if key not in core and value != base[key]}
+    for key in core:
+        setattr(character, key, int(values[key]) if key == "level" else values[key])
+    if character.sheet_data:
+        character.sheet_data = {**character.sheet_data, "input":{**character.sheet_data["input"],
+                                "name":character.name, "notes":character.notes}}
+    audit(db, ctx.user, "character.play_sheet_saved", f"Updated the deluxe play sheet for {character.name}.")
+    return redirect(ctx, f"/characters/{character.id}", "Character sheet saved.")
 
 
 @router.get("/characters/{character_id}/edit")

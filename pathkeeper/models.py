@@ -89,6 +89,7 @@ class Character(Base):
     level: Mapped[int] = mapped_column(Integer, default=1)
     notes: Mapped[str] = mapped_column(LONG_TEXT, default="")
     sheet_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    play_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     __mapper_args__ = {"version_id_col": version}

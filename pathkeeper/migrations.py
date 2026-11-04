@@ -35,7 +35,7 @@ def migrate(admin_engine):
     additions = {
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
-        "characters": {"sheet_data": "JSON NULL"},
+        "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL"},
     }
     for table, columns in additions.items():
         existing = {column["name"] for column in inspect(admin_engine).get_columns(table)}
@@ -59,4 +59,7 @@ def migrate(admin_engine):
             remove_manual_class_fields(db)
             db.add(SchemaMigration(version=4, name="fixed_class_skills_and_removed_class_notes"))
             db.commit()
-    print("Database migrations applied through 004 (fixed class skills and removed manual class fields).")
+        if not db.get(SchemaMigration, 5):
+            db.add(SchemaMigration(version=5, name="editable_deluxe_character_play_records"))
+            db.commit()
+    print("Database migrations applied through 005 (editable deluxe character play records).")
