@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from . import account_email, administration, auth, email_admin, workspace
+from . import account_email, administration, auth, character_wizard, email_admin, workspace
 from .config import ROOT, settings
 from .database import engine
 from .security import COOKIE, RedirectTo, context
@@ -75,6 +75,7 @@ app.include_router(auth.router)
 app.include_router(account_email.router)
 app.include_router(administration.router)
 app.include_router(email_admin.router)
+app.include_router(character_wizard.router)
 app.include_router(workspace.router)
 
 # Public documentation never queries the user store.

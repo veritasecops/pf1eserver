@@ -10,7 +10,7 @@ Public sign-up creates Player accounts only. An Admin can promote a registered P
 
 Select **Create user**. Enter display name, unique email, temporary password, and Player, Game Master, or Admin role. Choose whether the account is enabled and whether TOTP is required. Admins always require TOTP, regardless of the checkbox.
 
-New users must replace their temporary password at sign-in. Share credentials privately through your own communication channel; the application does not send email or messages. The temporary password is not displayed again after saving.
+With email configured, enabled new accounts receive a one-use password setup link and choose their own password. Temporary passwords are never emailed. If delivery is unavailable, share the temporary password privately; the user must replace it at sign-in. The temporary password is not displayed again after saving. See [account email and recovery](/help/account-email).
 
 ## Edit, disable and enable
 

@@ -11,6 +11,7 @@ from .security import (audit, authenticated, can_manage_campaign, context, diges
                        field, get_campaign, get_character, integer, is_member, read_form)
 from .ui import redirect, render
 from .notifications import application_link, invitation_email
+from .pf1_data import ABILITIES, SKILLS
 
 router = APIRouter()
 
@@ -251,13 +252,6 @@ def character_options(ctx):
     return {"campaigns": campaigns, "owners": owners}
 
 
-@router.get("/characters/new")
-async def character_new(request: Request, db: Session = Depends(get_db)):
-    ctx = context(request, db)
-    authenticated(ctx)
-    return render(ctx, "character_form.html", title="Create character", character=None, **character_options(ctx))
-
-
 def character_values(ctx, form, existing=None):
     if ctx.user.role == "admin" or ctx.user.role == "gm" and not existing and form.get("owner_id"):
         owner_id = integer(form, "owner_id", 1, 2**63 - 1)
@@ -301,7 +295,8 @@ async def character_page(character_id: int, request: Request, db: Session = Depe
     ctx = context(request, db)
     character = get_character(ctx, character_id)
     return render(ctx, "character.html", title=character.name, character=character,
-                  owner=db.get(User, character.owner_id), campaign=db.get(Campaign, character.campaign_id) if character.campaign_id else None)
+                  owner=db.get(User, character.owner_id), campaign=db.get(Campaign, character.campaign_id) if character.campaign_id else None,
+                  sheet=character.sheet_data, sheet_abilities=ABILITIES, sheet_skills=SKILLS)
 
 
 @router.get("/characters/{character_id}/edit")
@@ -317,8 +312,14 @@ async def character_update(character_id: int, request: Request, db: Session = De
     character = get_character(ctx, character_id)
     form = await read_form(ctx)
     verify_version(form, character)
-    for key, value in character_values(ctx, form, character).items():
+    values = character_values(ctx, form, character)
+    if character.sheet_data and any(values[key] != getattr(character,key) for key in ("ancestry","class_name","level")):
+        raise HTTPException(422,"Use Edit creation sheet to change race or class. Level advancement is outside the first-level creation wizard.")
+    for key, value in values.items():
         setattr(character, key, value)
+    if character.sheet_data:
+        character.sheet_data = {**character.sheet_data,"input":{**character.sheet_data["input"],"name":character.name,
+                                "notes":character.notes,"owner_id":character.owner_id,"campaign_id":character.campaign_id}}
     audit(db, ctx.user, "character.updated", f"Updated character {character.name}.")
     return redirect(ctx, f"/characters/{character.id}", "Character saved.")
 

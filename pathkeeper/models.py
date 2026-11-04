@@ -88,6 +88,7 @@ class Character(Base):
     class_name: Mapped[str] = mapped_column(String(100), default="")
     level: Mapped[int] = mapped_column(Integer, default=1)
     notes: Mapped[str] = mapped_column(LONG_TEXT, default="")
+    sheet_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     __mapper_args__ = {"version_id_col": version}
@@ -190,3 +191,32 @@ class EmailOutbox(Base):
     encrypted_body: Mapped[str | None] = mapped_column(Text, nullable=True)
     token_hash: Mapped[str | None] = mapped_column(ForeignKey("account_tokens.token_hash", ondelete="SET NULL"), nullable=True)
     invitation_id: Mapped[int | None] = mapped_column(ForeignKey("invitations.id", ondelete="SET NULL"), nullable=True)
+
+
+class CharacterDraft(Base):
+    __tablename__ = "character_drafts"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    mode: Mapped[str] = mapped_column(String(10), default="create")
+    editing_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
+    existing_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    data: Mapped[dict] = mapped_column(JSON)
+    step: Mapped[int] = mapped_column(Integer, default=0)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    completed_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
+    finalized_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    __mapper_args__ = {"version_id_col": version}
+
+
+class DiceRoll(Base):
+    __tablename__ = "dice_rolls"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    draft_id: Mapped[str] = mapped_column(ForeignKey("character_drafts.id", ondelete="CASCADE"), index=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    request_id: Mapped[str] = mapped_column(String(32))
+    purpose: Mapped[str] = mapped_column(String(10))
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    __table_args__ = (UniqueConstraint("draft_id", "request_id", name="uq_draft_roll_request"),)

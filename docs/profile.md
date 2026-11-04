@@ -22,4 +22,4 @@ Sessions expire after twelve hours or sixty minutes of inactivity by default. Pe
 
 If your email changes, ask a Game Master to replace invitations sent to the previous email. Invitations match the account's current email exactly after normalization.
 
-There is no automated password-reset email. Contact an Admin, or use the server recovery process if you are the only Admin.
+Use **Forgot your password?** on the login page to request a reset email. One-use links expire in one hour and retain existing TOTP requirements. Contact an Admin for lost authenticator recovery, or use the server recovery process if you are the only Admin. See [account email and recovery](/help/account-email).

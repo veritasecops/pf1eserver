@@ -4,7 +4,11 @@ Sign in as an Admin and open **Administration → Email Configuration**. Only Ad
 
 Choose **Brevo API** or **SMTP Relay**. One provider is active at a time. Both providers' settings remain saved when switching. Delivery starts disabled on a new instance.
 
-This integration supplies a shared delivery service and an explicit test-email action. Sign-up, password recovery, and campaign invitations do not automatically send email in this release. Existing account recovery and invitation-sharing steps still apply.
+The configured service sends welcome/verification emails, account setup links, password recovery and change notifications, and campaign invitations automatically. See [account emails and recovery](/help/account-email). The explicit test action remains available.
+
+## Application Base URL
+
+Set **Application Base URL** to the address people use to open this instance, such as `https://table.example.com`. Every emailed verification, password setup/reset, and invitation link uses this value. Enter only the origin, without a path, credentials, query, or fragment. Use the external HTTPS address when your reverse proxy is ready. Changing it affects newly created messages; already sent links keep their original address.
 
 ## Sender identity
 
@@ -49,7 +53,9 @@ Check **Recent email activity**, the recipient's inbox and spam folder, and the 
 - **Unknown** means the connection failed or the provider returned an ambiguous response during delivery. The message may have sent.
 - **Pending** means an attempt was recorded but has no final result yet. A service interruption can leave this state behind.
 
-Unknown and pending attempts are not retried automatically. Check provider activity before resending to avoid duplicates. Provider requests have a ten-second timeout for network operations. No background queue, automatic retries, bounce webhooks, or bulk-send feature is installed.
+Automatic messages first appear as **Queued**. The durable background mail service sends them after the account or invitation is committed. Message bodies, including links, are encrypted while queued and erased after the attempt. The delivery history stores only metadata. Check the recipient and purpose to identify each workflow.
+
+Unknown and pending attempts are not retried automatically. Check provider activity before requesting a new account email or creating a replacement invitation. Provider requests have a ten-second timeout for network operations. Bounce webhooks and bulk sending are not installed.
 
 ## Upgrade an existing instance
 
@@ -63,6 +69,8 @@ sudo systemctl restart pf1eserver
 ```
 
 Migration 001 adds email settings, delivery history, and migration tracking without altering existing accounts or campaigns. Repeating it preserves settings. Fresh installations apply it during `manage init`. The runtime MariaDB user retains only SELECT, INSERT, UPDATE, and DELETE permissions; schema changes require the trusted server operator.
+
+Migration 002 adds the Application Base URL, account email verification fields, single-use account tokens, and the encrypted outbox. Install and enable the supplied `pf1eserver-mail.service`; see [account email operations](/help/account-email). Existing users retain access and existing provider credentials are preserved.
 
 ## Backup and troubleshooting
 

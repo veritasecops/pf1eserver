@@ -1,6 +1,6 @@
-## Create a basic character
+## Create a character
 
-Open Characters and select **Create character**. Enter name, ancestry/race, class, level from 1 through 40, notes, and optional campaign. These are basic management records; class features, calculated statistics, combat, spells, inventory, and dice are not implemented in this foundation.
+Open Characters and select **Add character**. The [character wizard](/help/character-wizard) guides you through a first-level sheet with visual dice, ability scores, race, class, skills, feats, HP, gear, combat values, description, and spells. Your draft saves as you go and resumes later. Existing basic records remain supported.
 
 Players create their own characters. GMs create their own characters, or may select a joined member as owner when creating a character assigned to one of the GM's own campaigns. Admins may select any user as owner and manage campaign assignment globally.
 
@@ -12,7 +12,7 @@ Joining a campaign alone does not expose all the player's characters. A GM does 
 
 ## Edit, move and transfer
 
-Open a character and select **Edit character**. Save identity, class, level, notes, and allowed assignment changes. The owner can move an existing character between joined campaigns or choose No campaign. A GM editing someone else's character cannot change its campaign or owner. Admins can change both.
+Open a character and select **Edit character** for identity, notes, and permitted assignment changes. Wizard-built first-level sheets also offer **Edit creation sheet** for game choices. Their race, class, and level are read-only in the basic editor to protect calculated data. Legacy records retain basic class/level editing. The owner can move an existing character between joined campaigns or choose No campaign. A GM editing someone else's character cannot change its campaign or owner. Admins can change both.
 
 A GM-created character owned by a joined player remains that player's record. If the player is removed from the campaign, the character detaches and the GM loses access. Campaign deletion also detaches characters rather than deleting them.
 

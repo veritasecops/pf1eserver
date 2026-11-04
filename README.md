@@ -10,9 +10,10 @@ Python administration and identity foundation for a Pathfinder First Edition pla
 - Admin-only user creation, editing, disable/enable, deletion, role assignment, password resets, and activity log. Admins require TOTP. The last active Admin is protected.
 - Player: full CRUD on owned characters. Game Master: full CRUD on owned campaigns, owned characters, and joined members' characters assigned to owned campaigns. Admin: all users, campaigns, and characters.
 - Email-bound, single-use, seven-day invitations; revocation and member removal. A GM can create a joined member's character in that GM's campaign. Removing membership detaches the member's characters.
-- Basic campaign/character records with version-based edit-conflict protection. Detailed PF1e sheets, dice, encounters, spells, maps, and inventory are outside this foundation release.
+- Basic campaigns and a first-level character wizard with private resumable drafts, server-generated visual d4/d6/d8/d10/d12/d20/d100 rolls, ability generation, core races, core/base/alternate classes, skill budgets, feats, maximum starting HP, starting wealth, starter gear, combat values, descriptions, and spell choices. Third-party class links are excluded. See `/help/character-wizard` for calculations and GM-reviewed choices.
 - Searchable public help, printable articles/full manual, and downloadable manual. Help does not query the database.
-- Administration → Email Configuration: Brevo HTTPS API or SMTP relay, encrypted write-only credentials, verified TLS, sender/reply-to identity, enable/disable, explicit test sending, and persisted delivery history. No automatic account or invitation emails, background queue, retries, or bounce webhooks yet. See `/help/email`.
+- Administration → Email Configuration: Application Base URL for all emailed links, Brevo HTTPS API or SMTP relay, encrypted write-only credentials, verified TLS, sender/reply-to identity, enable/disable, explicit test sending, and persisted delivery history. See `/help/email`.
+- Automatic welcome/verification, Admin-created account setup, password recovery/change notices, and campaign invitations. One-use expiring account links, unchanged TOTP requirements, session revocation on reset, and an encrypted durable outbox served by `pf1eserver-mail.service`. Queued bodies are erased after the attempt. Ambiguous sends are not retried automatically; no bounce webhook or bulk sending is installed.
 
 ## Server
 
@@ -25,7 +26,7 @@ cd /opt/pf1eserver
 sudo .venv/bin/python -m pathkeeper.manage create-admin
 ```
 
-Sign in through `/login` and enroll TOTP. The installer creates no default credentials. Users created through Administration receive temporary passwords and must replace them at sign-in. Public `/signup` creates an active Player with their chosen password and signs them in immediately. Email is sent only through the explicit Admin test action; account emails and invitation emails are not sent automatically. Mailbox ownership is not verified.
+Sign in through `/login` and enroll TOTP. The installer creates no default credentials. With email configured, Admin-created users receive password setup links and public sign-ups verify their address through a welcome email before opening the workspace. `/forgot-password` provides email recovery while retaining existing MFA. Existing accounts keep their prior access after migration. Without email, account creation retains the private temporary-password/immediate-access fallback.
 
 For a generated temporary Admin password, use `create-admin --email EMAIL --name NAME --generate-password`. The command prints the password once after saving its hash and requires a password change and TOTP enrollment at first sign-in. Keep that output private.
 
@@ -52,6 +53,10 @@ sudo .venv/bin/python -m pytest -q
 Tests create a temporary MariaDB database/user and seed synthetic accounts, then clean them up. They do not use the production user store. Run as root on the server to permit temporary database provisioning. Browser QA likewise uses a separate, loopback-only temporary instance.
 
 The supplied `manage init` creates the database/tables and a DML-only runtime user using local MariaDB root socket authentication. Existing installations run `sudo .venv/bin/python -m pathkeeper.manage migrate` to apply explicit additive migrations. Migration 001 introduces email configuration and delivery history, starts delivery disabled, and preserves existing accounts and campaigns.
+
+Migration 002 adds the Application Base URL, account verification fields, account tokens, and the encrypted outbox. Install `deploy/pf1eserver-mail.service`, reload systemd, and enable `pf1eserver-mail` after migrating. Set the canonical address under Administration → Email Configuration. Link creation does not trust the incoming Host header. Web access logs are disabled; keep tokens out of external proxy logs too. See `/help/account-email` for operation and recovery.
+
+Migration 003 adds structured first-level sheets, character drafts, and dice history while preserving legacy characters. The visual dice renderer uses local canvas code, no graphics service or new runtime dependency. The server owns random results and final calculations. This builder does not automate all archetype/class-feature effects, every feat/spell prerequisite, proficiency, encumbrance, advancement, or multiclassing; those boundaries are visible in the wizard and manual.
 
 Email adapters use Python's standard `smtplib` and `urllib` libraries without an additional provider SDK. `pathkeeper.email_delivery.send_email` takes an immutable settings snapshot and returns accepted/failed/unknown; application callers commit attempt state before running it in a worker thread and persist the result afterward. Brevo endpoint and authentication follow the [official API guide](https://developers.brevo.com/docs/send-a-transactional-email). SMTP TLS modes follow the [Python documentation](https://docs.python.org/3.13/library/smtplib.html).
 

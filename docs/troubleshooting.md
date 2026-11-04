@@ -1,6 +1,6 @@
 ## Email or password is incorrect
 
-Check that you are using the intended instance and account email. Disabled accounts receive the same generic login error as invalid credentials. New users can [create a Player account](/help/signup). Ask an Admin to check account status or reset a lost password. There is no server key or automated reset email.
+Check that you are using the intended instance and account email. Disabled accounts receive the same generic login error as invalid credentials. New users can [create a Player account](/help/signup). Use **Forgot your password?** to request a reset email. Ask an Admin about disabled accounts or lost authenticators. There is no server key. For missing messages, check spam, the Application Base URL, delivery history, and the mail worker service.
 
 Repeated failures are throttled. Password login allows ten attempts per account and thirty per source address in fifteen minutes. Second-factor and sensitive-action attempts are limited to eight per account in five minutes, independently of source-address changes. A reverse proxy must be trusted explicitly for the application to distinguish real client addresses.
 

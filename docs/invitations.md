@@ -2,9 +2,9 @@
 
 Open a campaign you own as a Game Master, or any campaign as an Admin. Under the invitation panel, enter the intended user's account email and select **Create invitation**.
 
-The next page shows a personal link. Copy it and share it through your normal communication channel. Campaign invitations are not emailed automatically. Only a hash of the token is stored, so the full readable link is shown once. Create a replacement if you lose it.
+Creating an invitation queues an email to the invited address using the configured service and Application Base URL. The next page also shows a personal link you can copy. If email is unavailable, share the link privately. The invitation table stores a token hash; the encrypted mail queue retains the message only until the send attempt. Create a replacement if you need another email. Up to twenty invitations per inviter per hour are allowed.
 
-Each invitation expires after seven days and can be accepted once. The signed-in account must match the normalized email entered by the inviter. Mailbox ownership is not verified, so keep invitation links private.
+Each invitation expires after seven days and can be accepted once. The signed-in account must match the normalized email entered by the inviter. New registrations verify their email when delivery is enabled. Existing accounts retain their prior access; keep invitation links private.
 
 ## Accept an invitation
 

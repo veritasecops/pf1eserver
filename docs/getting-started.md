@@ -1,6 +1,6 @@
 ## What this build includes
 
-Pathkeeper's Python foundation includes MariaDB-backed accounts, password login, authenticator two-factor authentication, account Administration, three roles, invitations, and basic campaign and character records. Detailed Pathfinder sheets, combat tools, spells, inventory, maps, and dice animation are future work in this rebuild.
+Pathkeeper includes MariaDB-backed accounts, authenticator two-factor authentication, Administration, three roles, campaign invitations, automatic account emails, and a guided first-level character wizard. The wizard saves ability scores, race, class, skills, feats, HP, gear, combat values, descriptions, and starting spells, with visual polyhedral dice and resumable drafts. Encounter tools, maps, advancement, multiclassing, and full automation of every class feature remain future work. See the [character wizard guide](/help/character-wizard).
 
 Use the same instance address and account each time. Your saved records live on that server. Accounts on different instances are independent.
 
@@ -17,7 +17,7 @@ Enter an email, display name, and password at the prompts. Password entry is hid
 
 ## Other users
 
-Select **Create a Player account** on the login page to register and sign in immediately. See [sign-up help](/help/signup). An Admin can also create an account and share a temporary password privately. Admin-created accounts must replace that password at sign-in and enroll an authenticator if required. Account emails are not sent automatically. Admins can configure and test [email delivery](/help/email).
+Select **Create a Player account** on the login page to register. With email configured, confirm your address through the welcome email before opening the workspace. See [sign-up help](/help/signup). Admin-created accounts receive password setup links; if email is unavailable, the Admin shares a temporary password privately. Required authenticator setup still applies. See [account emails and recovery](/help/account-email).
 
 - **Overview** shows your workspace and accessible campaigns.
 - **Characters** lists records you are allowed to manage.

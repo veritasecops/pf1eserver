@@ -1,0 +1,34 @@
+{% extends 'base.html' %}{% from 'components.html' import icon %}
+{% block extra_head %}<link rel="stylesheet" href="/static/character-wizard.css">{% endblock %}
+{% block content %}
+<div class="pw-root" data-character-wizard data-csrf="{{ csrf }}">
+  <a class="text-button back-link" href="/characters">{{ icon('back') }}Characters</a>
+  <div class="page-heading pw-heading"><div><span class="overline">A NEW STORY AT YOUR TABLE</span><h1>{{ 'Shape your character.' if draft.mode == 'edit' else 'Every legend starts here.' }}</h1><p>A guided Pathfinder First Edition character sheet.</p></div><div class="pw-save-state"><span class="pw-save-dot"></span><span id="pw-save-status" role="status">Draft saved</span></div></div>
+  <nav class="pw-steps" id="pw-steps" aria-label="Character creation steps"></nav>
+  <div class="pw-message" id="pw-message" role="alert" hidden></div>
+  <div class="pw-layout">
+    <div class="pw-main">
+      <section class="card pw-stage-card"><header class="pw-stage-heading"><div><span class="overline" id="pw-step-count"></span><h2 id="pw-step-title"></h2></div><span class="pw-level">LEVEL 1</span></header>
+        <form id="pw-form"><div id="pw-stage" class="pw-stage"></div></form>
+        <footer class="pw-footer"><button class="button" type="button" id="pw-previous">{{ icon('back') }}Back</button><button class="text-button" type="button" id="pw-save-exit">Save & exit</button><button class="button primary" type="button" id="pw-next">Continue {{ icon('arrow') }}</button></footer>
+      </section>
+      <div class="pw-source"><a href="{{ outline }}" target="_blank" rel="noopener noreferrer">Character creation outline {{ icon('book') }}</a><span>Core, base, and alternate class choices. Third-party class links are excluded.</span></div>
+      <details class="pw-discard"><summary>Discard this draft</summary><p>The unfinished sheet and its draft dice history will be removed. An existing saved character is preserved.</p><button class="button danger small" type="button" id="pw-discard">Discard draft</button></details>
+    </div>
+    <aside class="pw-aside">
+      <section class="pw-dice-tray"><div class="pw-dice-title"><span>{{ icon('spark') }}DICE TRAY</span><span class="pw-live-dot"></span></div>
+        <canvas id="pw-dice-canvas" aria-hidden="true"></canvas>
+        <div class="pw-dice-result" id="pw-dice-result" role="status" aria-live="polite"><strong>Ready to roll</strong><small>Choose your dice below.</small></div>
+        <div class="pw-dice-types" id="pw-dice-types" aria-label="Dice types">{% for sides in [4,6,8,10,12,20,100] %}<button type="button" data-die="{{ sides }}" aria-pressed="{{ 'true' if sides == 20 else 'false' }}">d{{ sides }}</button>{% endfor %}</div>
+        <div class="pw-dice-controls"><label>Dice<input type="number" id="pw-dice-count" value="1" min="1" max="20" aria-label="Number of dice"></label><label>Modifier<input type="number" id="pw-dice-modifier" value="0" min="-1000" max="1000" aria-label="Dice modifier"></label></div>
+        <button class="button primary full-button" type="button" id="pw-roll">Roll 1d20</button><p class="pw-percentile-note">d100 uses tens and units dice. 00 + 0 means 100.</p>
+      </section>
+      <section class="card pw-preview"><header><span class="overline">YOUR CHARACTER</span><h2 id="pw-preview-name">An unwritten legend</h2><p id="pw-preview-class">Choose a race and class</p></header><div id="pw-preview-abilities" class="pw-mini-abilities"></div><div id="pw-preview-stats" class="pw-preview-stats"></div></section>
+      <details class="card pw-roll-history"><summary>Recent rolls <span id="pw-roll-count">0</span></summary><ol id="pw-roll-history"></ol><p>Results are saved with this draft. Your GM decides which methods and rerolls to allow.</p></details>
+    </aside>
+  </div>
+  <noscript><div class="error">This visual wizard needs JavaScript. Enable JavaScript and reload to continue.</div></noscript>
+  <script type="application/json" id="pw-bootstrap">{{ boot|tojson }}</script>
+</div>
+{% endblock %}
+{% block page_scripts %}<script src="/static/dice-tray.js" defer></script><script src="/static/character-wizard.js" defer></script>{% endblock %}

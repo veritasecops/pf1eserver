@@ -51,8 +51,10 @@ Initialization generates `.env`, creates the MariaDB database and restricted app
 
 ```sh
 sudo install -m 0644 deploy/pf1eserver.service /etc/systemd/system/pf1eserver.service
+sudo install -m 0644 deploy/pf1eserver-mail.service /etc/systemd/system/pf1eserver-mail.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now pf1eserver
+sudo systemctl enable --now pf1eserver-mail
 curl --fail http://127.0.0.1:8080/health
 sudo .venv/bin/python -m pathkeeper.manage create-admin
 ```
