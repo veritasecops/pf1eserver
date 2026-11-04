@@ -94,3 +94,18 @@
 @media print { @page { size:letter; margin:10mm; } body,.app-layout,.main-layout { display:block !important; background:white !important; } .sidebar,.topbar,.back-link,.deluxe-heading,.deluxe-toolbar,.deluxe-guidance,.deluxe-bottom,#delete-character,.flash,.toast,.deluxe-errors { display:none !important; } .content { max-width:none; padding:0 !important; } .ds-page { border:0; box-shadow:none; padding:0; margin:0; break-after:page; } .ds-page:last-child { break-after:auto; } .ds-page :is(input,textarea) { background:white !important; color:black !important; } .ds-table-scroll { overflow:visible; } .ds-page h3,.ds-page .ds-bar,.ds-page .ds-table thead th { print-color-adjust:exact; -webkit-print-color-adjust:exact; } .ds-identity { grid-template-columns:1fr; } .ds-combat-grid { grid-template-columns:1fr; } .ds-feature-grid { grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(14,auto); } .ds-skill-columns { grid-template-columns:1fr; } .ds-page :is(.ds-weapon,.ds-armor) { min-width:0; } .ds-page textarea { field-sizing:content; min-height:80px; } .ds-gear-columns { grid-template-columns:repeat(2,minmax(0,1fr)); } .ds-spell-summary { display:block; } .ds-spell-summary>textarea { margin-top:0; } .ds-spell-lists { grid-template-columns:repeat(2,minmax(0,1fr)); } .ds-page section,.ds-page tr { break-inside:avoid; } }
 
 .ds-page input[readonly] { background:#eee8dc; color:#554538; cursor:default; }
+.deluxe-character-title { margin:0 0 16px; font-size:2rem; overflow-wrap:anywhere; }
+.deluxe-toolbar-main { min-width:0; display:grid; gap:10px; }
+.deluxe-toolbar-context { display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px; color:#63503c; font-size:.875rem; }
+.deluxe-toolbar-context .text-button { display:inline-flex; align-items:center; gap:6px; font-size:.875rem; }
+.deluxe-guidance summary { cursor:pointer; }
+.deluxe-guidance p { margin-top:10px; }
+.deluxe-bottom { flex-wrap:wrap; }
+.deluxe-bottom>.row { flex-wrap:wrap; }
+.character-delete-dialog { width:min(520px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; margin:auto; padding:28px; border:1px solid #a78754; border-radius:4px; background:#fff7e7; color:#332419; box-shadow:0 18px 70px #170a1766; }
+.character-delete-dialog::backdrop { background:#1c1111b3; }
+.character-delete-dialog h2 { margin:0 0 14px; color:#70251b; }
+.character-delete-dialog p { margin-bottom:20px; line-height:1.6; }
+.character-delete-dialog .row { justify-content:flex-end; flex-wrap:wrap; gap:10px; }
+@media(max-width:650px) { .deluxe-character-title { font-size:1.625rem; margin-bottom:12px; } .deluxe-toolbar-main { gap:8px; } .character-delete-dialog { padding:22px; } }
+@media print { .deluxe-character-title,.character-delete-dialog { display:none !important; } }

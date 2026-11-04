@@ -76,7 +76,12 @@ def test_character_deletion_is_visible_to_owners_and_admins_and_requires_confirm
     client = env.login(account)
     path = f"/characters/{character.id}"
     page = client.get(path)
-    assert 'href="#delete-character"' in page.text
+    assert 'id="open-character-delete"' in page.text
+    assert '<dialog class="character-delete-dialog"' in page.text
+    assert 'CHARACTER RECORD' not in page.text
+    assert page.text.index('id="sheet-character-name"') < page.text.index('class="deluxe-toolbar"')
+    assert page.text.index('id="gear"') < page.text.index('>Manage character</a>') < page.text.index('id="open-character-delete"')
+    assert page.text.index('id="open-character-delete"') < page.text.index('id="delete-character"')
     assert page.text.count('id="delete-character"') == 1
     assert page.text.index("<body") < page.text.index('id="delete-character"')
     values = {"confirm_name": character.name, "version": character.version}

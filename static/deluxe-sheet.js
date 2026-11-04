@@ -24,6 +24,8 @@
     }
     document.getElementById('sheet-character-name').textContent = result.name;
     document.title = `${result.name} · Pathkeeper`;
+    const deleteName = document.getElementById('delete-character-name');
+    if (deleteName) deleteName.textContent = result.name;
     const breadcrumb = document.querySelector('.topbar .breadcrumb strong');
     if (breadcrumb) breadcrumb.textContent = result.name;
   };
