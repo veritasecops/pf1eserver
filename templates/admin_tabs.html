@@ -1,0 +1,5 @@
+<nav class="tabs" aria-label="Administration sections">
+  {% for label,href in [('Users','/administration'),('Roles & permissions','/administration/permissions'),('Email Configuration','/administration/email'),('Activity log','/administration/audit')] %}
+  <a href="{{ href }}" {% if path == href %}class="active" aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>

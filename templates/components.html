@@ -1,0 +1,34 @@
+{% macro icon(name) -%}
+{% set icons = {
+'home':'M3 10 12 3l9 7v11h-7v-7h-4v7H3Z',
+'users':'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m8-7a4 4 0 0 1 0 8',
+'user':'M20 21v-2a8 8 0 0 0-16 0v2m12-14a4 4 0 1 0-8 0 4 4 0 0 0 8 0',
+'flag':'M5 22V3m0 1c5-4 9 4 15 0v11c-6 4-10-4-15 0',
+'shield':'m12 2 9 4v7c0 5-9 9-9 9s-9-4-9-9V6ZM8 12l3 3 5-6',
+'key':'M9 15a6 6 0 1 1 5-5l8 8-4 4-3-3v-3h-3Z',
+'lock':'M5 10h14v11H5Zm3 0V6a4 4 0 0 1 8 0v4',
+'plus':'M12 5v14M5 12h14',
+'arrow':'M4 12h16m-6-6 6 6-6 6',
+'back':'M20 12H4m6-6-6 6 6 6',
+'logout':'M9 3H3v18h6m5-14 5 5-5 5m-7-5h12',
+'help':'M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.01M22 12a10 10 0 1 0-20 0 10 10 0 0 0 20 0',
+'activity':'M3 12h4l3-8 4 16 3-8h4',
+'edit':'m16 3 5 5L8 21l-6 1 1-6ZM14 5l5 5',
+'check':'m5 12 4 4L19 6',
+'search':'M21 21l-5-5m2-6a8 8 0 1 0-16 0 8 8 0 0 0 16 0',
+'menu':'M3 6h18M3 12h18M3 18h18',
+'trash':'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',
+'mail':'M3 5h18v14H3Zm0 0 9 8 9-8',
+'clock':'M12 7v5l3 3m7-3a10 10 0 1 0-20 0 10 10 0 0 0 20 0',
+'copy':'M8 8h13v13H8ZM3 16V3h13',
+'book':'M3 3h8v18H3Zm8 0h10v18H11M6 7h2m-2 4h2m7-4h3m-3 4h3',
+'spark':'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z',
+'eye':'M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Zm13 0a3 3 0 1 0-6 0 3 3 0 0 0 6 0'
+} %}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="{{ icons.get(name, icons['spark']) }}"/></svg>
+{%- endmacro %}
+{% macro csrf_input(csrf) %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
+{% macro field(label, name, value='', type='text', required=false, help='', autocomplete='', attrs='') %}<label class="field"><span>{{ label }}</span><input type="{{ type }}" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %} {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %} {{ attrs|safe }}>{% if help %}<small>{{ help }}</small>{% endif %}</label>{% endmacro %}
+{% macro area(label, name, value='', help='') %}<label class="field"><span>{{ label }}</span><textarea name="{{ name }}" rows="5">{{ value }}</textarea>{% if help %}<small>{{ help }}</small>{% endif %}</label>{% endmacro %}
+{% macro role_badge(role) %}<span class="badge role-{{ role }}">{{ roles.get(role, role) }}</span>{% endmacro %}
+{% macro reauth(user) %}<div class="form-divider">Confirm your identity</div><p class="hint">Use your Admin password and a fresh authenticator or unused recovery code.</p><div class="form-grid">{{ field('Your current password', 'current_password', type='password', required=true, autocomplete='current-password') }}{% if user.totp_enabled %}{{ field('Your authenticator or recovery code', 'code', required=true, autocomplete='one-time-code') }}{% endif %}</div>{% endmacro %}
+{% macro empty(title, description, symbol='flag') %}<div class="empty"><span class="empty-icon">{{ icon(symbol) }}</span><h3>{{ title }}</h3><p>{{ description }}</p></div>{% endmacro %}

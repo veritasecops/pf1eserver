@@ -1,0 +1,24 @@
+[Unit]
+Description=Pathkeeper Python application (Uvicorn)
+After=network.target mariadb.service
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=pf1eserver
+Group=pf1eserver
+WorkingDirectory=/opt/pf1eserver
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/pf1eserver/.venv/bin/python -m uvicorn pathkeeper.main:app --host 0.0.0.0 --port 8080 --workers 2 --no-access-log --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=3
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pf1eserver/storage
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,54 @@
+# Local secrets and credentials. Commit sanitized .env.example files only.
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+
+# Project-managed Python, uv, and environments.
+.venv/
+venv/
+.python/
+.tools/
+.cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Test, coverage, and analysis output.
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Runtime data, private database dumps, and backups.
+/storage/
+/backups/
+*.log
+*.pid
+*.sql
+*.sql.gz
+*.sql.xz
+*.sql.zst
+pathkeeper-*.tar.gz
+
+# Local editor, operating-system, and preview artifacts.
+.DS_Store
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+/preview*.jpg
+/preview*.png
+
+# Keep uv.lock, .python-version, source, tests, docs, and deployment files tracked.

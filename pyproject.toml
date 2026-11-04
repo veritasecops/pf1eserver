@@ -1,0 +1,31 @@
+[project]
+name = "pathkeeper"
+version = "0.2.0"
+description = "Pathfinder campaign administration and secure accounts"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "fastapi>=0.120,<1",
+  "uvicorn[standard]>=0.38,<1",
+  "sqlalchemy>=2.0,<3",
+  "pymysql[rsa]>=1.1,<2",
+  "argon2-cffi>=25.1,<30",
+  "cryptography>=46,<50",
+  "pyotp>=2.9,<3",
+  "segno>=1.6,<2",
+  "jinja2>=3.1,<4",
+  "python-multipart>=0.0.20,<1",
+  "pydantic-settings>=2.10,<3",
+  "email-validator>=2.3,<3",
+  "tzdata>=2025",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1"]
+
+[tool.uv]
+package = false
+python-preference = "only-managed"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

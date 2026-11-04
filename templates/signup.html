@@ -1,0 +1,18 @@
+{% extends 'login.html' %}{% from 'components.html' import icon, field, csrf_input %}
+{% block auth_heading %}Create your account.{% endblock %}
+{% block auth_intro %}Start as a Player. Bring your characters to the table.{% endblock %}
+{% block auth_form %}
+<form method="post" action="/signup" class="stack">
+  {{ csrf_input(csrf) }}
+  {{ field('Display name', 'name', name|default(''), required=true, autocomplete='name', attrs='maxlength="100"') }}
+  {{ field('Email address', 'email', email|default(''), 'email', true, autocomplete='email', attrs='maxlength="190"') }}
+  {{ field('Password', 'password', type='password', required=true, autocomplete='new-password', help='Use 12–128 characters.', attrs='minlength="12" maxlength="128"') }}
+  {{ field('Confirm password', 'confirm_password', type='password', required=true, autocomplete='new-password', attrs='minlength="12" maxlength="128"') }}
+  <button class="button primary full-button" type="submit">Create Player account {{ icon('arrow') }}</button>
+</form>
+{% endblock %}
+{% block auth_after %}
+<p class="account-note">All public sign-ups create Player accounts.<br>An Admin can grant Game Master or Admin access.</p>
+<div class="login-switch">Already have an account? <a class="text-button" href="/login">Sign in</a></div>
+<a class="text-button" href="/help/signup">{{ icon('help') }}Help with sign-up</a>
+{% endblock %}

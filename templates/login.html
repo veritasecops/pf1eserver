@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% from 'components.html' import icon, field, csrf_input %}
+{% block public_content %}
+<main class="login-layout">
+  <section class="login-story">
+    <a class="brand" href="/login"><img src="/static/mark.svg" width="40" height="40" alt=""><span><strong>Pathkeeper</strong><small>PATHFINDER · FIRST EDITION</small></span></a>
+    <div class="login-art" aria-hidden="true">
+      <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
+      <svg viewBox="0 0 300 300"><g fill="none" stroke="currentColor"><path d="m150 25 106 61v128l-106 61-106-61V86Zm0 0-48 128 48 122 48-122ZM44 86l58 67-58 61m212-128-58 67 58 61M102 153h96"/><circle cx="150" cy="150" r="141" stroke-dasharray="2 10"/></g><path d="m150 105 17 45-17 43-17-43Z" fill="currentColor"/></svg>
+      <span class="star star-a">✧</span><span class="star star-b">✦</span><span class="star star-c">✧</span>
+    </div>
+    <div class="login-story-copy"><div class="eyebrow">EVERY ADVENTURE NEEDS A KEEPER</div><h1>Your worlds.<br>Your stories.<br>Your table.</h1><p>A home for your characters and the campaigns you share.</p><div class="login-pills"><span>Players</span><span>Game Masters</span><span>Adventures</span></div></div>
+    <footer>BUILT FOR PATHFINDER FIRST EDITION</footer>
+  </section>
+  <section class="login-panel">
+    <div class="login-card">
+      <span class="overline">YOUR ADVENTURE AWAITS</span>
+      <h1>{% block auth_heading %}Welcome back.{% endblock %}</h1>
+      <p class="intro">{% block auth_intro %}Sign in to your Pathkeeper workspace.{% endblock %}</p>
+      {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+      {% block auth_form %}
+      <form method="post" action="/login" class="stack">
+        {{ csrf_input(csrf) }}
+        {{ field('Email address', 'email', email|default(''), 'email', true, autocomplete='username') }}
+        <div>{{ field('Password', 'password', type='password', required=true, autocomplete='current-password') }}<button type="button" class="text-button reveal-password">{{ icon('eye') }}Show password</button></div>
+        <button class="button primary full-button" type="submit">Sign in {{ icon('arrow') }}</button>
+      </form>
+      {% endblock %}
+      {% block auth_after %}
+      <div class="login-security">{{ icon('shield') }}Authenticator verification follows if enabled.</div>
+      <div class="login-switch">New to the table? <a class="text-button" href="/signup{% if next_path != '/' %}?next={{ next_path|urlencode }}{% endif %}">Create a Player account</a></div>
+      <p class="account-note">Need Game Master access or account recovery?<br>Contact an Admin.</p>
+      <a class="text-button" href="/help">{{ icon('help') }}Help & getting started</a>
+      {% endblock %}
+      <div class="login-footer">Pathkeeper · Pathfinder First Edition</div>
+    </div>
+  </section>
+</main>
+{% endblock %}

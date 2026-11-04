@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% from 'components.html' import icon, field, csrf_input, reauth, empty %}
+{% block content %}
+<div class="page-heading"><div><span class="overline">CONNECTED TO YOUR TABLE</span><h1>Administration</h1><p>Choose how Pathkeeper sends email from this instance.</p></div><a class="button" href="/help/email">{{ icon('help') }}Email setup guide</a></div>
+{% include 'admin_tabs.html' %}
+{% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+{% if notice %}<div class="email-notice" role="status">{{ notice }}</div>{% endif %}
+<div class="email-layout">
+  <section class="card form-card">
+    <div class="card-heading"><div><h2>{{ icon('mail') }}Email Configuration</h2><p>One active provider. Credentials stay hidden after saving.</p></div><span class="status {{ 'active' if config.enabled else 'disabled' }}"><i></i>{{ 'Enabled' if config.enabled else 'Disabled' }}</span></div>
+    <form action="/administration/email" method="post" class="stack" autocomplete="off" data-email-settings>
+      {{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ config.version }}">
+      <label class="check"><input type="checkbox" name="enabled" {% if config.enabled %}checked{% endif %}>Enable email delivery</label>
+      <label class="field"><span>Delivery provider</span><select name="provider" id="email-provider"><option value="brevo" {% if config.provider == 'brevo' %}selected{% endif %}>Brevo API</option><option value="smtp" {% if config.provider == 'smtp' %}selected{% endif %}>SMTP Relay</option></select><small>Switching providers preserves each provider's saved credentials.</small></label>
+      <div class="form-divider">Sender identity</div>
+      <div class="form-grid">
+        {{ field('Sender name', 'sender_name', config.sender_name, required=true, attrs='maxlength="100"') }}
+        {{ field('Sender email', 'sender_email', config.sender_email, 'email', help='Use a sender approved by your provider.', attrs='maxlength="190"') }}
+      </div>
+      {{ field('Reply-to email (optional)', 'reply_to', config.reply_to, 'email', help='Replies use this address when supplied.', attrs='maxlength="190"') }}
+      <fieldset class="provider-panel stack" data-email-provider="brevo">
+        <legend>Brevo API</legend><p class="hint">Connect a Brevo transactional email account with an approved sender and API key.</p>
+        <div class="credential-state">{{ icon('key') }}{{ 'API key saved' if has_brevo_key else 'No API key saved' }}</div>
+        {{ field('Brevo API key', 'brevo_key', type='password', autocomplete='new-password', help='Leave blank to keep the saved key. This is an API key, not an SMTP key.', attrs='maxlength="4096"') }}
+        {% if has_brevo_key %}<label class="check"><input type="checkbox" name="clear_brevo_key">Remove saved Brevo API key</label>{% endif %}
+      </fieldset>
+      <fieldset class="provider-panel stack" data-email-provider="smtp">
+        <legend>SMTP Relay</legend><p class="hint">Use your provider's SMTP settings or an authorized relay on your network.</p>
+        <div class="form-grid">
+          {{ field('SMTP host', 'smtp_host', config.smtp_host, help='Hostname or IP only, without a URL or port.', attrs='maxlength="253"') }}
+          {{ field('SMTP port', 'smtp_port', config.smtp_port, 'number', true, help='Common ports: 587 for STARTTLS, 465 for TLS.', attrs='min="1" max="65535"') }}
+        </div>
+        <label class="field"><span>Connection security</span><select name="smtp_security"><option value="starttls" {% if config.smtp_security == 'starttls' %}selected{% endif %}>STARTTLS (usually 587)</option><option value="ssl" {% if config.smtp_security == 'ssl' %}selected{% endif %}>TLS from connection (usually 465)</option><option value="none" {% if config.smtp_security == 'none' %}selected{% endif %}>None, trusted relay without authentication</option></select><small>TLS checks the relay certificate. Authentication requires STARTTLS or TLS.</small></label>
+        {{ field('SMTP username (optional)', 'smtp_username', config.smtp_username, autocomplete='off', help='Leave blank for a relay that authorizes this server by IP.', attrs='maxlength="254"') }}
+        <div class="credential-state">{{ icon('key') }}{{ 'SMTP password saved' if has_smtp_password else 'No SMTP password saved' }}</div>
+        {{ field('SMTP password or relay key', 'smtp_password', type='password', autocomplete='new-password', help='Leave blank to keep the saved password.', attrs='maxlength="1024"') }}
+        {% if has_smtp_password %}<label class="check"><input type="checkbox" name="clear_smtp_password">Remove saved SMTP password</label>{% endif %}
+      </fieldset>
+      {{ reauth(user) }}
+      <div class="form-actions"><button class="button primary" type="submit">{{ icon('check') }}Save email settings</button><a class="text-button" href="/administration/email">Reload saved settings</a></div>
+    </form>
+  </section>
+  <aside class="stack email-aside">
+    <section class="card form-card"><div class="card-heading"><div><h2>Send a test</h2><p>Send one fixed test message using saved settings.</p></div></div>
+      <form method="post" action="/administration/email/test" class="stack">{{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ config.version }}">
+        {{ field('Test recipient', 'recipient', type='email', required=true, help='This action sends a real email to the address you enter.', attrs='maxlength="190"') }}
+        <button class="button primary full-button" type="submit" {% if not config.enabled %}disabled{% endif %}>{{ icon('mail') }}Send test email</button>
+      </form><p class="hint section-space">Save changes before testing. Up to five tests per Admin every fifteen minutes.</p>
+    </section>
+    <section class="card form-card"><h2>Delivery status</h2><p>Accepted means the provider received the message. Check the recipient's inbox and spam folder to confirm delivery.</p><p>Unknown or pending results may have sent. Check provider activity before sending again.</p><a class="text-button" href="/administration/email">{{ icon('activity') }}Refresh results</a></section>
+    <div class="inline-note">{{ icon('shield') }}API keys and relay passwords are encrypted. Keep the instance encryption key with your backups.</div>
+  </aside>
+</div>
+<section class="card section-space"><div class="card-heading"><div><h2>Recent email activity</h2><p>Latest 25 attempts. All times are UTC. Messages and credentials are never stored in this history.</p></div></div>
+  {% if deliveries %}<div class="table-scroll"><table><thead><tr><th>When</th><th>Recipient</th><th>Provider</th><th>Result</th><th>Details</th></tr></thead><tbody>{% for delivery in deliveries %}<tr><td class="nowrap muted">{{ delivery.created_at.strftime('%b %d, %H:%M:%S') }}</td><td>{{ delivery.recipient }}</td><td>{{ 'Brevo' if delivery.provider == 'brevo' else 'SMTP' }}</td><td><span class="delivery-status delivery-{{ delivery.status }}">{{ delivery.status|capitalize }}</span></td><td class="wrappable">{{ delivery.detail }}{% if delivery.message_id %}<small class="message-id">{{ delivery.message_id }}</small>{% endif %}<small>Settings version {{ delivery.configuration_version }}</small></td></tr>{% endfor %}</tbody></table></div>
+  {% else %}{{ empty('No email activity yet.', 'Save your provider settings, then send a test message.', 'mail') }}{% endif %}
+</section>
+{% endblock %}
