@@ -7,10 +7,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from .character_rules import calculate, clean, defaults
+from .character_rules import bounded_int, calculate, clean, defaults
 from .database import commit, get_db
 from .rule_catalog import load_catalog, equipment, class_skills
-from .models import Character, CharacterDraft, DiceRoll, utcnow
+from .models import Character, CharacterDraft, DiceRoll, RuleCatalog, utcnow
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, SPELL_SUGGESTIONS, STEPS
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
 from .ui import redirect, render
@@ -50,8 +50,9 @@ def display_wizard(ctx, draft):
     rolls = roll_history(ctx.db, draft.id)
     data = {**draft.data,"owner_id":ctx.user.id} if draft.mode == "create" else draft.data
     catalog = load_catalog(ctx.db)
+    catalog_record = ctx.db.get(RuleCatalog,1)
     image_url = portrait_url(ctx.db,draft)
-    boot = {"portrait_url":image_url,"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
+    boot = {"catalog_version":catalog_record.version if catalog_record else 0,"portrait_url":image_url,"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
             "computed":calculate(data,rolls,load_catalog(ctx.db)),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":{key:{**cls,"skills":class_skills(catalog,key)} for key,cls in CLASSES.items()},"skills":catalog["skills"],"feats":catalog["feats"],"equipment":equipment(catalog),"alignments":ALIGNMENTS,
@@ -130,6 +131,57 @@ async def save(draft_id: str,request: Request,db: Session = Depends(get_db)):
     draft.data,draft.step,draft.updated_at = data,integer(form,"step",0,max(STEPS)) or next(iter(STEPS)),utcnow()
     commit(db)
     return {"version":draft.version,"computed":calculate(data,roll_history(db,draft.id),load_catalog(db))}
+
+
+@router.post("/api/character-drafts/{draft_id}/weapons")
+async def buy_weapons(draft_id: str, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request,db)
+    draft = get_draft(ctx,draft_id,True)
+    form = await read_form(ctx)
+    if draft.finalized_at: raise HTTPException(409,'This draft has already been finalized.')
+    if integer(form,'version',1,2**31-1) != draft.version:
+        raise HTTPException(409,'This draft changed or the purchase was already saved. Reload to check inventory before buying again.')
+    try: cart = json.loads(str(form.get('payload','')))
+    except (ValueError,TypeError): raise HTTPException(422,'The weapon selection could not be read.') from None
+    if not isinstance(cart,dict) or set(cart)-{'quantities','prices'}:
+        raise HTTPException(422,'Choose weapon quantities and optional agreed prices.')
+    quantities,prices = cart.get('quantities'),cart.get('prices',{})
+    if not isinstance(quantities,dict) or not quantities or not isinstance(prices,dict) or set(prices)-set(quantities):
+        raise HTTPException(422,'Select at least one weapon or ammunition entry.')
+    prices = {key:bounded_int(value,0,100000000,'Agreed weapon price') for key,value in prices.items()}
+    catalog_record = db.scalar(select(RuleCatalog).where(RuleCatalog.id==1).with_for_update())
+    if integer(form,'catalog_version',0,2**31-1) != (catalog_record.version if catalog_record else 0):
+        raise HTTPException(409,'Weapon prices or rules changed. Reload the wizard before buying.')
+    catalog = load_catalog(db)
+    entries = equipment(catalog)
+    data = clean(draft.data,ctx.user.id,catalog)
+    rolls = roll_history(db,draft.id)
+    if data['wealth_method']=='rolled':
+        roll = rolls.get(data['wealth_roll'])
+        if not roll or roll['purpose']!='wealth' or roll['result'].get('class_id')!=data['class_id']:
+            raise HTTPException(422,'Roll starting wealth for the selected class before buying weapons.')
+    for key,quantity in quantities.items():
+        item = entries.get(key,{})
+        if not item or not (item.get('kind')=='weapon' or item.get('category')=='ammunition') or not item.get('enabled',True):
+            raise HTTPException(422,'Choose available weapons or ammunition from the catalog.')
+        quantity = bounded_int(quantity,1,100,'Weapon quantity')
+        data['equipment'][key] = bounded_int(data['equipment'].get(key,0)+quantity,1,100,'Total equipment quantity')
+        if item['cost'] is None:
+            # Existing copies keep their agreed unit price so a new purchase
+            # cannot silently reprice items already in inventory.
+            previous_price = data['equipment_prices'].get(key)
+            if previous_price is not None and draft.data.get('equipment',{}).get(key,0)>0:
+                if key in prices and prices[key]!=previous_price: raise HTTPException(422,'Use the existing agreed unit price for this item.')
+            elif key not in prices: raise HTTPException(422,f"Enter the agreed unit price for {item['name']}.")
+            else: data['equipment_prices'][key] = bounded_int(prices[key],0,100000000,'Agreed weapon price')
+        elif key in prices:
+            raise HTTPException(422,'Published weapon prices are calculated by the server.')
+    computed = calculate(data,rolls,catalog)
+    if computed['remaining_cp'] < 0: raise HTTPException(422,'These weapons exceed the character’s remaining treasure. Reduce quantities or adjust starting wealth.')
+    draft.data,draft.updated_at = data,utcnow()
+    audit(db,ctx.user,'character.weapons_added',f'Added {sum(quantities.values())} weapon/ammunition units to a character draft.')
+    commit(db)
+    return {'version':draft.version,'data':data,'computed':computed}
 
 
 @router.post("/api/character-drafts/{draft_id}/roll")

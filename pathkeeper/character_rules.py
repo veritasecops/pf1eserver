@@ -13,7 +13,7 @@ def defaults(owner_id):
             "race":"human", "flex_ability":"str", "class_id":"", "favored_bonus":"hp", "vigilante_specialization":"stalker",
             "skills":{}, "skill_specialties":"", "feats":[], "bonus_feat":{},
             "adaptability":"perception", "wealth_method":"average", "wealth_roll":"", "manual_gold":0,
-            "equipment":{}, "armor":"", "shield":"", "weapon":"", "extra_spending":0,
+            "equipment":{}, "equipment_prices":{}, "armor":"", "shield":"", "weapon":"", "extra_spending":0,
             "inventory_notes":"", "alignment":"N", "age":"", "gender":"", "appearance":"",
             "personality":"", "languages":"", "deity":"", "notes":"", "spells":[], "cantrips":[], "spell_notes":""}
 
@@ -76,6 +76,9 @@ def clean(payload, owner_id, catalog=None):
     if not isinstance(data["equipment"], dict) or set(data["equipment"]) - set(EQUIPMENT):
         raise HTTPException(422, "Choose equipment from the catalog; record other gear in notes.")
     data["equipment"] = {key:bounded_int(value,0,100,"Equipment quantity") for key,value in data["equipment"].items()}
+    if not isinstance(data['equipment_prices'],dict) or set(data['equipment_prices'])-set(EQUIPMENT):
+        raise HTTPException(422,'Choose agreed prices for catalog equipment only.')
+    data['equipment_prices']={key:bounded_int(value,0,100000000,'Agreed equipment price') for key,value in data['equipment_prices'].items()}
     if data["equipment"].get("outfit",0) > 1:
         raise HTTPException(422, "Only one starting outfit is free.")
     for key, kind in (("armor","armor"),("shield","shield"),("weapon","weapon")):
@@ -179,7 +182,9 @@ def calculate(data, rolls, catalog=None):
     elif data["wealth_method"] == "manual":
         gold = data["manual_gold"]
         warnings.append("Manual starting wealth requires your GM's approval.")
-    equipment = [{"id":key,"quantity":quantity,**EQUIPMENT[key]} for key,quantity in data["equipment"].items() if quantity]
+    equipment = [{"id":key,"quantity":quantity,**EQUIPMENT[key],
+                  "cost":EQUIPMENT[key]['cost'] if EQUIPMENT[key]['cost'] is not None else data.get('equipment_prices',{}).get(key)}
+                 for key,quantity in data["equipment"].items() if quantity]
     for item in equipment:
         if not item.get("enabled",True): error(8,f"{item['name']} is archived; remove it from starting equipment.")
     spent = sum((item["cost"] or 0)*item["quantity"] for item in equipment) + data["extra_spending"]
