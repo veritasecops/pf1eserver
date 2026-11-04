@@ -341,3 +341,74 @@ def test_live_calculation_requires_access_csrf_valid_inputs_and_current_version(
     invalid = env.post(client,preview,{**values,'ability.str.score':'invalid'})
     assert invalid.status_code == 422 and invalid.json()['errors']
     assert env.post(env.login(env.player2),preview,values).status_code == 404
+
+
+def autosave(client, path, values, token='a'*32):
+    return client.post(path+'/play-sheet',data=values,
+                       headers={'Accept':'application/json','X-Sheet-Save-Id':token})
+
+
+def test_autosave_saves_fields_and_totals_and_retries_are_idempotent(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    html = client.get(path).text
+    assert 'Save sheet</button>' not in html
+    values = SheetForm(html).values
+    values.update({'name':'New name','ability.dex.score':'18','initiative.misc':'4',
+                   'alignment':'NG','notes':'A recorded story','spell.1.used.0':'1'})
+    first = autosave(client,path,values)
+    assert first.status_code == 200 and first.json()['version'] == character.version+1
+    assert first.json()['values']['initiative.total'] == '8'
+    assert first.headers['cache-control'] == 'no-store'
+    repeated = autosave(client,path,values)
+    assert repeated.status_code == 200 and repeated.json() == first.json()
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        assert record.name == 'New name' and record.notes == 'A recorded story'
+        assert record.play_data['alignment'] == 'NG'
+        assert record.play_data['spell.1.used.0'] == '1'
+        assert len(list(db.scalars(select(AuditEvent).where(AuditEvent.event == 'character.play_sheet_saved')))) == 1
+    assert autosave(client,path,{**values,'notes':'Different changes'}).status_code == 409
+    values['version'] = str(first.json()['version'])
+    values['notes'] = 'A newer edit'
+    values.pop('spell.1.used.0')
+    second = autosave(client,path,values,'b'*32)
+    assert second.status_code == 200 and second.json()['version'] == first.json()['version']+1
+    assert autosave(client,path,{**values,'version':str(character.version)},'c'*32).status_code == 409
+    saved = SheetForm(client.get(path).text)
+    assert saved.values['notes'] == 'A newer edit' and 'spell.1.used.0' not in saved.values
+
+
+def test_autosave_validates_requests_and_preserves_data_on_failure(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    values = SheetForm(client.get(path).text).values
+    assert autosave(client,path,values,'invalid').status_code == 422
+    assert autosave(client,path,{**values,'csrf':'bad'}).status_code == 403
+    assert autosave(client,path,{**values,'version':'99'}).status_code == 409
+    invalid = autosave(client,path,{**values,'name':'','notes':'Do not save this'})
+    assert invalid.status_code == 422 and invalid.json()['errors']
+    other = env.login(env.player2)
+    assert autosave(other,path,{**values,'csrf':env.csrf(other)}).status_code == 404
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        assert record.name == character.name and record.notes == character.notes
+        assert record.version == character.version and record.play_data is None
+
+
+def test_autosave_retry_cannot_hide_a_later_edit_from_another_window(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    values = SheetForm(client.get(path).text).values
+    values['notes'] = 'First save'
+    assert autosave(client,path,values).status_code == 200
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        record.notes = 'Edit from another window'
+        db.commit()
+    assert autosave(client,path,values).status_code == 409
+    with Session(engine()) as db:
+        assert db.get(Character,character.id).notes == 'Edit from another window'

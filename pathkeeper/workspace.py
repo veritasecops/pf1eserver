@@ -1,3 +1,5 @@
+import json
+import re
 import secrets
 from datetime import timedelta
 
@@ -314,9 +316,10 @@ def render_character(ctx, character, values=None, errors=()):
     return response
 
 
-async def read_play_sheet(ctx, character):
+async def read_play_sheet(ctx, character, form=None):
     db = ctx.db
-    form = await read_form(ctx, max_fields=1024)
+    if form is None:
+        form = await read_form(ctx, max_fields=1024)
     verify_version(form, character)
     owner = db.get(User, character.owner_id)
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
@@ -345,8 +348,29 @@ async def character_play_sheet_calculate(character_id: int, request: Request, db
 async def character_play_sheet(character_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     character = get_character(ctx, character_id)
-    values, errors, base = await read_play_sheet(ctx, character)
+    autosave = 'application/json' in request.headers.get('accept','')
+    form = await read_form(ctx, max_fields=1024)
+    save_id = request.headers.get('x-sheet-save-id','')
+    fingerprint = None
+    if autosave:
+        if not re.fullmatch(r'[a-f0-9]{32}',save_id):
+            raise HTTPException(422,'Enter a valid automatic save identifier.')
+        # Serialize retries as well as writes, including a retry whose first
+        # response was lost after the transaction committed.
+        db.refresh(character,with_for_update=True)
+        character = get_character(ctx,character_id)
+        fingerprint = digest(json.dumps(sorted((key,value) for key,value in form.multi_items() if key != 'csrf')))
+        previous = (character.play_data or {}).get('autosave',{})
+        if previous.get('id') == save_id and previous.get('actor') == ctx.user.id:
+            if previous.get('version') != character.version:
+                raise HTTPException(409,'The character changed after this automatic save.')
+            if previous.get('fingerprint') != fingerprint:
+                raise HTTPException(409,'This save identifier was already used for different changes.')
+            return autosave_response(ctx,character)
+    values, errors, base = await read_play_sheet(ctx, character, form)
     if errors:
+        if autosave:
+            return JSONResponse({'errors':errors},status_code=422)
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
@@ -357,8 +381,24 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     if character.sheet_data:
         character.sheet_data = {**character.sheet_data, "input":{**character.sheet_data["input"],
                                 "name":character.name, "notes":character.notes}}
+    if autosave:
+        character.play_data = {**character.play_data,'autosave':{'id':save_id,'actor':ctx.user.id,'fingerprint':fingerprint,'version':character.version+1}}
     audit(db, ctx.user, "character.play_sheet_saved", f"Updated the deluxe play sheet for {character.name}.")
+    if autosave:
+        commit(db)
+        return autosave_response(ctx,character)
     return redirect(ctx, f"/characters/{character.id}", "Character sheet saved.")
+
+
+def autosave_response(ctx, character):
+    owner = ctx.db.get(User,character.owner_id)
+    campaign = ctx.db.get(Campaign,character.campaign_id) if character.campaign_id else None
+    gm = ctx.db.get(User,campaign.owner_id) if campaign else None
+    values = sheet_values(character,owner,campaign,gm)
+    locked = calculated_fields(character,values)
+    return JSONResponse({'version':character.version,'name':character.name,
+                         'values':{key:values[key] for key in locked},'readonly':sorted(locked)},
+                        headers={'Cache-Control':'no-store'})
 
 
 @router.get("/characters/{character_id}/edit")
