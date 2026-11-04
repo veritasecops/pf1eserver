@@ -31,3 +31,11 @@ Existing creation values populate the sheet. Player and Character class are read
 The character's name, race, class, level, and notes use the existing database fields. Migration 005 adds `characters.play_data`, a validated JSON record for the additional fields and overrides. Unchanged creation values continue to come from `sheet_data`; saving play values preserves the creation snapshot and roll history. Manual play edits can record level progression without implementing automatic advancement or multiclassing. The first-level creation wizard remains available for first-level characters.
 
 Owners, administrators, and the assigned campaign's authorized Game Master retain their existing access. Saving requires CSRF validation and the latest record version. A stale form cannot overwrite another edit. Validation errors preserve entered values for correction. Campaign text on the sheet is a descriptive label; Manage character controls actual ownership and campaign membership.
+
+## Character image
+
+Choose the image beside the character name to upload a JPG, PNG, or WebP portrait. Images save immediately, separately from text autosave. Use Remove image to clear the portrait. The browser resizes files up to 10 MB before upload; the server validates and re-encodes them as bounded JPEG images. The existing proxy request limit remains unchanged.
+
+Portraits are private and use the same access rules as the character. The creation wizard keeps its image with the private draft, displays it beside the name and in the preview, and carries it to the completed character. Discarding a draft leaves an existing character's image unchanged. An editing wizard only replaces the saved portrait when its image was explicitly changed.
+
+Migration 007 adds portrait blobs to characters and drafts. Portraits are included in normal database backups. Uploading an image does not change the text-edit revision or interrupt automatic saving.

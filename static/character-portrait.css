@@ -1,0 +1,23 @@
+.character-name-header { display:flex; align-items:center; gap:18px; margin:0 0 16px; min-width:0; }
+.character-name-header>div:last-child { min-width:0; }
+.character-name-header .deluxe-character-title { margin:0; }
+.character-portrait-editor { flex:0 0 84px; width:84px; }
+.character-portrait-picker { position:relative; display:block; width:84px; height:84px; overflow:hidden; border:1px solid #a78754; border-radius:4px; background:#ead8b4; cursor:pointer; }
+.character-portrait-picker>img { width:100%; height:100%; object-fit:cover; display:block; }
+.character-portrait-placeholder { display:grid; place-items:center; width:100%; height:100%; color:#795336; }
+.character-portrait-placeholder>.icon { width:38px; height:38px; }
+.character-portrait-edit { position:absolute; bottom:0; right:0; padding:4px; background:#fff4db; color:#6f3325; display:flex; }
+.character-portrait-edit>.icon { width:16px; height:16px; }
+.character-portrait-picker>input[type=file] { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+.character-portrait-picker:focus-within { outline:3px solid #9a5a19; outline-offset:3px; }
+.character-portrait-remove { font-size:.875rem; display:block; margin-top:5px; text-decoration:underline; }
+.character-portrait-status { font-size:.875rem; margin:0 0 14px; }
+.pw-preview-identity { display:flex; gap:12px; align-items:center; }
+.pw-preview-identity>img { width:56px; height:64px; flex-shrink:0; object-fit:cover; border-radius:3px; }
+.pw-review-hero>img { width:72px; height:80px; object-fit:cover; border-radius:3px; }
+@media(max-width:650px) { .character-name-header { gap:14px; } .character-portrait-editor { flex-basis:68px; width:68px; } .character-portrait-picker { width:68px; height:68px; } }
+@media print { .character-portrait-editor input,.character-portrait-edit,.character-portrait-remove,.character-portrait-status { display:none!important; } }
+.character-portrait-editor .character-portrait-remove { padding:0; font-size:.875rem; white-space:nowrap; }
+.pw-heading .character-portrait-remove { color:#f0d8a6; }
+.character-name-header h1 { overflow-wrap:anywhere; }
+@media(max-width:650px) { .character-portrait-editor .character-portrait-remove { white-space:normal; width:100%; line-height:1.35; } }

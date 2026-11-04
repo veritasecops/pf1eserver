@@ -17,6 +17,7 @@ dependencies = [
   "pydantic-settings>=2.10,<3",
   "email-validator>=2.3,<3",
   "tzdata>=2025",
+  "pillow>=13,<14",
 ]
 
 [dependency-groups]

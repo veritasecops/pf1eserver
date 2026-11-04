@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, JSON, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
 LONG_TEXT = Text().with_variant(MEDIUMTEXT(), "mysql")
+PORTRAIT = LargeBinary().with_variant(MEDIUMBLOB(), "mysql")
 
 
 def utcnow() -> datetime:
@@ -90,6 +92,7 @@ class Character(Base):
     notes: Mapped[str] = mapped_column(LONG_TEXT, default="")
     sheet_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     play_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    portrait: Mapped[bytes | None] = mapped_column(PORTRAIT, nullable=True, deferred=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     __mapper_args__ = {"version_id_col": version}
@@ -202,6 +205,8 @@ class CharacterDraft(Base):
     editing_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
     existing_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     data: Mapped[dict] = mapped_column(JSON)
+    portrait_changed: Mapped[bool] = mapped_column(Boolean, default=False)
+    portrait: Mapped[bytes | None] = mapped_column(PORTRAIT, nullable=True, deferred=True)
     step: Mapped[int] = mapped_column(Integer, default=1)
     version: Mapped[int] = mapped_column(Integer, default=1)
     completed_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)

@@ -55,7 +55,8 @@ def migrate(admin_engine):
     additions = {
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
-        "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL"},
+        "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL"},
+        "character_drafts": {"portrait": "MEDIUMBLOB NULL", "portrait_changed": "BOOLEAN NOT NULL DEFAULT 0"},
     }
     for table, columns in additions.items():
         existing = {column["name"] for column in inspect(admin_engine).get_columns(table)}
@@ -86,4 +87,7 @@ def migrate(admin_engine):
             remove_automatic_racial_summaries(db)
             db.add(SchemaMigration(version=6, name="remove_automatic_racial_trait_summaries"))
             db.commit()
-    print("Database migrations applied through 006 (removed automatic racial trait summaries).")
+        if not db.get(SchemaMigration, 7):
+            db.add(SchemaMigration(version=7, name="character_and_draft_portrait_images"))
+            db.commit()
+    print("Database migrations applied through 007 (character and draft portrait images).")

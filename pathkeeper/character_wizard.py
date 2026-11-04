@@ -4,7 +4,7 @@ import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from .character_rules import calculate, clean, defaults
@@ -14,6 +14,7 @@ from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BON
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
 from .ui import redirect, render
 from .workspace import character_options, character_values
+from .portraits import image_response, portrait_url, uploaded_portrait
 
 router = APIRouter()
 DICE = (4,6,8,10,12,20,100)
@@ -47,13 +48,15 @@ def display_wizard(ctx, draft):
     options = character_options(ctx,include_owners=False)
     rolls = roll_history(ctx.db, draft.id)
     data = {**draft.data,"owner_id":ctx.user.id} if draft.mode == "create" else draft.data
-    boot = {"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
+    image_url = portrait_url(ctx.db,draft)
+    boot = {"portrait_url":image_url,"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
             "computed":calculate(data,rolls),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":CLASSES,"skills":SKILLS,"feats":FEATS,"equipment":EQUIPMENT,"alignments":ALIGNMENTS,
             "point_cost":POINT_COST,"spell_suggestions":SPELL_SUGGESTIONS,"monk_bonus":MONK_BONUS,
             "campaigns":[{"id":campaign.id,"name":campaign.name} for campaign in options["campaigns"]]}
-    return render(ctx,"character_wizard.html",title="Character creation",draft=draft,boot=boot,outline=OUTLINE)
+    return render(ctx,"character_wizard.html",title="Character creation",draft=draft,boot=boot,outline=OUTLINE,
+                  portrait_url=image_url,portrait_endpoint=f"/api/character-drafts/{draft.id}/portrait")
 
 
 @router.get("/characters/new")
@@ -91,7 +94,7 @@ async def edit_sheet(character_id: int,request: Request,db: Session = Depends(ge
         data = dict(character.sheet_data["input"])
         data.update(name=character.name,notes=character.notes,owner_id=character.owner_id,campaign_id=character.campaign_id)
         draft = CharacterDraft(id=secrets.token_hex(16),actor_id=ctx.user.id,mode="edit",editing_id=character.id,
-                               existing_version=character.version,data=data)
+                               existing_version=character.version,data=data,portrait=character.portrait)
         db.add(draft)
         db.flush()
         # Preserve provenance by copying only the original sheet's dice records.
@@ -193,6 +196,9 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     if data["method"] in {"standard","classic","heroic"}: active_rolls.add(data["ability_roll"])
     if data["wealth_method"] == "rolled": active_rolls.add(data["wealth_roll"])
     selected = [item for key,item in rolls.items() if key in active_rolls]
+    if not existing or draft.portrait_changed:
+        character.portrait = draft.portrait
+    draft.portrait = None
     character.sheet_data = {"schema":1,"input":data,"computed":computed,"rolls":selected,"source":OUTLINE}
     db.add(character)
     db.flush()
@@ -211,3 +217,36 @@ async def discard(draft_id: str,request: Request,db: Session = Depends(get_db)):
     db.delete(draft)
     commit(db)
     return {"location":"/characters"}
+
+
+@router.get('/api/character-drafts/{draft_id}/portrait')
+async def draft_portrait(draft_id: str,request: Request,db: Session = Depends(get_db)):
+    ctx = context(request,db)
+    draft = get_draft(ctx,draft_id)
+    if draft.finalized_at and draft.completed_id:
+        character = get_character(ctx,draft.completed_id)
+        return image_response(character.portrait)
+    return image_response(draft.portrait)
+
+
+@router.post('/api/character-drafts/{draft_id}/portrait')
+async def draft_portrait_upload(draft_id: str,request: Request,db: Session = Depends(get_db)):
+    ctx = context(request,db)
+    get_draft(ctx,draft_id)
+    content = await uploaded_portrait(ctx)
+    draft = get_draft(ctx,draft_id,True)
+    if draft.finalized_at: raise HTTPException(409,'This draft has already been finalized.')
+    db.execute(update(CharacterDraft).where(CharacterDraft.id == draft.id).values(portrait=content,portrait_changed=True,updated_at=utcnow()))
+    commit(db)
+    return {'url':f'/api/character-drafts/{draft.id}/portrait?v={secrets.token_hex(8)}'}
+
+
+@router.post('/api/character-drafts/{draft_id}/portrait/remove')
+async def draft_portrait_remove(draft_id: str,request: Request,db: Session = Depends(get_db)):
+    ctx = context(request,db)
+    draft = get_draft(ctx,draft_id,True)
+    await read_form(ctx)
+    if draft.finalized_at: raise HTTPException(409,'This draft has already been finalized.')
+    db.execute(update(CharacterDraft).where(CharacterDraft.id == draft.id).values(portrait=None,portrait_changed=True,updated_at=utcnow()))
+    commit(db)
+    return {'url':None}

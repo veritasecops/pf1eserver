@@ -17,6 +17,7 @@ from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
+from .portraits import portrait_url
 
 router = APIRouter()
 
@@ -310,6 +311,7 @@ def render_character(ctx, character, values=None, errors=()):
     gm = ctx.db.get(User, campaign.owner_id) if campaign else None
     response = render(ctx, "character.html", title=character.name, character=character, owner=owner, campaign=campaign,
                       can_delete=can_delete_character(ctx.user, character),
+                      portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       **view_context(character, owner, campaign, gm, values, errors))
     if errors:
         response.status_code = 422
