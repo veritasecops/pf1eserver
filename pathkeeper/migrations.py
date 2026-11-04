@@ -27,6 +27,26 @@ def remove_manual_class_fields(db):
                 draft.existing_version = character.version
 
 
+def remove_automatic_racial_summaries(db):
+    from .pf1_data import RACES
+
+    summaries = {race['traits'] for race in RACES.values() if race.get('traits')}
+    changed = {}
+    for character in db.scalars(select(Character).where(Character.play_data.is_not(None)).with_for_update()):
+        saved = character.play_data
+        cleaned = {key:value for key,value in saved.items()
+                   if not (key.startswith('feature.') and isinstance(value,str) and value in summaries)}
+        if cleaned != saved:
+            changed[character.id] = (character.version,character)
+            character.play_data = cleaned
+    db.flush()
+    for draft in db.scalars(select(CharacterDraft).where(CharacterDraft.mode == 'edit').with_for_update()):
+        if draft.editing_id in changed:
+            previous,character = changed[draft.editing_id]
+            if draft.existing_version == previous:
+                draft.existing_version = character.version
+
+
 def migrate(admin_engine):
     # MariaDB DDL commits separately. Complete all DDL before opening a read
     # transaction, so snapshot isolation cannot retain pre-DDL table definitions.
@@ -62,4 +82,8 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 5):
             db.add(SchemaMigration(version=5, name="editable_deluxe_character_play_records"))
             db.commit()
-    print("Database migrations applied through 005 (editable deluxe character play records).")
+        if not db.get(SchemaMigration, 6):
+            remove_automatic_racial_summaries(db)
+            db.add(SchemaMigration(version=6, name="remove_automatic_racial_trait_summaries"))
+            db.commit()
+    print("Database migrations applied through 006 (removed automatic racial trait summaries).")

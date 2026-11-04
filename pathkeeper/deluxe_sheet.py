@@ -111,7 +111,6 @@ def baseline(character, owner, campaign=None, gm=None):
         total = mod if second else values.get('skill_totals',{}).get(key,mod)
         data.update({f'skill.{key}.total':total,f'skill.{key}.ability':mod,f'skill.{key}.ranks':rank,f'skill.{key}.misc':total-mod-rank-(3 if rank and key in cls.get('skills',[]) else 0)})
     feats = [entry['name']+(f" ({entry['choice']})" if entry.get('choice') else '') for entry in values.get('feats',[])] + values.get('automatic_feats',[])
-    if race.get('traits'): feats.append(race['traits'])
     for i,feat in enumerate(feats[:56]): data[f'feature.{i}'] = feat
     equipment = values.get('equipment',[])
     for i,item in enumerate(equipment[:56]):

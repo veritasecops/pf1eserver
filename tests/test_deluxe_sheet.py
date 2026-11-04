@@ -265,3 +265,41 @@ def test_existing_dodge_bonus_is_separated_once_and_survives_repeated_saves(env)
         assert form.values['ac.total'] == '17'
         assert form.values['ac.flat'] == '16'
         assert env.post(client,path+'/play-sheet',form.values).status_code == 303
+
+
+def test_racial_summary_is_not_added_and_cleanup_preserves_custom_features(env):
+    from pathkeeper.migrations import remove_automatic_racial_summaries
+    from pathkeeper.models import CharacterDraft
+    from pathkeeper.pf1_data import RACES
+
+    character = seed_character(env.player)
+    data = fighter(defaults(env.player.id))
+    summary = RACES['human']['traits']
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        record.sheet_data = {'input':data,'computed':calculate(data,{}),'rolls':[]}
+        record.play_data = {'feature.8':summary,'feature.9':'Custom racial ability','notes':summary}
+        db.flush()
+        current_version = record.version
+        db.add_all([CharacterDraft(id='current-edit',actor_id=env.player.id,mode='edit',editing_id=record.id,
+                                   existing_version=current_version,data=data),
+                    CharacterDraft(id='stale-edit',actor_id=env.player.id,mode='edit',editing_id=record.id,
+                                   existing_version=current_version-1,data=data)])
+        db.commit()
+        owner = db.get(User,env.player.id)
+        assert summary not in [value for key,value in baseline(record,owner).items() if key.startswith('feature.')]
+        remove_automatic_racial_summaries(db)
+        db.commit()
+        assert 'feature.8' not in record.play_data
+        assert record.play_data['feature.9'] == 'Custom racial ability'
+        assert record.play_data['notes'] == summary
+        assert db.get(CharacterDraft,'current-edit').existing_version == record.version
+        assert db.get(CharacterDraft,'stale-edit').existing_version == current_version-1
+        version = record.version
+        remove_automatic_racial_summaries(db)
+        db.commit()
+        assert record.version == version
+    client = env.login(env.player)
+    form = SheetForm(client.get(f'/characters/{character.id}').text)
+    assert summary not in [value for key,value in form.values.items() if key.startswith('feature.')]
+    assert form.values['feature.9'] == 'Custom racial ability'
