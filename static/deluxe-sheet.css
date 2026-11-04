@@ -113,3 +113,5 @@
 .ds-weapon-reference{display:block;margin:4px 6px 6px;font-size:0.875rem;line-height:1.35;text-decoration:underline;color:var(--ink);white-space:normal}.ds-weapon-reference[hidden]{display:none}.ds-weapon-reference:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 
 .ds-weapon-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:20px}.ds-weapon-heading h3{flex:1;margin:0}.ds-weapon-heading .button{margin:8px 0;font-size:1rem}.ds-weapons{min-width:1000px}.ds-weapons th:nth-child(2){width:70px}
+.ds-page input[data-equipment-equipped]{display:block;width:22px;height:22px;margin:8px auto;accent-color:#773626;cursor:pointer}.ds-page input[data-equipment-equipped]:disabled{opacity:.35;cursor:default}.ds-page input[data-equipment-equipped]:focus-visible{outline:2px solid #94542b;outline-offset:3px}.ds-page .ds-gear th:first-child{width:55%}.ds-page .ds-gear th:nth-child(2){width:70px}.ds-page .ds-gear{min-width:250px}
+@media(max-width:1600px){.ds-gear-columns{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.ds-gear-columns{grid-template-columns:1fr}}

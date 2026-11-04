@@ -220,11 +220,8 @@ async def roll(draft_id: str,request: Request,db: Session = Depends(get_db)):
         dice = [secrets.randbelow(6)+1 for _ in range(CLASSES[class_id]["wealth_dice"])]
         result = {"dice":dice,"sides":6,"class_id":class_id,"total":sum(dice)*10,"gold_cp":sum(dice)*1000,"modifier":0}
     elif purpose == "free":
-        sides,count,modifier = integer(form,"sides",4,100),integer(form,"count",1,20),integer(form,"modifier",-1000,1000)
-        if sides not in DICE: raise HTTPException(422,"Choose d4, d6, d8, d10, d12, d20, or d100.")
-        values = [secrets.randbelow(sides)+1 for _ in range(count)]
-        result = {"dice":values,"sides":sides,"total":sum(values)+modifier,"modifier":modifier}
-        if sides == 100: result["percentile"] = [{"tens":value//10*10 if value != 100 else 0,"ones":value%10} for value in values]
+        from .character_dice import free_roll
+        result=free_roll(form)
     else: raise HTTPException(422,"Choose a supported roll purpose.")
     record = DiceRoll(id=secrets.token_hex(16),draft_id=draft.id,actor_id=ctx.user.id,request_id=key,purpose=purpose,result=result)
     db.add(record)

@@ -21,6 +21,7 @@ from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
 from .sheet_formulas import sheet_formulas
+from .equipment_state import equipment_groups, equipped_values, sync_equipped
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
 
 router = APIRouter()
@@ -338,6 +339,7 @@ async def read_play_sheet(ctx, character, form=None):
     locked = calculated_fields(character, current)
     values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),load_catalog(db).get('deities',{}),current.get('deity',''))
     if not errors:
+        sync_equipped(character,values,current)
         recalculate(character, values)
     return values, errors, baseline(character, owner, campaign, gm)
 
@@ -407,7 +409,7 @@ def autosave_response(ctx, character):
     gm = ctx.db.get(User,campaign.owner_id) if campaign else None
     values = sheet_values(character,owner,campaign,gm)
     locked = calculated_fields(character,values)
-    return JSONResponse({'version':character.version,'name':character.name,
+    return JSONResponse({'version':character.version,'name':character.name,'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values),
                          'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
                          'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db))},

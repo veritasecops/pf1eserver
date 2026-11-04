@@ -17,13 +17,7 @@
       <details class="pw-discard"><summary>Discard this draft</summary><p>The unfinished sheet and its draft dice history will be removed. An existing saved character is preserved.</p><button class="button danger small" type="button" id="pw-discard">Discard draft</button></details>
     </div>
     <aside class="pw-aside">
-      <section class="pw-dice-tray"><div class="pw-dice-title"><span>{{ icon('spark') }}DICE TRAY</span><span class="pw-live-dot"></span></div>
-        <canvas id="pw-dice-canvas" aria-hidden="true"></canvas>
-        <div class="pw-dice-result" id="pw-dice-result" role="status" aria-live="polite"><strong>Ready to roll</strong><span class="secondary-text">Choose your dice below.</span></div>
-        <div class="pw-dice-types" id="pw-dice-types" aria-label="Dice types">{% for sides in [4,6,8,10,12,20,100] %}<button type="button" data-die="{{ sides }}" aria-pressed="{{ 'true' if sides == 20 else 'false' }}">d{{ sides }}</button>{% endfor %}</div>
-        <div class="pw-dice-controls"><label>Dice<input type="number" id="pw-dice-count" value="1" min="1" max="20" aria-label="Number of dice"></label><label>Modifier<input type="number" id="pw-dice-modifier" value="0" min="-1000" max="1000" aria-label="Dice modifier"></label></div>
-        <button class="button primary full-button" type="button" id="pw-roll">Roll 1d20</button><p class="pw-percentile-note">d100 uses tens and units dice. 00 + 0 means 100.</p>
-      </section>
+      {% include 'dice_tray.html' %}
       <section class="card pw-preview"><header><div class="pw-preview-identity"><img data-character-portrait {% if portrait_url %}src="{{ portrait_url }}"{% endif %} alt="Character portrait"{% if not portrait_url %} hidden{% endif %}><div><span class="overline">YOUR CHARACTER</span><h2 id="pw-preview-name">An unwritten legend</h2><p id="pw-preview-class">Choose a race and class</p></div></div></header><div id="pw-preview-abilities" class="pw-mini-abilities"></div><div id="pw-preview-stats" class="pw-preview-stats"></div></section>
       <details class="card pw-roll-history"><summary>Recent rolls <span id="pw-roll-count">0</span></summary><ol id="pw-roll-history"></ol><p>Results are saved with this draft. Your GM decides which methods and rerolls to allow.</p></details>
     </aside>

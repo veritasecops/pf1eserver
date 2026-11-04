@@ -8,9 +8,9 @@ from .sheet_calculations import calculated_fields, recalculate, base_speed_race
 from .sheet_formulas import sheet_formulas
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
 
-WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
-ARMOR_COLUMNS = [('name','Item'),('quantity','Quantity'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
-GEAR_COLUMNS = [('name','Item'),('weight','Weight')]
+WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('equipped','Equipped'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
+ARMOR_COLUMNS = [('name','Item'),('quantity','Quantity'),('equipped','Equipped'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
+GEAR_COLUMNS = [('name','Item'),('equipped','Equipped'),('weight','Weight')]
 FACTION_COLUMNS = [('type','Type'),('value','Value')]
 SAVES = [('fortitude','Fortitude','con'),('reflex','Reflex','dex'),('will','Will','wis')]
 SKILL_ROWS = sorted([(key,meta) for key,meta in SKILLS.items()],key=lambda item:item[1]['name'])
@@ -56,6 +56,8 @@ for i in range(3):
 for prefix,columns,count in [('weapon',WEAPON_COLUMNS,6),('armor',ARMOR_COLUMNS,6),('gear',GEAR_COLUMNS,56),('faction',FACTION_COLUMNS,4)]:
     for i in range(count):
         for part,title in columns: register(f'{prefix}.{i}.{part}',f'{prefix.capitalize()} {i+1}: {title}')
+for prefix,count in [('weapon',6),('armor',6),('gear',56)]:
+    for row in range(count): FIELDS[f'{prefix}.{row}.equipped']['kind']='checkbox'
 for i in range(6): FIELDS[f'weapon.{i}.notes']['maximum'] = 5000
 for i in range(56): register(f'feature.{i}',f'Feat, class or racial ability {i+1}',maximum=500)
 for key,meta in SKILL_ROWS:
@@ -139,11 +141,14 @@ def baseline(character, owner, campaign=None, gm=None):
     feats = [entry['name']+(f" ({entry['choice']})" if entry.get('choice') else '') for entry in values.get('feats',[])] + values.get('automatic_feats',[])
     for i,feat in enumerate(feats[:56]): data[f'feature.{i}'] = feat
     equipment = values.get('equipment',[])
+    equipped={inputs.get(slot) for slot in ('weapon','armor','shield') if inputs.get(slot)}
     for i,item in enumerate(equipment[:56]):
+        data[f'gear.{i}.equipped']='1' if item['id'] in equipped else ''
         data[f'gear.{i}.name'] = f"{item['name']} × {item['quantity']}"
         data[f'gear.{i}.weight'] = str(item['weight']*item['quantity']*(.5 if small and item['kind'] in {'weapon','armor','shield'} else 1)) if item.get('weight') is not None else item.get('weight_text','Special')
     for i,item in enumerate([e for e in equipment if e['kind'] == 'weapon'][:6]):
         data[f'weapon.{i}.name'] = item['name']
+        data[f'weapon.{i}.equipped']='1' if item['id'] in equipped else ''
         data[f'weapon.{i}.quantity'] = str(item['quantity'])
         for part,source in [('critical','critical'),('type','damage_type'),('range','range')]:
             data[f'weapon.{i}.{part}'] = item.get(source,'')
@@ -155,6 +160,7 @@ def baseline(character, owner, campaign=None, gm=None):
             data[f'weapon.{i}.damage'] = str(values.get('weapon_damage',''))+(f'{modifier:+d}' if modifier else '')
     from .armor import armor_fields
     for i,item in enumerate([e for e in equipment if e['kind'] in {'armor','shield'}][:6]):
+        data[f'armor.{i}.equipped']='1' if item['id'] in equipped else ''
         for part,value in armor_fields(item,item['quantity'],data.get('size','')).items(): data[f'armor.{i}.{part}']=value
     cp = values.get('remaining_cp',0)
     data['money.gp'],cp = divmod(cp,100)
@@ -255,7 +261,8 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     from .treasure import COIN_TYPES, treasure
     try: treasure_gp=format(Decimal(treasure(values))/100,'.2f').rstrip('0').rstrip('.')
     except HTTPException: treasure_gp=None
-    return dict(deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
+    from .equipment_state import equipment_groups
+    return dict(equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog,(character.sheet_data or {}).get('input',{}).get('class_id','')) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

@@ -40,6 +40,7 @@
       if (result.formulas) window.PathkeeperFormulas?.update(input,result.formulas[input.name]);
       if (locked.has(input.name)) input.value = result.values[input.name];
     }
+    window.PathkeeperEquipment?.update(result.equipment_state,result.equipment_groups);
     document.getElementById('sheet-character-name').textContent = result.name;
     document.title = `${result.name} · Pathkeeper`;
     const deleteName = document.getElementById('delete-character-name');
@@ -151,7 +152,7 @@
     applyPurchase(result) {
       for (const [name,value] of Object.entries(result.purchase_fields)) {
         const input = form.elements.namedItem(name);
-        if (input) input.value = value;
+        if (input) {if(input.type==='checkbox')input.checked=value==='1';else input.value=value;}
       }
       form.elements.namedItem('version').value = String(result.version);
       const deleteVersion = document.querySelector('#delete-character input[name="version"]');
