@@ -52,7 +52,7 @@ sudo .venv/bin/python -m pytest -q
 
 Tests create a temporary MariaDB database/user and seed synthetic accounts, then clean them up. They do not use the production user store. Run as root on the server to permit temporary database provisioning. Browser QA likewise uses a separate, loopback-only temporary instance.
 
-The supplied `manage init` creates the database/tables and a DML-only runtime user using local MariaDB root socket authentication. Existing installations run `sudo .venv/bin/python -m pathkeeper.manage migrate` to apply explicit additive migrations. Migration 001 introduces email configuration and delivery history, starts delivery disabled, and preserves existing accounts and campaigns.
+The supplied `manage init` creates the database/tables and a DML-only runtime user using local MariaDB root socket authentication. Existing installations run `sudo .venv/bin/python -m pathkeeper.manage migrate` to apply explicit versioned schema and data migrations. Migration 001 introduces email configuration and delivery history, starts delivery disabled, and preserves existing accounts and campaigns.
 
 Migration 002 adds the Application Base URL, account verification fields, account tokens, and the encrypted outbox. Install `deploy/pf1eserver-mail.service`, reload systemd, and enable `pf1eserver-mail` after migrating. Set the canonical address under Administration → Email Configuration. Link creation does not trust the incoming Host header. Web access logs are disabled; keep tokens out of external proxy logs too. See `/help/account-email` for operation and recovery.
 
@@ -61,3 +61,5 @@ Migration 003 adds structured first-level sheets, character drafts, and dice his
 Email adapters use Python's standard `smtplib` and `urllib` libraries without an additional provider SDK. `pathkeeper.email_delivery.send_email` takes an immutable settings snapshot and returns accepted/failed/unknown; application callers commit attempt state before running it in a worker thread and persist the result afterward. Brevo endpoint and authentication follow the [official API guide](https://developers.brevo.com/docs/send-a-transactional-email). SMTP TLS modes follow the [Python documentation](https://docs.python.org/3.13/library/smtplib.html).
 
 Pathfinder is a trademark of Paizo Inc. Pathkeeper is an independent project.
+
+Migration 004 removes the retired class-notes and additional-class-skill fields from stored drafts and sheets, and recalculates sheets using each class’s fixed skill list. Any catalog skill can receive ranks; a trained class skill gains +3. Back up, stop the web and mail services, run `sudo .venv/bin/python -m pathkeeper.manage migrate`, then start the services. Draft progress, rank assignments, dice history, and unrelated character data are preserved.

@@ -10,8 +10,8 @@ from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BON
 def defaults(owner_id):
     return {"name":"", "owner_id":owner_id, "campaign_id":None, "method":"point_buy", "point_budget":15,
             "abilities":{key:10 for key in ABILITIES}, "ability_roll":"", "assignments":list(range(6)),
-            "race":"human", "flex_ability":"str", "class_id":"", "favored_bonus":"hp", "class_notes":"", "vigilante_specialization":"stalker",
-            "skills":{}, "extra_class_skills":[], "skill_specialties":"", "feats":[], "bonus_feat":{},
+            "race":"human", "flex_ability":"str", "class_id":"", "favored_bonus":"hp", "vigilante_specialization":"stalker",
+            "skills":{}, "skill_specialties":"", "feats":[], "bonus_feat":{},
             "adaptability":"perception", "wealth_method":"average", "wealth_roll":"", "manual_gold":0,
             "equipment":{}, "armor":"", "shield":"", "weapon":"", "extra_spending":0,
             "inventory_notes":"", "alignment":"N", "age":"", "gender":"", "appearance":"",
@@ -31,7 +31,7 @@ def clean(payload, owner_id):
     if set(payload) - set(data):
         raise HTTPException(422, "The draft contains unsupported fields. Reload the wizard.")
     data.update(deepcopy(payload))
-    for key, maximum in {"name":150,"class_notes":3000,"skill_specialties":1000,"inventory_notes":3000,"age":30,
+    for key, maximum in {"name":150,"skill_specialties":1000,"inventory_notes":3000,"age":30,
                          "gender":80,"appearance":2000,"personality":2000,"languages":500,"deity":100,"notes":10000,"spell_notes":3000}.items():
         if not isinstance(data[key], str) or len(data[key]) > maximum:
             raise HTTPException(422, f"{key.replace('_',' ').capitalize()} is too long or invalid.")
@@ -59,8 +59,6 @@ def clean(payload, owner_id):
     if not isinstance(data["skills"], dict) or set(data["skills"]) - set(SKILLS):
         raise HTTPException(422, "Choose skills from the skill list.")
     data["skills"] = {key:bounded_int(value,0,1,"First-level skill ranks") for key,value in data["skills"].items()}
-    if not isinstance(data["extra_class_skills"], list) or len(data["extra_class_skills"]) > 15 or any(not isinstance(key,str) or key not in SKILLS for key in data["extra_class_skills"]):
-        raise HTTPException(422, "Choose valid extra class skills.")
     if not isinstance(data["adaptability"],str) or data["adaptability"] not in SKILLS:
         raise HTTPException(422, "Choose a skill for half-elf adaptability.")
     if not isinstance(data["feats"], list) or len(data["feats"]) > 2:
@@ -155,8 +153,7 @@ def calculate(data, rolls):
     skill_budget = max(1,(cls["ranks"] if cls else 0) + modifiers["int"]) + (data["race"] == "human") + (data["favored_bonus"] == "skill")
     ranks_used = sum(data["skills"].values())
     if ranks_used != skill_budget: error(5, f"Allocate exactly {skill_budget} skill ranks; {ranks_used} are assigned.")
-    class_skills = set((cls["skills"] if cls else []) + data["extra_class_skills"])
-    if data["extra_class_skills"] and not data["class_notes"]: error(5, "Explain the source of extra class skills in Class choices.")
+    class_skills = set(cls["skills"] if cls else [])
     gold = (cls["wealth_dice"] * 3500 if cls else 0)
     if data["wealth_method"] == "rolled":
         wealth = rolls.get(data["wealth_roll"])

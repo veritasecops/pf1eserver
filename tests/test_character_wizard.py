@@ -322,7 +322,7 @@ def test_wizard_edit_preserves_sheet_and_detects_stale_character(env):
     assert finish(env,c,edit_id,edit_version).status_code==409
 
 
-@pytest.mark.parametrize("override",[{"abilities":[]},{"armor":[]},{"extra_class_skills":[{}]},{"adaptability":[]},{"point_budget":15.0},{"class_id":"armiger"},{"scores":{"str":99}}])
+@pytest.mark.parametrize("override",[{"abilities":[]},{"armor":[]},{"extra_class_skills":["perception"]},{"class_notes":"Legacy class notes"},{"adaptability":[]},{"point_budget":15.0},{"class_id":"armiger"},{"scores":{"str":99}}])
 def test_malformed_or_third_party_draft_inputs_are_rejected(env,override):
     c,draft_id,version,data=start(env)
     data.update(override)
@@ -347,12 +347,31 @@ def test_first_level_feat_prerequisites_are_enforced(env):
     assert any("Strength 13" in error["message"] for error in calculate(clean(data,env.player.id),{})["errors"])
 
 
-def test_vigilante_bab_uses_explicit_specialization_not_freeform_notes(env):
-    data=defaults(env.player.id)
-    data.update(class_id="vigilante",class_notes="Stalker, not an avenger.")
-    assert calculate(clean(data,env.player.id),{})["bab"]==0
-    data["vigilante_specialization"]="avenger"
-    assert calculate(clean(data,env.player.id),{})["bab"]==1
+def test_any_catalog_skill_can_receive_a_rank_without_changing_class_skills(env):
+    data = fighter(defaults(env.player.id))
+    data["skills"] = {"climb":1,"perception":1,"knowledge-arcana":1}
+    result = calculate(clean(data,env.player.id),{})
+    assert not result["errors"]
+    assert "climb" in result["class_skills"]
+    assert "perception" not in result["class_skills"]
+    assert "knowledge-arcana" not in result["class_skills"]
+    # Climb includes +1 rank, +1 Strength, +3 class skill, and -2 shield penalty.
+    assert result["skill_totals"]["climb"] == 3
+    assert result["skill_totals"]["perception"] == 1
+    assert result["skill_totals"]["knowledge-arcana"] == 1
+    data["skills"] = {"climb":0,"perception":1,"knowledge-arcana":1,"ride":1}
+    untrained = calculate(clean(data,env.player.id),{})
+    assert not untrained["errors"]
+    assert untrained["class_skills"] == result["class_skills"]
+    assert untrained["skill_totals"]["climb"] == -1
+
+
+def test_vigilante_bab_uses_explicit_specialization(env):
+    data = defaults(env.player.id)
+    data["class_id"] = "vigilante"
+    assert calculate(clean(data,env.player.id),{})["bab"] == 0
+    data["vigilante_specialization"] = "avenger"
+    assert calculate(clean(data,env.player.id),{})["bab"] == 1
 
 
 def test_draft_discard_preserves_existing_characters(env):
@@ -379,3 +398,63 @@ def test_wizard_migration_preserves_existing_characters(env,isolated_database):
         restored=db.get(Character,character.id)
         assert restored.name=="A legacy hero" and restored.sheet_data is None
         assert db.get(SchemaMigration,3)
+
+
+def test_migration_removes_retired_fields_and_recalculates_fixed_class_skills(env,isolated_database):
+    from pathkeeper.migrations import migrate
+    from pathkeeper.pf1_data import CLASSES
+
+    client,completed_draft_id,version,data = start(env)
+    data = fighter(data)
+    data["notes"] = "Keep this character's story."
+    saved = save(env,client,completed_draft_id,version,data)
+    character_path = finish(env,client,completed_draft_id,saved.json()["version"]).json()["location"]
+    character_id = int(character_path.rsplit("/",1)[1])
+    pending_id,current_edit_id,stale_edit_id = [secrets.token_hex(16) for _ in range(3)]
+    with Session(engine()) as db:
+        character = db.get(Character,character_id)
+        old_input = {**character.sheet_data["input"],"class_notes":"Remove this source note.",
+                     "extra_class_skills":["perception"]}
+        old_computed = deepcopy(character.sheet_data["computed"])
+        old_computed["class_skills"].append("perception")
+        old_computed["skill_totals"]["perception"] += 3
+        character.sheet_data = {**character.sheet_data,"input":old_input,"computed":old_computed}
+        completed = db.get(CharacterDraft,completed_draft_id)
+        completed.data = old_input
+        db.flush()
+        old_character_version = character.version
+        db.add_all([
+            CharacterDraft(id=pending_id,actor_id=env.player.id,data=old_input,step=5),
+            CharacterDraft(id=current_edit_id,actor_id=env.player.id,data=old_input,step=5,mode="edit",
+                           editing_id=character_id,existing_version=old_character_version),
+            CharacterDraft(id=stale_edit_id,actor_id=env.player.id,data=old_input,step=5,mode="edit",
+                           editing_id=character_id,existing_version=old_character_version-1),
+        ])
+        db.flush()
+        db.add(DiceRoll(id=secrets.token_hex(16),draft_id=pending_id,actor_id=env.player.id,
+                       request_id=secrets.token_hex(16),purpose="free",result={"sides":6,"dice":[4],"total":4,"modifier":0}))
+        db.commit()
+    migrate(isolated_database)
+    with Session(engine()) as db:
+        character = db.get(Character,character_id)
+        assert "class_notes" not in character.sheet_data["input"]
+        assert "extra_class_skills" not in character.sheet_data["input"]
+        assert character.sheet_data["computed"]["class_skills"] == sorted(CLASSES["fighter"]["skills"])
+        assert character.sheet_data["computed"]["skill_totals"]["perception"] == 1
+        assert character.sheet_data["input"]["skills"] == data["skills"]
+        assert character.notes == data["notes"]
+        for draft in db.scalars(select(CharacterDraft)):
+            assert "class_notes" not in draft.data and "extra_class_skills" not in draft.data
+        pending = db.get(CharacterDraft,pending_id)
+        assert pending.step == 5 and pending.data["name"] == data["name"]
+        assert db.scalar(select(func.count()).select_from(DiceRoll).where(DiceRoll.draft_id==pending_id)) == 1
+        assert db.get(CharacterDraft,completed_draft_id).completed_id == character_id
+        assert db.get(CharacterDraft,current_edit_id).existing_version == character.version
+        assert db.get(CharacterDraft,stale_edit_id).existing_version == old_character_version-1
+        versions = (character.version,pending.version)
+        assert db.get(SchemaMigration,4)
+    assert save(env,client,pending_id,1,old_input,5).status_code == 409
+    assert client.get(f"/characters/drafts/{pending_id}").status_code == 200
+    migrate(isolated_database)
+    with Session(engine()) as db:
+        assert (db.get(Character,character_id).version,db.get(CharacterDraft,pending_id).version) == versions

@@ -1,8 +1,30 @@
-"""Explicit additive migrations for existing MariaDB instances."""
-from sqlalchemy import inspect, text
+"""Explicit versioned schema and data migrations for MariaDB instances."""
+from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, CharacterDraft, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, SchemaMigration
+from .models import AccountToken, Character, CharacterDraft, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, SchemaMigration
+
+
+def remove_manual_class_fields(db):
+    from .character_rules import calculate, clean
+
+    removed = {"class_notes", "extra_class_skills"}
+    changed_characters = {}
+    for character in db.scalars(select(Character).where(Character.sheet_data.is_not(None)).with_for_update()):
+        sheet = character.sheet_data
+        inputs = clean({key:value for key,value in sheet["input"].items() if key not in removed},character.owner_id)
+        rolls = {roll["id"]:roll for roll in sheet.get("rolls",[])}
+        changed_characters[character.id] = (character.version,character)
+        character.sheet_data = {**sheet,"input":inputs,"computed":calculate(inputs,rolls)}
+    db.flush()
+    for draft in db.scalars(select(CharacterDraft).with_for_update()):
+        draft.data = {key:value for key,value in draft.data.items() if key not in removed}
+        # Preserve editing drafts that were current before this migration;
+        # drafts that already conflicted with another edit must remain stale.
+        if draft.mode == "edit" and draft.editing_id in changed_characters:
+            previous,character = changed_characters[draft.editing_id]
+            if draft.existing_version == previous:
+                draft.existing_version = character.version
 
 
 def migrate(admin_engine):
@@ -33,4 +55,8 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 3):
             db.add(SchemaMigration(version=3, name="character_wizard_drafts_sheets_and_dice"))
             db.commit()
-    print("Database migrations applied through 003 (character wizard, drafts, and dice).")
+        if not db.get(SchemaMigration, 4):
+            remove_manual_class_fields(db)
+            db.add(SchemaMigration(version=4, name="fixed_class_skills_and_removed_class_notes"))
+            db.commit()
+    print("Database migrations applied through 004 (fixed class skills and removed manual class fields).")

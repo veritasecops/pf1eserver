@@ -28,13 +28,13 @@ Class choices include the outline's core and base classes plus Ninja and Samurai
 
 Vigilantes explicitly choose Stalker or Avenger; the Avenger's first-level base attack bonus is applied from that choice rather than inferred from notes.
 
-Choose +1 HP, +1 skill rank, or another/not-favored-class benefit. Custom favored-class benefits are recorded in class notes and require GM review. Record domains, schools, bloodlines, mysteries, companions, talents, orders, and other class choices in the provided notes. These are saved choices, not an automated companion or archetype builder.
+Choose +1 HP, +1 skill rank, or another/not-favored-class benefit. Custom favored-class benefits require GM review. Record these benefits, domains, schools, bloodlines, mysteries, companions, talents, orders, and other class choices in Character notes under Description. These are saved choices, not an automated companion or archetype builder.
 
 The source outline's Samurai wealth table differs from the official legacy PRD. The wizard uses the official Samurai starting wealth of 5d6 × 10 gp, average 175 gp.
 
 ## Skills and feats
 
-The skill budget includes the class base, Intelligence modifier with the minimum class allotment, the human bonus rank, and the chosen favored-class rank. Allocate all available ranks. Each listed skill can have at most one rank at first level. Trained class skills add +3. Additional class skills granted by features can be selected with their source recorded in class notes.
+The skill budget includes the class base, Intelligence modifier with the minimum class allotment, the human bonus rank, and the chosen favored-class rank. Allocate all available ranks. Each listed skill can have at most one rank at first level. Trained class skills add +3. Select any catalog skill by assigning a rank. Every class can assign ranks to any catalog skill. The selected class determines the fixed class-skill list; assigning ranks does not change that list. Multiclassing is not implemented.
 
 Craft, Perform, and Profession specialties and conditional bonuses are recorded in skill notes. Their additional independent specialties, conditional racial benefits, archetypes, and other special cases need GM review. The displayed totals include standard ability modifiers, class training, supported racial bonuses and feats, and equipped armor check penalties.
 
@@ -70,6 +70,6 @@ Discarding a draft removes its unfinished data and dice history. A saved charact
 
 ## Server upgrade and sources
 
-Migration 003 adds the nullable character sheet field, private draft table, and dice-roll table. Existing users, campaigns, email settings, and basic character records are preserved. Apply `sudo .venv/bin/python -m pathkeeper.manage migrate` before restarting Uvicorn. No new runtime package or external graphics service is required.
+Migration 004 removes the retired class-notes and additional-class-skill data from drafts and sheets, and recalculates saved sheets with fixed class skills. Back up and stop the application before migrating. Migration 003 adds the nullable character sheet field, private draft table, and dice-roll table. Existing users, campaigns, email settings, and basic character records are preserved. Apply `sudo .venv/bin/python -m pathkeeper.manage migrate` before restarting Uvicorn. No new runtime package or external graphics service is required.
 
 References: the d20PFSRD Character Creation Outline, its core/base class and race references, and the official legacy Pathfinder Reference Document for ability generation, races, classes, skills, equipment, feats, and combat. The wizard uses rules facts and original help text rather than reproducing class chapters. The main outline is https://www.d20pfsrd.com/basics-ability-scores/character-creation/ and the legacy rules are https://legacy.aonprd.com/coreRulebook/gettingStarted.html.
