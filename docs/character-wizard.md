@@ -73,3 +73,12 @@ Discarding a draft removes its unfinished data and dice history. A saved charact
 Migration 004 removes the retired class-notes and additional-class-skill data from drafts and sheets, and recalculates saved sheets with fixed class skills. Back up and stop the application before migrating. Migration 003 adds the nullable character sheet field, private draft table, and dice-roll table. Existing users, campaigns, email settings, and basic character records are preserved. Apply `sudo .venv/bin/python -m pathkeeper.manage migrate` before restarting Uvicorn. No new runtime package or external graphics service is required.
 
 References: the d20PFSRD Character Creation Outline, its core/base class and race references, and the official legacy Pathfinder Reference Document for ability generation, races, classes, skills, equipment, feats, and combat. The wizard uses rules facts and original help text rather than reproducing class chapters. The main outline is https://www.d20pfsrd.com/basics-ability-scores/character-creation/ and the legacy rules are https://legacy.aonprd.com/coreRulebook/gettingStarted.html.
+
+
+## Searchable feat choices
+
+Step six opens a dropdown list for each feat name and any required skill or weapon choice. Each dropdown has a search box above its options, with feat descriptions and prerequisite explanations. Fighter bonus lists contain supported combat feats; monk bonus lists use the first-level monk choices and waive their normal prerequisites. Already-granted or duplicate nonrepeatable feats are unavailable.
+
+Selecting a feat that needs no additional choice hides the optional choice field. Changing feats clears the previous feat's skill or weapon choice. Existing custom feats remain available, and typing an unlisted name offers a GM-approved custom selection where the class permits it. Custom effects and unsupported prerequisites still require GM review. Selections save with the draft.
+
+Use the arrow keys to move through results, Enter to select, and Escape to close a dropdown. Searching does not alter the saved selection.

@@ -1,0 +1,18 @@
+.pw-stage-card { overflow:visible; }
+.pw-search-select { position:relative; min-width:0; display:grid; gap:7px; }
+.pw-search-label { font-weight:600; font-size:1rem; }
+.pw-search-select .pw-search-trigger { width:100%; min-height:44px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; font:inherit; color:#332419; background:#fff8e9; border:1px solid #b8a27c; border-radius:3px; }
+.pw-search-trigger>span:first-child { min-width:0; overflow-wrap:anywhere; }
+.pw-search-select .pw-search-trigger[aria-expanded=true] { outline:2px solid #9a5a19; outline-offset:1px; }
+.pw-search-panel { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:60; background:#fff8e9; border:1px solid #a78754; border-radius:3px; box-shadow:0 8px 24px #25110933; overflow:hidden; }
+.pw-search-panel.pw-search-above { top:auto; bottom:calc(100% + 4px); }
+.pw-search-box { padding:10px; border-bottom:1px solid #d6c4a1; }
+.pw-search-box input { width:100%; min-height:42px; padding:9px 11px; font-size:1rem; background:#fffdf7; }
+.pw-search-options { max-height:min(280px,45vh,var(--pw-search-space,280px)); overflow-y:auto; overscroll-behavior:contain; padding:4px; }
+.pw-search-options [role=option] { display:grid; gap:3px; width:100%; padding:10px 12px; min-height:42px; text-align:left; background:transparent; color:#332419; border:0; border-radius:2px; font:inherit; white-space:normal; overflow-wrap:anywhere; min-width:0; }
+.pw-search-options [role=option]:is(:hover,:focus-visible) { background:#ecd8ad; outline:2px solid #9a5a19; outline-offset:-2px; }
+.pw-search-options [role=option][aria-selected=true] { background:#efe0c0; font-weight:600; }
+.pw-search-options [role=option]:disabled { opacity:1; color:#766c5f; background:#eee8dc; cursor:not-allowed; }
+.pw-search-options .secondary-text { font-size:.875rem; line-height:1.5; font-weight:400; color:inherit; }
+.pw-search-empty { padding:12px; color:#635345; font-size:1rem; }
+@media print { .pw-search-panel { display:none!important; } }
