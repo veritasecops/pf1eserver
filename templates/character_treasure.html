@@ -5,6 +5,6 @@
 <div class="treasure-coins">
 {% for coin,label,gp in coin_types %}<div class="treasure-coin" data-treasure-coin="{{ coin }}"><label for="ds-money.{{ coin }}">{{ label }} <span>({{ coin }})</span></label><div class="treasure-coin-controls"><input id="ds-money.{{ coin }}" name="money.{{ coin }}" type="number" value="{{ deluxe.get('money.' ~ coin,'') or '0' }}" min="0" max="1000000000" step="any" aria-label="{{ label }} ({{ coin }})" inputmode="decimal"><button type="button" class="treasure-remove" data-remove-coins="{{ coin }}" aria-label="Remove all {{ label|lower }}" title="Remove all {{ label|lower }}">×</button></div><span class="treasure-rate">1 {{ coin }} = {{ gp }} gp</span></div>{% endfor %}
 </div>
-<div class="treasure-footer"><a href="https://www.d20pfsrd.com/equipmenT/#TOC-Coins" target="_blank" rel="noopener noreferrer">Coin exchange table ↗</a><div class="treasure-actions"><button type="button" class="button small" id="undo-treasure" hidden>Undo</button><button type="button" class="button small" id="add-treasure">Add coins</button></div></div>
+<div class="treasure-footer"><a href="https://www.aonprd.com/Rules.aspx?ID=107" target="_blank" rel="noopener noreferrer">Coin exchange table ↗</a><div class="treasure-actions"><button type="button" class="button small" id="undo-treasure" hidden>Undo</button><button type="button" class="button small" id="add-treasure">Add coins</button></div></div>
 <p id="treasure-validation" class="treasure-validation" role="status" hidden></p>
 </div></dialog>

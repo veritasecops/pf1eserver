@@ -1,9 +1,11 @@
 """First-level creation facts. Source links are kept with the data; prose is original."""
+from .reference_links import class_reference
+
 ABILITIES = {"str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma"}
 POINT_COST = {7: -4, 8: -2, 9: -1, 10: 0, 11: 1, 12: 2, 13: 3, 14: 5, 15: 7, 16: 10, 17: 13, 18: 17}
 # Keys are stable draft/validation identifiers; insertion order controls navigation.
 STEPS = {1: "Character sheet", 3: "Race", 4: "Class", 2: "Ability scores", 5: "Skill ranks", 6: "Feats", 7: "Hit points", 8: "Equipment", 9: "Combat values", 10: "Description", 11: "Starting spells", 12: "Review"}
-OUTLINE = "https://www.d20pfsrd.com/basics-ability-scores/character-creation/"
+OUTLINE = "https://www.aonprd.com/Rules.aspx?ID=83"
 RACES = {
     "human": {"name": "Human", "mods": {}, "flex": True, "size": "Medium", "speed": 30, "languages": "Common", "traits": "A flexible ability bonus, an extra feat, and an extra skill rank."},
     "dwarf": {"name": "Dwarf", "mods": {"con": 2, "wis": 2, "cha": -2}, "size": "Medium", "speed": 20, "languages": "Common, Dwarven", "traits": "Darkvision 60 ft.; steady speed in armor; stability and conditional defenses."},
@@ -33,7 +35,7 @@ def class_record(name, hd, ranks, bab, saves, wealth, skills, caster="", group="
     return {"name": name, "hd": hd, "ranks": ranks, "bab": bab, "saves": saves, "wealth_dice": wealth,
             "skills": keys, "caster": caster, "group": group, "choices": choices,
             "automatic_feats": list(automatic), "bonus_feat": bonus,
-            "url": "https://www.d20pfsrd.com/classes/" + ("core-classes/" if group == "Core" else "alternate-classes/" if group == "Alternate" else "base-classes/") + name.lower().replace(" ", "-") + "/"}
+            "url": class_reference(name)}
 
 
 CLASSES = {

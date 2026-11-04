@@ -37,7 +37,7 @@ def test_import_contains_all_requested_tables_and_exact_reference_values():
     assert weapons['shield-light']['cost'] is None and weapons['shield-light']['cost_text']=='3 gp/9 gp'
     assert weapons['shield-light']['weight'] is None
     assert weapons['longbow-composite-plus-3']['strength_rating']==3
-    assert weapons['dagger']['url']=='https://www.d20pfsrd.com/equipment/weapons/weapon-descriptions/dagger'
+    assert weapons['dagger']['url']=='https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Dagger'
     assert 'arrows' in weapons and 'bolts' in weapons and weapons['arrows']['kind']=='gear'
     for key in weapons:
         assert 'firearm' not in key and 'musket' not in key and 'pistol' not in key
@@ -65,7 +65,7 @@ def test_weapon_admin_round_trip_all_aspects_and_safe_links(env):
     form=weapon_form(damage='1d8/1d6',small_damage='1d6/1d4',critical='19–20/×3',range='15 ft.',
                      damage_type='B or P',special='trip, reach',source='House rules',cost='3200',cost_text='32 gp',
                      weight='6.5',weight_text='6.5 lbs.',category='two-handed',two_handed='on',notes='Custom rules',
-                     url='https://www.d20pfsrd.com/equipment/weapons/weapon-descriptions/longsword#test',aliases='Old sword')
+                     url='https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Longsword#test',aliases='Old sword')
     response=env.post(admin,'/administration/catalog/weapons',form)
     assert response.status_code==303
     with Session(engine()) as db:
@@ -102,7 +102,7 @@ def test_new_sheet_seeds_weapon_stats_and_live_links_follow_admin_edits(env):
     form.values['weapon.0.attack']='99'
     assert env.post(client,path+'/play-sheet',form.values).status_code==303
     admin=env.login(env.admin)
-    updated='https://www.d20pfsrd.com/equipment/weapons/weapon-descriptions/longsword#updated'
+    updated='https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Longsword#updated'
     assert env.post(admin,'/administration/catalog/weapons',weapon_form(url=updated)).status_code==303
     changed=client.get(path)
     assert updated in changed.text

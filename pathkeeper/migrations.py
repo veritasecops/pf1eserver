@@ -126,4 +126,9 @@ def migrate(admin_engine):
             record.data=updated
             db.add(SchemaMigration(version=12,name="deity_and_belief_catalog"))
             db.commit()
-    print("Database migrations applied through 012 (deity and belief catalog).")
+        if not db.get(SchemaMigration, 13):
+            from .reference_links import migrate_reference_links
+            migrate_reference_links(db)
+            db.add(SchemaMigration(version=13, name="archives_of_nethys_reference_links"))
+            db.commit()
+    print("Database migrations applied through 013 (Archives of Nethys reference links).")

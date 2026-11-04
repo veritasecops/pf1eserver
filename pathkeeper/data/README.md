@@ -1,7 +1,7 @@
 # Weapon table facts
 
 `weapons.json` contains the Simple, Martial, and Exotic tables from
-https://www.d20pfsrd.com/equipment/weapons, inspected November 4, 2026.
+the d20PFSRD weapon tables, inspected November 4, 2026.
 
 The 279 rows comprise 243 weapon entries and 36 ammunition entries:
 
@@ -11,9 +11,9 @@ The 279 rows comprise 243 weapon entries and 36 ammunition entries:
 | Martial | 90 | 21 |
 | Exotic | 111 | 7 |
 
-Each reference URL is the link attached to the weapon name in its source row,
-including links to ammunition, armor, and tool pages where the original table
-uses them. Other weapon lists (firearms, Eastern weapons, historical lists,
+Reference URLs now point to the corresponding Archives of Nethys entries,
+including its miscellaneous equipment pages for alchemical ammunition and armor
+extras. Other weapon lists (firearms, Eastern weapons, historical lists,
 third-party lists) and example weapons elsewhere on the page are excluded.
 No weapon-description prose is copied.
 
@@ -45,3 +45,5 @@ it does not replace character snapshots. Reference links use live catalog URLs.
 `scripts/import_weapon_tables.py` builds this JSON from a DOM table export
 containing cell text, footnotes, and anchor URLs. It accepts only headers for
 the three requested proficiencies and rejects duplicate identifiers or columns.
+
+`aon_reference_links.json` records verified replacements for 279 weapon/ammunition entries, 72 armor entries, and 25 class options (23 links and two unavailable references). Destinations were checked against AoN indexes and item pages on November 4, 2026. Different names include Aldori dueling sword, Shoanti bolas, Varisian dancing scarves, Erutaki coat, and Alkenstar fortress plate. Unarmed strike links to the weapon descriptions in the AoN legacy Core Rulebook. Five shield boss variants share a description page containing all five variants. The legacy URL paths support migration 013; they are not outbound application links.

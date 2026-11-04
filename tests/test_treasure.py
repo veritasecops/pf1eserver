@@ -18,7 +18,7 @@ def test_treasure_box_uses_the_published_four_coin_types_and_existing_balance(en
     form=SheetForm(page.text)
     assert form.values['money.gp']=='141'
     assert 'id="character-treasure"' in page.text
-    assert 'https://www.d20pfsrd.com/equipmenT/#TOC-Coins' in page.text
+    assert 'https://www.aonprd.com/Rules.aspx?ID=107' in page.text
     assert '141 gp</output>' in page.text
     assert COINS=={'cp':1,'sp':10,'gp':100,'pp':1000}
     assert [coin for coin,_,_ in COIN_TYPES]==['cp','sp','gp','pp']
