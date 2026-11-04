@@ -2,7 +2,7 @@
 from decimal import Decimal, InvalidOperation
 from math import floor
 
-from .pf1_data import ABILITIES, CLASSES, SKILLS
+from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
 
 
@@ -10,9 +10,14 @@ def class_record(character):
     return next((cls for cls in CLASSES.values() if cls['name'].casefold() == character.class_name.casefold()), {})
 
 
+def base_speed_race(character):
+    selected=(character.sheet_data or {}).get('input',{}).get('race')
+    return RACES.get(selected) or next((race for race in RACES.values() if race['name'].casefold()==str(character.ancestry or '').casefold()),{})
+
+
 def calculated_fields(character, values):
     SKILLS = character_catalog(character)["skills"]
-    locked = {'player','class_name','initiative.total','initiative.dex','cmb.total','cmd.total',
+    locked = {'player','class_name','speed.base','initiative.total','initiative.dex','cmb.total','cmd.total',
               'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int'}
     for ability in ABILITIES:
         locked.update({f'ability.{ability}.mod',f'ability.{ability}.temp_mod'})
@@ -43,6 +48,8 @@ SIZE_MODIFIERS = {'fine':8,'diminutive':4,'tiny':2,'small':1,'medium':0,'large':
 
 def recalculate(character, values):
     """Recompute from editable components; a missing essential input stays blank."""
+    race=base_speed_race(character)
+    if race: values['speed.base']=str(race['speed'])
     catalog = character_catalog(character)
     SKILLS = catalog["skills"]
     def number(key, default=None):

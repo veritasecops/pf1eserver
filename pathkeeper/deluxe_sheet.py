@@ -4,7 +4,7 @@ from decimal import Decimal, InvalidOperation
 from fastapi import HTTPException
 
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, RACES, SKILLS
-from .sheet_calculations import calculated_fields, recalculate
+from .sheet_calculations import calculated_fields, recalculate, base_speed_race
 from .sheet_formulas import sheet_formulas
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
 
@@ -99,7 +99,8 @@ def baseline(character, owner, campaign=None, gm=None):
     sheet = character.sheet_data or {}
     inputs,values = sheet.get('input',{}),sheet.get('computed',{})
     cls = next((value for value in CLASSES.values() if value['name'].casefold() == character.class_name.casefold()),{})
-    race = RACES.get(inputs.get('race'),{})
+    race = base_speed_race(character)
+    data['speed.base']=str(race['speed']) if race else ''
     if not values: return data
     for key in ('alignment','gender','age','deity','appearance','personality','skill_specialties','spell_notes','inventory_notes'):
         data[key] = inputs.get(key,'')

@@ -1,12 +1,15 @@
 """Plain-language descriptions of the formulas the play sheet actually uses."""
 from .pf1_data import ABILITIES
 from .rule_catalog import character_catalog
-from .sheet_calculations import calculated_fields
+from .sheet_calculations import calculated_fields, base_speed_race
 
 
 def sheet_formulas(character, values):
     locked=calculated_fields(character,values)
+    race=base_speed_race(character)
+    speed_source=(f"Base speed is {race['speed']} ft. because {race['name']} has a racial land speed of {race['speed']} ft. This is the speed before class bonuses, armor, or other movement adjustments." if race else 'The character’s previously recorded base speed is preserved because a supported race could not be identified.')
     formulas={
+        'speed.base':speed_source,
         'player':'The name of the account that owns this character.',
         'class_name':'The class recorded for this character.',
         'initiative.total':'Initiative = Dexterity modifier + miscellaneous initiative modifier.',

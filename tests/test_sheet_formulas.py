@@ -55,3 +55,38 @@ def test_purchase_formulas_describe_managed_equipment_and_survive_autosave(env):
     response=client.post(path+'/play-sheet',data=form.values,headers={'Accept':'application/json','X-Sheet-Save-Id':'f'*32})
     assert response.status_code==200,response.text
     assert 'base attack bonus' in response.json()['formulas']['weapon.0.attack']
+
+
+def test_base_speed_uses_race_ignores_manual_override_and_is_locked(env):
+    from sqlalchemy.orm import Session
+    from pathkeeper.database import engine
+    character=seed_character(env.player)
+    with Session(engine()) as db:
+        saved=db.get(Character,character.id)
+        saved.ancestry='Dwarf'
+        saved.play_data={'speed.base':'99','speed.fly':'60'}
+        db.commit()
+    client=env.login(env.player)
+    path=f'/characters/{character.id}'
+    page=client.get(path)
+    form=SheetForm(page.text)
+    assert 'speed.base' in form.readonly
+    assert form.values['speed.base']=='20'
+    assert form.values['speed.fly']=='60' and 'speed.fly' not in form.readonly
+    assert 'Dwarf has a racial land speed of 20 ft.' in page.text
+    form.values['speed.base']='999'
+    assert env.post(client,path+'/play-sheet',form.values).status_code==303
+    assert SheetForm(client.get(path).text).values['speed.base']=='20'
+
+
+def test_base_speed_uses_wizard_race_and_preserves_unknown_legacy_value():
+    from pathkeeper.sheet_calculations import recalculate
+    character=Character(owner_id=1,name='Tester',ancestry='Elf',class_name='Fighter',level=2,
+                        sheet_data={'input':{'race':'halfling'}},play_data={})
+    values={'speed.base':'99'}
+    assert recalculate(character,values)['speed.base']=='20'
+    assert 'Halfling' in sheet_formulas(character,values)['speed.base']
+    character.sheet_data=None;character.ancestry='Unknown ancestry'
+    values={'speed.base':'35'}
+    assert recalculate(character,values)['speed.base']=='35'
+    assert 'previously recorded' in sheet_formulas(character,values)['speed.base']
