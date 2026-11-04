@@ -62,7 +62,8 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     form = SheetForm(page.text)
     assert set(form.names) == set(FIELDS) | {'csrf','version'}
     assert len(form.names) == len(set(form.names))
-    assert form.readonly == {'player','class_name'}
+    assert {'player','class_name','initiative.total','ac.total','ability.str.mod','skill.climb.total'} <= form.readonly
+    assert not {'hp.current','ability.str.score','ability.str.temp_score','skill.climb.ranks','skill.climb.misc','money.gp'} & form.readonly
     assert form.options['alignment'] == ['',*ALIGNMENTS]
     for key,meta in FIELDS.items():
         if key in form.readonly: continue
@@ -70,12 +71,16 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     response = env.post(client,f'/characters/{character.id}/play-sheet',form.values)
     assert response.status_code == 303
     saved = SheetForm(client.get(response.headers['location']).text)
-    assert saved.values == {**form.values,'version':'2'}
+    assert all(saved.values[key] == value for key,value in form.values.items() if key not in saved.readonly | {'version'})
+    assert saved.values['version'] == '2'
+    assert saved.values['ability.str.mod'] == '-4'
+    assert saved.values['initiative.total'] == '-1'
+    assert saved.values['spell.1.known'] == '1'
     with Session(engine()) as db:
         record = db.get(Character,character.id)
         assert record.owner_id == env.player.id and record.campaign_id is None
         assert db.scalar(select(AuditEvent).where(AuditEvent.event == 'character.play_sheet_saved'))
-        assert len(record.play_data) > 600
+        assert len(record.play_data) > 400
 
 
 def test_creation_values_seed_sheet_and_overrides_preserve_creation_snapshot(env):
@@ -181,3 +186,82 @@ def test_locked_identity_ignores_forged_values_and_alignment_choices_persist(env
         assert record.owner_id == env.player.id
         assert record.class_name == character.class_name
         assert 'player' not in record.play_data
+
+
+def test_calculated_fields_ignore_forgery_and_follow_editable_inputs(env):
+    character = seed_character(env.player)
+    data = fighter(defaults(env.player.id))
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        record.class_name,record.level = 'Fighter',1
+        record.sheet_data = {'input':data,'computed':calculate(data,{}),'rolls':[]}
+        db.commit()
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    form = SheetForm(client.get(path).text)
+    assert {'hp.total','bab','save.fortitude.base','skill_points.base'} <= form.readonly
+    values = dict(form.values)
+    for key in form.readonly: values[key] = '999999'
+    values.update({'ability.str.score':'18','ability.dex.temp_score':'16',
+                   'initiative.misc':'4','skill.climb.ranks':'2','skill.climb.misc':'1',
+                   'skill.perception.ranks':'2','skill.perception.misc':'1',
+                   'ac.armor':'4','ac.shield':'2','ac.dex':'3','ac.dodge':'1','ac.misc':'0',
+                   'save.reflex.magic':'2','save.reflex.misc':'1','hp.current':'7','ability.con.temp_score':'14',
+                   'spell.2.list':'Scorching ray\n\nMirror image'})
+    assert env.post(client,path+'/play-sheet',values).status_code == 303
+    saved = SheetForm(client.get(path).text)
+    assert saved.values['hp.total'] == str(int(form.values['hp.total'])+2)
+    assert saved.values['bab'] == form.values['bab']
+    assert saved.values['hp.current'] == '7'
+    assert saved.values['ability.str.mod'] == '4'
+    assert saved.values['ability.dex.temp_mod'] == '3'
+    assert saved.values['initiative.total'] == '7'
+    assert saved.values['skill.climb.total'] == '10'  # 4 STR + 2 ranks + 3 class + 1 misc
+    assert saved.values['skill.perception.total'] == '3'  # no class bonus
+    assert saved.values['save.reflex.total'] == '6'
+    assert saved.values['ac.total'] == '20'
+    assert saved.values['ac.touch'] == '14'
+    assert saved.values['ac.flat'] == '16'
+    assert saved.values['spell.2.known'] == '2'
+    assert '999999' not in [saved.values[key] for key in saved.readonly]
+
+
+def test_calculations_preserve_manual_progression_and_negative_modifiers(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    form = SheetForm(client.get(path).text)
+    assert not {'hp.total','bab','save.will.base','skill_points.base'} & form.readonly
+    form.values.update({'ability.dex.score':'7','ability.str.score':'9','size':'Small',
+                        'bab':'3','save.will.base':'3','ability.wis.score':'12',
+                        'skill_points.base':'2','ability.int.score':'6','skill_points.misc':'1',
+                        'ac.armor':'2','ac.dex':'-2','ac.dodge':'1','ac.misc':'0'})
+    assert env.post(client,path+'/play-sheet',form.values).status_code == 303
+    saved = SheetForm(client.get(path).text)
+    assert saved.values['ability.dex.mod'] == '-2'
+    assert saved.values['ability.str.mod'] == '-1'
+    assert saved.values['skill_points.total'] == '2'  # minimum 1 + misc 1
+    assert saved.values['save.will.total'] == '4'
+    assert saved.values['cmb.size'] == '-1' and saved.values['ac.size'] == '1'
+    assert saved.values['ac.flat'] == '11'  # negative DEX remains, dodge is excluded
+
+
+def test_existing_dodge_bonus_is_separated_once_and_survives_repeated_saves(env):
+    character = seed_character(env.player)
+    data = fighter(defaults(env.player.id))
+    data['feats'] = [{'name':'Dodge'},{'name':'Toughness'}]
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        record.class_name,record.level = 'Fighter',1
+        record.sheet_data = {'input':data,'computed':calculate(data,{}),'rolls':[]}
+        record.play_data = {'ac.misc':'3'}  # Dodge + two other points on the old sheet
+        db.commit()
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    for _ in range(3):
+        form = SheetForm(client.get(path).text)
+        assert form.values['ac.dodge'] == '1'
+        assert form.values['ac.misc'] in {'2','2.0'}
+        assert form.values['ac.total'] == '17'
+        assert form.values['ac.flat'] == '16'
+        assert env.post(client,path+'/play-sheet',form.values).status_code == 303

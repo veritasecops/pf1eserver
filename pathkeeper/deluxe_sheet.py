@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from fastapi import HTTPException
 
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, RACES, SKILLS
+from .sheet_calculations import calculated_fields, recalculate
 
 WEAPON_COLUMNS = [('name','Weapon'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
 ARMOR_COLUMNS = [('name','Item'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
@@ -41,7 +42,7 @@ for key in ('cmb','cmd'):
     for part in ('total','bab','str','dex','size','misc'):
         if key == 'cmb' and part == 'dex': continue
         register(f'{key}.{part}',f'{key.upper()}: {part.capitalize()}','number')
-for part,title in [('total','Total'),('armor','Armor bonus'),('shield','Shield bonus'),('dex','Dexterity modifier'),('size','Size modifier'),('natural','Natural armor'),('deflection','Deflection bonus'),('misc','Miscellaneous modifier'),('flat','Flat-footed'),('touch','Touch')]:
+for part,title in [('total','Total'),('armor','Armor bonus'),('shield','Shield bonus'),('dex','Dexterity modifier'),('size','Size modifier'),('natural','Natural armor'),('deflection','Deflection bonus'),('dodge','Dodge bonus'),('misc','Miscellaneous modifier'),('flat','Flat-footed'),('touch','Touch')]:
     register('ac.'+part,'AC: '+title,'number')
 for key,label in [('temporary_modifiers','Temporary modifiers'),('save_modifiers','Saving throw modifiers'),('combat_modifiers','Combat maneuver modifiers'),('languages','Languages'),('campaign_traits','Campaign traits'),('domain','Domain / school / special'),('spell_notes','Spell notes'),('appearance','Appearance'),('personality','Personality'),('inventory_notes','Inventory notes'),('skill_specialties','Skill specialties'),('notes','Notes')]:
     register(key,label,'textarea',10000 if key == 'notes' else 5000)
@@ -100,7 +101,9 @@ def baseline(character, owner, campaign=None, gm=None):
     data['cmd.misc'] = values.get('cmd',10)-10-values.get('bab',0)-mods.get('str',0)-mods.get('dex',0)+int(small)
     armor,shield = (EQUIPMENT.get(inputs.get(key),{}) for key in ('armor','shield'))
     dex = min(mods.get('dex',0),armor.get('max_dex',100))
-    for key,value in [('armor',armor.get('armor',0)),('shield',shield.get('shield',0)),('dex',dex),('size',int(small)),('natural',0),('deflection',0),('misc',values.get('ac',10)-10-armor.get('armor',0)-shield.get('shield',0)-dex-int(small))]: data['ac.'+key] = value
+    dodge = int(any(entry.get('name') == 'Dodge' for entry in values.get('feats',[])))
+    data['ac.dodge'] = dodge
+    for key,value in [('armor',armor.get('armor',0)),('shield',shield.get('shield',0)),('dex',dex),('size',int(small)),('natural',0),('deflection',0),('misc',values.get('ac',10)-10-armor.get('armor',0)-shield.get('shield',0)-dex-int(small)-dodge)]: data['ac.'+key] = value
     for key,meta in SKILL_ROWS:
         second = key.endswith('-2')
         rank = 0 if second else inputs.get('skills',{}).get(key,0)
@@ -139,12 +142,22 @@ def baseline(character, owner, campaign=None, gm=None):
 
 def sheet_values(character, owner, campaign=None, gm=None):
     values = baseline(character,owner,campaign,gm)
-    values.update({key:value for key,value in (character.play_data or {}).items() if key in FIELDS})
+    saved = character.play_data or {}
+    values.update({key:value for key,value in saved.items() if key in FIELDS})
+    # Older sheets grouped the wizard's Dodge bonus into AC Misc. Separate it
+    # once without counting the existing bonus twice. New saves carry a version.
+    if not saved.get('calculation_version') and 'ac.misc' in saved and 'ac.dodge' not in saved:
+        try:
+            old_misc, dodge = Decimal(str(values['ac.misc'])), Decimal(str(values['ac.dodge'] or 0))
+            if old_misc.is_finite() and dodge.is_finite():
+                values['ac.misc'] = str(old_misc-dodge)
+        except InvalidOperation:
+            pass
     # These fields have a single source of truth in the character record.
     values.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes,player=owner.name)
     alignment = values['alignment']
     values['alignment'] = next((key for key,label in ALIGNMENTS.items() if alignment.casefold() in {key.casefold(),label.casefold()}),'')
-    return values
+    return recalculate(character, values)
 
 
 def parse_sheet(form, locked=None):
@@ -188,7 +201,8 @@ def parse_sheet(form, locked=None):
 
 def view_context(character, owner, campaign=None, gm=None, values=None, errors=()):
     cls = next((c for c in CLASSES.values() if c['name'].casefold() == character.class_name.casefold()),{})
-    return dict(deluxe=values if values is not None else sheet_values(character,owner,campaign,gm),sheet_fields=FIELDS,
+    values = values if values is not None else sheet_values(character,owner,campaign,gm)
+    return dict(deluxe=values,sheet_fields=FIELDS,readonly_fields=calculated_fields(character,values),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=SKILL_ROWS,class_skills=cls.get('skills',[]),trained_only=TRAINED_ONLY,
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

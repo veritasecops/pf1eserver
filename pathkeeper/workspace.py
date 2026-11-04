@@ -12,7 +12,8 @@ from .security import (audit, authenticated, can_delete_character, can_manage_ca
 from .ui import redirect, render
 from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
-from .deluxe_sheet import baseline, parse_sheet, view_context
+from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
+from .sheet_calculations import calculated_fields, recalculate
 
 router = APIRouter()
 
@@ -319,15 +320,19 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     form = await read_form(ctx, max_fields=1024)
     verify_version(form, character)
     owner = db.get(User, character.owner_id)
-    values, errors = parse_sheet(form, {"player":owner.name, "class_name":character.class_name})
-    if errors:
-        return render_character(ctx, character, values, errors)
-    # Store only overrides so untouched wizard values continue to follow their source.
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
     gm = db.get(User, campaign.owner_id) if campaign else None
+    current = sheet_values(character, owner, campaign, gm)
+    locked = calculated_fields(character, current)
+    values, errors = parse_sheet(form, {key:current[key] for key in locked})
+    if errors:
+        return render_character(ctx, character, values, errors)
+    recalculate(character, values)
+    # Store only overrides so untouched wizard values continue to follow their source.
     base = baseline(character, owner, campaign, gm)
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    character.play_data = {key:value for key,value in values.items() if key not in core | {"player"} and value != base[key]}
+    character.play_data = {"calculation_version":1, **{key:value for key,value in values.items()
+                           if key not in core | {"player"} and value != base[key]}}
     for key in core:
         setattr(character, key, int(values[key]) if key == "level" else values[key])
     if character.sheet_data:
