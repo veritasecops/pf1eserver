@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
 
-from .pf1_data import ABILITIES, CLASSES, EQUIPMENT, RACES, SKILLS
+from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, RACES, SKILLS
 
 WEAPON_COLUMNS = [('name','Weapon'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
 ARMOR_COLUMNS = [('name','Item'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
@@ -25,6 +25,7 @@ def register(key, label, kind='text', maximum=200):
 for key,label in [('name','Character name'),('alignment','Alignment'),('player','Player'),('class_name','Character class'),('deity','Deity'),('homeland','Homeland'),('ancestry','Race'),('size','Size'),('gender','Gender'),('age','Age'),('height','Height'),('weight','Weight'),('hair','Hair'),('eyes','Eyes'),('campaign','Campaign'),('gm','DM / Game Master')]:
     register(key,label,maximum=150 if key == 'name' else 100 if key in {'class_name','ancestry'} else 200)
 register('level','Level','number')
+FIELDS['alignment']['kind'] = 'select'
 for ability,label in ABILITIES.items():
     for part,title in [('score','Ability score'),('mod','Ability modifier'),('temp_score','Temporary score'),('temp_mod','Temporary modifier')]:
         register(f'ability.{ability}.{part}',f'{label}: {title}','number')
@@ -140,17 +141,23 @@ def sheet_values(character, owner, campaign=None, gm=None):
     values = baseline(character,owner,campaign,gm)
     values.update({key:value for key,value in (character.play_data or {}).items() if key in FIELDS})
     # These fields have a single source of truth in the character record.
-    values.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes)
+    values.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes,player=owner.name)
+    alignment = values['alignment']
+    values['alignment'] = next((key for key,label in ALIGNMENTS.items() if alignment.casefold() in {key.casefold(),label.casefold()}),'')
     return values
 
 
-def parse_sheet(form):
+def parse_sheet(form, locked=None):
+    locked = locked or {}
     unknown = set(form)-{'csrf','version'}-set(FIELDS)
-    missing = {key for key,meta in FIELDS.items() if meta['kind'] != 'checkbox'}-set(form)
+    missing = {key for key,meta in FIELDS.items() if meta['kind'] != 'checkbox'}-set(form)-set(locked)
     if missing: raise HTTPException(422,'The sheet is incomplete. Reload before saving.')
     if unknown: raise HTTPException(422,'The sheet contains unsupported fields. Reload before saving.')
     values,errors = {},[]
     for key,meta in FIELDS.items():
+        if key in locked:
+            values[key] = locked[key]
+            continue
         entries = form.getlist(key)
         value = form.get(key,'')
         if len(entries) > 1 or not isinstance(value,str):
@@ -162,6 +169,8 @@ def parse_sheet(form):
             errors.append(f'{meta["label"]}: use {meta["maximum"]} characters or fewer.')
         elif meta['kind'] == 'checkbox' and value not in {'','1'}:
             errors.append(f'{meta["label"]}: invalid checkbox.')
+        elif meta['kind'] == 'select' and value and value not in ALIGNMENTS:
+            errors.append('Alignment: choose an alignment from the list.')
         elif meta['kind'] == 'number' and value:
             try:
                 number = Decimal(value)
@@ -180,6 +189,6 @@ def parse_sheet(form):
 def view_context(character, owner, campaign=None, gm=None, values=None, errors=()):
     cls = next((c for c in CLASSES.values() if c['name'].casefold() == character.class_name.casefold()),{})
     return dict(deluxe=values if values is not None else sheet_values(character,owner,campaign,gm),sheet_fields=FIELDS,
-                abilities=ABILITIES,save_rows=SAVES,skill_rows=SKILL_ROWS,class_skills=cls.get('skills',[]),trained_only=TRAINED_ONLY,
+                abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=SKILL_ROWS,class_skills=cls.get('skills',[]),trained_only=TRAINED_ONLY,
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

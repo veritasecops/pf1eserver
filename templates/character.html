@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components.html' import icon, field, csrf_input %}
-{% block extra_head %}<link rel="stylesheet" href="/static/deluxe-sheet.css?v=20261104-deluxe-4">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/deluxe-sheet.css?v=20261104-deluxe-identity-1">{% endblock %}
 {% block content %}
 <a class="text-button back-link" href="/characters">{{ icon('back') }}All characters</a>
 <div class="page-heading deluxe-heading"><div><span class="overline">CHARACTER RECORD</span><h1>{{ character.name }}</h1><p>Owned by {{ owner.name }}{% if campaign %} · <a href="/campaigns/{{ campaign.id }}">{{ campaign.name }}</a>{% endif %}</p></div><div class="row"><a class="button" href="/characters/{{ character.id }}/edit">Manage character</a>{% if character.sheet_data and character.level == 1 %}<a class="button" href="/characters/{{ character.id }}/sheet/edit">Creation wizard</a>{% endif %}{% if can_delete %}<a class="button danger" href="#delete-character">{{ icon('trash') }}Delete character</a>{% endif %}</div></div>
@@ -8,10 +8,10 @@
 <form method="post" action="/characters/{{ character.id }}/play-sheet" id="deluxe-form">
 {{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ character.version }}">
 <div class="deluxe-toolbar"><nav aria-label="Character sheet pages"><a href="#combat">Combat</a><a href="#abilities-skills">Abilities & skills</a><a href="#spells">Spells</a><a href="#gear">Gear & notes</a></nav><div class="row"><span id="sheet-save-status" role="status">All changes saved</span><button class="button" type="button" id="print-sheet">Print</button><button class="button primary" type="submit">{{ icon('check') }}Save sheet</button></div></div>
-<p class="hint deluxe-guidance">Edit any value, then save the sheet. Totals are editable; update them when bonuses or equipment change. Class skills come from the character’s class and grant +3 when trained.</p>
+<p class="hint deluxe-guidance">Edit the sheet, then save your changes. Totals are editable; update them when bonuses or equipment change. Class skills come from the character’s class and grant +3 when trained.</p>
 {% include 'character_sheet.html' %}
 <div class="deluxe-bottom"><span class="hint">Character #{{ character.id }} · Created {{ character.created_at|date }}</span><button class="button primary" type="submit">Save sheet</button></div>
 </form>
 {% if can_delete %}<section class="card padded section-space" id="delete-character"><h2>Delete character</h2><p class="hint">Deletion is permanent. Type the character's name to confirm.</p><form method="post" action="/characters/{{ character.id }}/delete" class="stack">{{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ character.version }}">{{ field('Character name to confirm', 'confirm_name', required=true) }}<button class="button danger">{{ icon('trash') }}Delete character</button></form></section>{% endif %}
 {% endblock %}
-{% block page_scripts %}<script src="/static/deluxe-sheet.js?v=20261104-deluxe-4" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/deluxe-sheet.js?v=20261104-deluxe-identity-1" defer></script>{% endblock %}

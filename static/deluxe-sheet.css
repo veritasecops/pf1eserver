@@ -27,13 +27,13 @@
 .ds-eight { grid-template-columns:1.5fr repeat(7,minmax(0,1fr)); }
 .ds-page .ds-field { display:flex; flex-direction:column; gap:4px; min-width:0; font-weight:400; font-size:.875rem; color:#554538; }
 .ds-page .ds-field>span { min-height:1.4em; line-height:1.4; }
-.ds-page :is(input:not([type=checkbox]),textarea) { display:block; width:100%; min-width:0; max-width:100%; background:#fffdf7; color:var(--ds-ink); border:1px solid #b6aa98; border-radius:0; box-shadow:none; padding:6px 7px; font-family:inherit; font-size:1rem; line-height:1.5; margin:0; }
-.ds-page input:not([type=checkbox]) { height:38px; }
+.ds-page :is(input:not([type=checkbox]),select,textarea) { display:block; width:100%; min-width:0; max-width:100%; background:#fffdf7; color:var(--ds-ink); border:1px solid #b6aa98; border-radius:0; box-shadow:none; padding:6px 7px; font-family:inherit; font-size:1rem; line-height:1.5; margin:0; }
+.ds-page :is(input:not([type=checkbox]),select) { height:38px; }
 .ds-page textarea { resize:vertical; background:repeating-linear-gradient(transparent,transparent 23px,#c9bead 23px,#c9bead 24px); line-height:24px; padding-top:0; }
-.ds-page :is(input,textarea):focus { outline:2px solid #9a5a19; outline-offset:1px; background-color:#fff2cf; border-color:#805022; }
+.ds-page :is(input,select,textarea):focus { outline:2px solid #9a5a19; outline-offset:1px; background-color:#fff2cf; border-color:#805022; }
 .ds-page input[type=number] { appearance:textfield; -moz-appearance:textfield; }
 .ds-page input[type=number]::-webkit-inner-spin-button,.ds-page input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-.ds-identity input,.ds-physical input,.ds-feature-grid input { border:0 !important; border-bottom:1px solid var(--ds-line) !important; }
+.ds-identity select,.ds-identity input,.ds-physical input,.ds-feature-grid input { border:0 !important; border-bottom:1px solid var(--ds-line) !important; }
 .ds-combat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
 .ds-combat-grid>div { min-width:0; }
 .ds-vitals { display:grid; grid-template-columns:minmax(0,2.1fr) minmax(0,1fr); gap:14px; align-items:start; }

@@ -318,16 +318,16 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     character = get_character(ctx, character_id)
     form = await read_form(ctx, max_fields=1024)
     verify_version(form, character)
-    values, errors = parse_sheet(form)
+    owner = db.get(User, character.owner_id)
+    values, errors = parse_sheet(form, {"player":owner.name, "class_name":character.class_name})
     if errors:
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
-    owner = db.get(User, character.owner_id)
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
     gm = db.get(User, campaign.owner_id) if campaign else None
     base = baseline(character, owner, campaign, gm)
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    character.play_data = {key:value for key,value in values.items() if key not in core and value != base[key]}
+    character.play_data = {key:value for key,value in values.items() if key not in core | {"player"} and value != base[key]}
     for key in core:
         setattr(character, key, int(values[key]) if key == "level" else values[key])
     if character.sheet_data:

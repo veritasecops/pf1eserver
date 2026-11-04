@@ -8,6 +8,7 @@ from pathkeeper.character_rules import calculate, defaults
 from pathkeeper.database import engine
 from pathkeeper.deluxe_sheet import FIELDS, baseline, sheet_values
 from pathkeeper.models import AuditEvent, Character, SchemaMigration, User
+from pathkeeper.pf1_data import ALIGNMENTS
 from .test_character_wizard import fighter
 from .test_workspace import seed_campaign, seed_character
 
@@ -19,15 +20,26 @@ class SheetForm(HTMLParser):
         self.values = {}
         self.names = []
         self.textarea = None
+        self.select = None
+        self.readonly = set()
+        self.options = {}
         self.feed(html)
 
     def handle_starttag(self, tag, attributes):
         attrs = dict(attributes)
         if tag == 'form': self.active = attrs.get('id') == 'deluxe-form'
-        if not self.active or tag not in {'input','textarea'} or 'name' not in attrs: return
+        if self.active and tag == 'option' and self.select:
+            self.options[self.select].append(attrs.get('value',''))
+            if 'selected' in attrs: self.values[self.select] = attrs.get('value','')
+        if not self.active or tag not in {'input','textarea','select'} or 'name' not in attrs: return
         key = attrs['name']
         self.names.append(key)
-        if tag == 'textarea':
+        if 'readonly' in attrs: self.readonly.add(key)
+        if tag == 'select':
+            self.select = key
+            self.values[key] = ''
+            self.options[key] = []
+        elif tag == 'textarea':
             self.textarea = key
             self.values[key] = ''
         elif attrs.get('type') != 'checkbox' or 'checked' in attrs:
@@ -36,12 +48,13 @@ class SheetForm(HTMLParser):
     def handle_endtag(self, tag):
         if tag == 'form': self.active = False
         if tag == 'textarea': self.textarea = None
+        if tag == 'select': self.select = None
 
     def handle_data(self, value):
         if self.textarea: self.values[self.textarea] += value
 
 
-def test_every_deluxe_field_is_editable_and_round_trips(env):
+def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     character = seed_character(env.player)
     client = env.login(env.player)
     page = client.get(f'/characters/{character.id}')
@@ -49,8 +62,11 @@ def test_every_deluxe_field_is_editable_and_round_trips(env):
     form = SheetForm(page.text)
     assert set(form.names) == set(FIELDS) | {'csrf','version'}
     assert len(form.names) == len(set(form.names))
+    assert form.readonly == {'player','class_name'}
+    assert form.options['alignment'] == ['',*ALIGNMENTS]
     for key,meta in FIELDS.items():
-        form.values[key] = '1' if meta['kind'] == 'checkbox' else '3' if meta['kind'] == 'number' else f'Edited {key}'
+        if key in form.readonly: continue
+        form.values[key] = 'CG' if key == 'alignment' else '1' if meta['kind'] == 'checkbox' else '3' if meta['kind'] == 'number' else f'Edited {key}'
     response = env.post(client,f'/characters/{character.id}/play-sheet',form.values)
     assert response.status_code == 303
     saved = SheetForm(client.get(response.headers['location']).text)
@@ -115,7 +131,7 @@ def test_sheet_rejects_csrf_stale_invalid_and_incomplete_saves(env):
     path = f'/characters/{character.id}/play-sheet'
     assert env.post(client,path,{**values,'csrf':'wrong'},use_csrf=False).status_code == 403
     assert env.post(client,path,{**values,'version':'99'}).status_code == 409
-    for changes in [{'level':'41'},{'hp.current':'NaN'},{'hp.current':'1e9999999'},{'skill.climb.ranks':'-1'},{'ancestry':'x'*101},{'notes':'x'*10001}]:
+    for changes in [{'alignment':'invalid'},{'level':'41'},{'hp.current':'NaN'},{'hp.current':'1e9999999'},{'skill.climb.ranks':'-1'},{'ancestry':'x'*101},{'notes':'x'*10001}]:
         response = env.post(client,path,{**values,'homeland':'Preserved entry',**changes})
         assert response.status_code == 422
         assert 'Preserved entry' in response.text and 'Check these fields' in response.text
@@ -140,3 +156,28 @@ def test_deluxe_migration_adds_column_idempotently_without_replacing_creation_da
     with Session(engine()) as db:
         assert db.get(Character,character.id).name == character.name
         assert db.get(SchemaMigration,5)
+
+
+def test_locked_identity_ignores_forged_values_and_alignment_choices_persist(env):
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        record.play_data = {'player':'Obsolete player label','alignment':'Chaotic good'}
+        db.commit()
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    form = SheetForm(client.get(path).text)
+    assert form.values['player'] == 'Test Player'
+    assert form.values['alignment'] == 'CG'
+    for alignment in ALIGNMENTS:
+        form.values.update(player='Forged player',class_name='Wizard',alignment=alignment)
+        assert env.post(client,path+'/play-sheet',form.values).status_code == 303
+        form = SheetForm(client.get(path).text)
+        assert form.values['player'] == 'Test Player'
+        assert form.values['class_name'] == character.class_name
+        assert form.values['alignment'] == alignment
+    with Session(engine()) as db:
+        record = db.get(Character,character.id)
+        assert record.owner_id == env.player.id
+        assert record.class_name == character.class_name
+        assert 'player' not in record.play_data
