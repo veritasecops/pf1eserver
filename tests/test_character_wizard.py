@@ -15,7 +15,7 @@ from .test_workspace import seed_campaign, seed_character
 
 def start(env, account=None):
     c = env.login(account or env.player)
-    response = c.get("/characters/new")
+    response = c.get("/characters/new",follow_redirects=True)
     assert response.status_code == 200
     with Session(engine()) as db:
         draft = db.scalar(select(CharacterDraft).where(CharacterDraft.actor_id == (account or env.player).id,CharacterDraft.mode == "create"))
@@ -42,29 +42,73 @@ def finish(env,c,draft_id,version):
     return env.post(c,f"/api/character-drafts/{draft_id}/finish",{"version":version})
 
 
-def test_add_character_resumes_persistent_private_draft_without_creating_character(env):
+def test_drafts_are_listed_and_add_character_creates_an_independent_draft(env):
     c,draft_id,version,data = start(env)
     data["name"] = "A saved idea"
     saved = save(env,c,draft_id,version,data,3)
     assert saved.status_code == 200
-    response = c.get("/characters/new")
+    response = c.get(f"/characters/drafts/{draft_id}")
     assert "A saved idea" in response.text and '"step": 3' in response.text
+    listing = c.get("/characters")
+    assert "A saved idea" in listing.text and "Draft" in listing.text
+    assert f'href="/characters/drafts/{draft_id}"' in listing.text
+    created = c.get("/characters/new")
+    assert created.status_code == 303
+    new_path = created.headers["location"]
+    assert new_path != f"/characters/drafts/{draft_id}"
+    for _ in range(2):
+        page = c.get(new_path)
+        assert page.status_code == 200
+        boot = json.loads(re.search(r'<script type="application/json" id="pw-bootstrap">(.*?)</script>',page.text,re.S).group(1))
+        assert boot["data"]["name"] == "" and boot["step"] == 1
     with Session(engine()) as db:
-        assert db.scalar(select(func.count()).select_from(CharacterDraft)) == 1
+        assert db.scalar(select(func.count()).select_from(CharacterDraft)) == 2
         assert db.scalar(select(func.count()).select_from(Character)) == 0
-    assert "Add character" in c.get("/characters").text
+        assert db.get(CharacterDraft,draft_id).data["name"] == "A saved idea"
+    listing = c.get("/characters")
+    assert "Unnamed character" in listing.text and "Add character" in listing.text
+    assert f'href="{new_path}"' in listing.text
 
 
 def test_wizard_ability_assignment_order_is_explicit_despite_sorted_json(env):
-    c,_,_,_=start(env)
-    page=c.get("/characters/new")
+    c,draft_id,_,_=start(env)
+    page=c.get(f"/characters/drafts/{draft_id}")
     boot=json.loads(re.search(r'<script type="application/json" id="pw-bootstrap">(.*?)</script>',page.text,re.S).group(1))
     assert boot["ability_order"]==["str","dex","con","int","wis","cha"]
 
 
+def test_character_search_includes_draft_names_and_classes(env):
+    client,draft_id,version,data = start(env)
+    data.update(name="Unfinished knight",class_id="fighter")
+    assert save(env,client,draft_id,version,data).status_code == 200
+    second = client.get("/characters/new")
+    second_id = second.headers["location"].rsplit("/",1)[1]
+    second_data = defaults(env.player.id)
+    second_data.update(name="Moon scholar",class_id="wizard")
+    assert save(env,client,second_id,1,second_data).status_code == 200
+    for query,visible,hidden in [("UNFINISHED","Unfinished knight","Moon scholar"),
+                                 ("wizard","Moon scholar","Unfinished knight")]:
+        listing = client.get("/characters",params={"q":query})
+        assert visible in listing.text and hidden not in listing.text
+    assert "A hero waiting to happen." in client.get("/characters",params={"q":"no such hero"}).text
+    assert "Unfinished knight" in client.get(f"/characters/drafts/{draft_id}").text
+
+
+def test_new_draft_keeps_requested_campaign_despite_an_existing_draft(env):
+    client,draft_id,_,_ = start(env,env.gm)
+    campaign = seed_campaign(env.gm)
+    response = client.get("/characters/new",params={"campaign_id":campaign.id})
+    assert response.status_code == 303
+    new_id = response.headers["location"].rsplit("/",1)[1]
+    with Session(engine()) as db:
+        assert new_id != draft_id
+        assert db.get(CharacterDraft,new_id).data["campaign_id"] == campaign.id
+        assert db.get(CharacterDraft,draft_id).data["campaign_id"] is None
+
+
 def test_wizard_starts_at_sheet_with_abilities_fourth_and_no_dice_step(env):
     client,draft_id,version,data = start(env)
-    page = client.get("/characters/new")
+    page = client.get(f"/characters/drafts/{draft_id}")
     boot = json.loads(re.search(r'<script type="application/json" id="pw-bootstrap">(.*?)</script>',page.text,re.S).group(1))
     assert boot["step"] == boot["step_order"][0]
     assert [boot["steps"][str(key)] for key in boot["step_order"]] == [
@@ -87,7 +131,7 @@ def test_reordered_wizard_resumes_existing_drafts_at_the_same_section(env,saved_
         draft.step = saved_step
         draft.data = {**draft.data,"name":"Keep my draft"}
         db.commit()
-    page = client.get("/characters/new")
+    page = client.get(f"/characters/drafts/{draft_id}")
     boot = json.loads(re.search(r'<script type="application/json" id="pw-bootstrap">(.*?)</script>',page.text,re.S).group(1))
     assert boot["steps"][str(boot["step"])] == title
     assert boot["step_order"].index(boot["step"]) + 1 == number
@@ -96,8 +140,13 @@ def test_reordered_wizard_resumes_existing_drafts_at_the_same_section(env,saved_
 
 @pytest.mark.parametrize("account",["player2","gm","admin"])
 def test_other_accounts_cannot_read_save_roll_or_finalize_private_draft(env,account):
-    _,draft_id,version,data = start(env)
+    owner,draft_id,version,data = start(env)
+    data["name"] = "A private unfinished hero"
+    assert save(env,owner,draft_id,version,data).status_code == 200
     other = env.login(getattr(env,account))
+    assert other.get(f"/characters/drafts/{draft_id}").status_code == 404
+    listing = other.get("/characters")
+    assert draft_id not in listing.text and data["name"] not in listing.text
     for action,values in (("save",{"version":version,"payload":json.dumps(data),"step":0}),
                           ("roll",{"request_id":secrets.token_hex(16),"sides":20,"count":1,"modifier":0}),
                           ("finish",{"version":version}),("discard",{})):
@@ -178,6 +227,8 @@ def test_creation_sheet_math_persistence_and_idempotent_completion(env):
     path=completed.json()["location"]
     page=c.get(path)
     assert page.status_code == 200 and "Seren Ashfall" in page.text and "First-level character sheet" in page.text
+    assert f'href="/characters/drafts/{draft_id}"' not in c.get("/characters").text
+    assert c.get(f"/characters/drafts/{draft_id}").headers["location"] == path
     with Session(engine()) as db:
         records=list(db.scalars(select(Character)))
         assert len(records)==1 and records[0].sheet_data["computed"]["hp"]==14 and records[0].owner_id==env.player.id
@@ -309,6 +360,8 @@ def test_draft_discard_preserves_existing_characters(env):
     c,draft_id,_,_=start(env)
     roll(env,c,draft_id)
     assert env.post(c,f"/api/character-drafts/{draft_id}/discard").status_code==200
+    assert f'href="/characters/drafts/{draft_id}"' not in c.get("/characters").text
+    assert c.get(f"/characters/drafts/{draft_id}").status_code == 404
     with Session(engine()) as db:
         assert db.get(Character,existing.id) and not db.get(CharacterDraft,draft_id)
         assert db.scalar(select(func.count()).select_from(DiceRoll))==0

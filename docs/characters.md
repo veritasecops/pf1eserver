@@ -1,6 +1,6 @@
 ## Create a character
 
-Open Characters and select **Add character**. The [character wizard](/help/character-wizard) guides you through a first-level sheet with visual dice, ability scores, race, class, skills, feats, HP, gear, combat values, description, and spells. Your draft saves as you go and resumes later. Existing basic records remain supported.
+Open Characters and select **Add character** to start a new draft. The [character wizard](/help/character-wizard) guides you through a first-level sheet with visual dice, ability scores, race, class, skills, feats, HP, gear, combat values, description, and spells. Your drafts save as you go and appear with a **Draft** badge under **Draft characters** on the Characters page. Click a draft to continue editing it. You can keep multiple unfinished characters; Add character always starts a new one. Drafts remain private to their creator. Existing basic records remain supported.
 
 Players create their own characters. GMs create their own characters, or may select a joined member as owner when creating a character assigned to one of the GM's own campaigns. Admins may select any user as owner and manage campaign assignment globally.
 

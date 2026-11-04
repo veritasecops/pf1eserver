@@ -12,7 +12,7 @@ from .database import commit, get_db
 from .models import Character, CharacterDraft, DiceRoll, utcnow
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, SPELL_SUGGESTIONS, STEPS
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
-from .ui import render
+from .ui import redirect, render
 from .workspace import character_options, character_values
 
 router = APIRouter()
@@ -60,14 +60,23 @@ def display_wizard(ctx, draft):
 async def start(request: Request, db: Session = Depends(get_db)):
     ctx = context(request,db)
     account = authenticated(ctx)
-    draft = db.scalar(select(CharacterDraft).where(CharacterDraft.actor_id == account.id,CharacterDraft.mode == "create",CharacterDraft.finalized_at.is_(None)).order_by(CharacterDraft.updated_at.desc()).limit(1))
-    if not draft:
-        data = defaults(account.id)
-        if request.query_params.get("campaign_id"):
-            data["campaign_id"] = get_campaign(ctx,integer(request.query_params,"campaign_id",1,2**63-1)).id
-        draft = CharacterDraft(id=secrets.token_hex(16),actor_id=account.id,data=data)
-        db.add(draft)
-        commit(db)
+    data = defaults(account.id)
+    if request.query_params.get("campaign_id"):
+        data["campaign_id"] = get_campaign(ctx,integer(request.query_params,"campaign_id",1,2**63-1)).id
+    draft = CharacterDraft(id=secrets.token_hex(16),actor_id=account.id,data=data)
+    db.add(draft)
+    return redirect(ctx,f"/characters/drafts/{draft.id}")
+
+
+@router.get("/characters/drafts/{draft_id}")
+async def resume(draft_id: str,request: Request,db: Session = Depends(get_db)):
+    ctx = context(request,db)
+    draft = get_draft(ctx,draft_id)
+    if draft.finalized_at:
+        if not draft.completed_id:
+            raise HTTPException(404,"The completed character was deleted.")
+        get_character(ctx,draft.completed_id)
+        return redirect(ctx,f"/characters/{draft.completed_id}")
     return display_wizard(ctx,draft)
 
 

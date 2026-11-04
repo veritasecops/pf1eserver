@@ -1,8 +1,8 @@
 ## Open and resume the wizard
 
-Select **Add character** in Characters, the workspace, or a campaign. Your unfinished creation draft resumes automatically. The wizard creates a first-level PC in twelve steps: character sheet, race, class, ability scores, skills, feats, HP, equipment, combat, description, starting spells, and review. The dice tray is available throughout the wizard. Third-party class links are excluded.
+Select **Add character** in Characters, the workspace, or a campaign to start a new draft. To resume an unfinished character, open its **Draft** card on the Characters page. The wizard creates a first-level PC in twelve steps: character sheet, race, class, ability scores, skills, feats, HP, equipment, combat, description, starting spells, and review. The dice tray is available throughout the wizard. Third-party class links are excluded.
 
-Your draft saves after changes and when switching steps. **Draft saved** confirms persistence. **Save & exit** returns to Characters; Add character resumes the draft later. A draft becomes a character only after **Create character** on Review. There is one active creation draft per user; separate editing drafts may exist for saved sheets.
+Your draft saves after changes and when switching steps. **Draft saved** confirms persistence. **Save & exit** returns to Characters, where your unfinished characters appear under **Draft characters**. You can keep multiple drafts and resume each independently, including its saved step and dice history. Drafts remain private to their creator. Refreshing a draft's page reopens that same draft. A draft becomes a character only after **Create character** on Review; its Draft card then disappears. Separate editing drafts may exist for saved sheets.
 
 ## Dice tray
 

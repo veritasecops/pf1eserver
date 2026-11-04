@@ -6,12 +6,12 @@ from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from .database import commit, get_db
-from .models import Campaign, Character, Invitation, Membership, User, utcnow
+from .models import Campaign, Character, CharacterDraft, Invitation, Membership, User, utcnow
 from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
                        field, get_campaign, get_character, integer, is_member, read_form)
 from .ui import redirect, render
 from .notifications import application_link, invitation_email
-from .pf1_data import ABILITIES, SKILLS
+from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 
 router = APIRouter()
 
@@ -238,7 +238,15 @@ async def characters_page(request: Request, db: Session = Depends(get_db)):
     if search:
         query = query.where(or_(Character.name.ilike(f"%{search}%"), Character.class_name.ilike(f"%{search}%")))
     characters = db.execute(query.order_by(Character.name)).all()
-    return render(ctx, "characters.html", title="Characters", characters=characters, search=search)
+    drafts = list(db.scalars(select(CharacterDraft).where(
+        CharacterDraft.actor_id == account.id, CharacterDraft.mode == "create",
+        CharacterDraft.finalized_at.is_(None)).order_by(CharacterDraft.updated_at.desc(), CharacterDraft.id)))
+    if search:
+        term = search.casefold()
+        drafts = [draft for draft in drafts if term in (draft.data.get("name") or "Unnamed character").casefold()
+                  or term in CLASSES.get(draft.data.get("class_id"), {}).get("name", "Class unassigned").casefold()]
+    return render(ctx, "characters.html", title="Characters", characters=characters, drafts=drafts,
+                  draft_races=RACES, draft_classes=CLASSES, search=search)
 
 
 def character_options(ctx):
