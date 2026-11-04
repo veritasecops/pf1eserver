@@ -93,6 +93,7 @@ class Character(Base):
     sheet_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     play_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     portrait: Mapped[bytes | None] = mapped_column(PORTRAIT, nullable=True, deferred=True)
+    header_background: Mapped[bytes | None] = mapped_column(PORTRAIT, nullable=True, deferred=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     __mapper_args__ = {"version_id_col": version}

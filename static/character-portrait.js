@@ -1,9 +1,10 @@
 (() => {
-  const editor = document.querySelector('[data-portrait-editor]');
-  if (!editor) return;
+  for (const editor of document.querySelectorAll('[data-portrait-editor]')) {
+  const background = editor.dataset.imageKind === 'background';
+  const noun = background ? 'Header background' : 'Character image';
   const input = editor.querySelector('input[type="file"]');
   const remove = editor.querySelector('[data-portrait-remove]');
-  const status = document.getElementById('portrait-status');
+  const status = document.getElementById(editor.dataset.statusId || 'portrait-status');
   let busy = false;
   const message = text => { status.hidden = !text; status.textContent = text; };
   const resized = async file => {
@@ -11,7 +12,9 @@
     if (file.size > 10 * 1024 * 1024) throw new Error('Choose an image smaller than 10 MB.');
     const image = await createImageBitmap(file);
     try {
-      const scale = Math.min(1,768 / Math.max(image.width,image.height));
+      const maximumSide = Number(editor.dataset.maximumSide || 768);
+      for (const edge of new Set([maximumSide,Math.min(maximumSide,1024),Math.min(maximumSide,768)])) {
+      const scale = Math.min(1,edge / Math.max(image.width,image.height));
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1,Math.round(image.width*scale));
       canvas.height = Math.max(1,Math.round(image.height*scale));
@@ -23,6 +26,7 @@
         const blob = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',quality));
         if (blob && blob.size <= 200 * 1024) return blob;
       }
+      }
       throw new Error('This image is too detailed. Try a smaller image.');
     } finally { image.close(); }
   };
@@ -31,7 +35,7 @@
     busy = true;
     input.disabled = true;
     remove.disabled = true;
-    message(file ? 'Saving character image…' : 'Removing character image…');
+    message(file ? `Saving ${noun.toLowerCase()}…` : background ? 'Restoring default background…' : 'Removing character image…');
     try {
       const form = new FormData();
       form.set('csrf',editor.dataset.csrf);
@@ -43,19 +47,22 @@
       let result;
       try { result = await response.json(); } catch { throw new Error('The image could not be saved. Try again.'); }
       if (!response.ok) throw new Error(result.detail || 'The image could not be saved.');
-      for (const image of document.querySelectorAll('[data-character-portrait]')) {
+      for (const image of document.querySelectorAll(background ? '[data-character-header-background]' : '[data-character-portrait]')) {
         image.hidden = !result.url;
         if (result.url) image.src = result.url;
         else image.removeAttribute('src');
       }
-      for (const placeholder of document.querySelectorAll('[data-character-portrait-placeholder]')) placeholder.hidden = Boolean(result.url);
-      remove.hidden = !result.url;
-      document.dispatchEvent(new CustomEvent('characterportraitchange',{detail:{url:result.url}}));
-      message(file ? 'Character image saved.' : 'Character image removed.');
+      if (!background) {
+        for (const placeholder of document.querySelectorAll('[data-character-portrait-placeholder]')) placeholder.hidden = Boolean(result.url);
+        document.dispatchEvent(new CustomEvent('characterportraitchange',{detail:{url:result.url}}));
+      }
+      remove.hidden = background ? !result.custom : !result.url;
+      message(file ? `${noun} saved.` : background ? 'Default background restored.' : 'Character image removed.');
     } catch (error) { message(error.message || 'Choose a valid character image.'); }
     finally { busy = false; input.disabled = false; remove.disabled = false; input.value = ''; }
   };
   input.addEventListener('change',() => { if (input.files[0]) upload(input.files[0]); });
   remove.addEventListener('click',() => upload(null));
   window.addEventListener('beforeunload',event => { if (busy) { event.preventDefault(); event.returnValue = ''; } });
+  }
 })();

@@ -55,7 +55,7 @@ def migrate(admin_engine):
     additions = {
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
-        "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL"},
+        "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL"},
         "character_drafts": {"portrait": "MEDIUMBLOB NULL", "portrait_changed": "BOOLEAN NOT NULL DEFAULT 0"},
     }
     for table, columns in additions.items():
@@ -90,4 +90,7 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 7):
             db.add(SchemaMigration(version=7, name="character_and_draft_portrait_images"))
             db.commit()
-    print("Database migrations applied through 007 (character and draft portrait images).")
+        if not db.get(SchemaMigration, 8):
+            db.add(SchemaMigration(version=8, name="owner_editable_character_header_backgrounds"))
+            db.commit()
+    print("Database migrations applied through 008 (owner-editable character header backgrounds).")

@@ -39,3 +39,9 @@ Choose the image beside the character name to upload a JPG, PNG, or WebP portrai
 Portraits are private and use the same access rules as the character. The creation wizard keeps its image with the private draft, displays it beside the name and in the preview, and carries it to the completed character. Discarding a draft leaves an existing character's image unchanged. An editing wizard only replaces the saved portrait when its image was explicitly changed.
 
 Migration 007 adds portrait blobs to characters and drafts. Portraits are included in normal database backups. Uploading an image does not change the text-edit revision or interrupt automatic saving.
+
+## Header background
+
+The saved character's header starts with the same citadel image as Overview. The character owner can choose Change header background to upload a JPG, PNG, or WebP, or Use default background to restore the original. Other users who can access the character can view its background; editing the background requires ownership, including for administrators and campaign Game Masters.
+
+Backgrounds save independently of the portrait and text autosave. Custom images are resized and stored privately in the database; migration 008 adds the optional header background column. Existing characters automatically use the default without copying image data into every record.

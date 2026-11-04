@@ -21,3 +21,15 @@
 .pw-heading .character-portrait-remove { color:#f0d8a6; }
 .character-name-header h1 { overflow-wrap:anywhere; }
 @media(max-width:650px) { .character-portrait-editor .character-portrait-remove { white-space:normal; width:100%; line-height:1.35; } }
+.character-sheet-banner { position:relative; isolation:isolate; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; overflow:hidden; padding:28px; margin-bottom:16px; border:1px solid #ad8744; border-radius:4px; background:#29150e; }
+.character-sheet-background { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 45%; }
+.character-sheet-banner::before { content:""; position:absolute; z-index:-1; inset:0; background:linear-gradient(90deg,#251109ed,#31150bbf 55%,#24120b26); }
+.character-sheet-banner .character-name-header { margin:0; flex:1 1 260px; }
+.character-sheet-banner .deluxe-character-title { color:#fff0cf; text-shadow:0 2px 8px #160b07; }
+.character-sheet-banner .character-portrait-remove { color:#f0d8a6; }
+.header-background-controls { display:flex; flex-wrap:wrap; gap:8px; position:relative; }
+.header-background-picker { position:relative; cursor:pointer; overflow:hidden; }
+.header-background-picker>input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+.header-background-picker:focus-within { outline:3px solid #edcd8a; outline-offset:3px; }
+@media(max-width:650px) { .character-sheet-banner { padding:20px; gap:16px; } .header-background-controls { width:100%; } .header-background-controls .button { white-space:normal; text-align:left; } }
+@media print { .character-sheet-banner { display:none!important; } }
