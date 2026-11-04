@@ -8,7 +8,7 @@
 {% if not bare %}</label>{% endif %}
 {%- endmacro %}
 {% macro table(prefix,columns,count) -%}
-<div class="ds-table-scroll" tabindex="0" role="region" aria-label="{{ prefix|capitalize }} entries"><table class="ds-table ds-{{ prefix }}"><thead><tr>{% for key,label in columns %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for row in range(count) %}<tr>{% for key,label in columns %}<td>{{ control(prefix ~ '.' ~ row ~ '.' ~ key,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+<div class="ds-table-scroll" tabindex="0" role="region" aria-label="{{ prefix|capitalize }} entries"><table class="ds-table ds-{{ prefix }}"><thead><tr>{% for key,label in columns %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for row in range(count) %}<tr>{% for key,label in columns %}<td>{{ control(prefix ~ '.' ~ row ~ '.' ~ key,bare=true) }}{% if prefix=='weapon' and key=='name' %}{% set reference=weapon_links.get(row|string) %}<a class="ds-weapon-reference" data-weapon-reference="{{ row }}" {% if reference %}href="{{ reference.url }}" aria-label="Reference for {{ reference.name }}"{% else %}hidden{% endif %} target="_blank" rel="noopener noreferrer">Weapon reference ↗</a>{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
 {%- endmacro %}
 <div class="deluxe-sheet">
 <section class="ds-page" id="combat" aria-label="Combat and identity">

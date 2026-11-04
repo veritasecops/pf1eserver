@@ -54,6 +54,7 @@ for i in range(3):
 for prefix,columns,count in [('weapon',WEAPON_COLUMNS,6),('armor',ARMOR_COLUMNS,6),('gear',GEAR_COLUMNS,56),('faction',FACTION_COLUMNS,4)]:
     for i in range(count):
         for part,title in columns: register(f'{prefix}.{i}.{part}',f'{prefix.capitalize()} {i+1}: {title}')
+for i in range(6): FIELDS[f'weapon.{i}.notes']['maximum'] = 5000
 for i in range(56): register(f'feature.{i}',f'Feat, class or racial ability {i+1}',maximum=500)
 for key,meta in SKILL_ROWS:
     for part,title in [('total','Total'),('ability','Ability modifier'),('ranks','Ranks'),('misc','Miscellaneous modifier')]:
@@ -137,9 +138,12 @@ def baseline(character, owner, campaign=None, gm=None):
     equipment = values.get('equipment',[])
     for i,item in enumerate(equipment[:56]):
         data[f'gear.{i}.name'] = f"{item['name']} × {item['quantity']}"
-        data[f'gear.{i}.weight'] = str(item['weight']*item['quantity']*(.5 if small and item['kind'] in {'weapon','armor','shield'} else 1))
+        data[f'gear.{i}.weight'] = str(item['weight']*item['quantity']*(.5 if small and item['kind'] in {'weapon','armor','shield'} else 1)) if item.get('weight') is not None else item.get('weight_text','Special')
     for i,item in enumerate([e for e in equipment if e['kind'] == 'weapon'][:6]):
         data[f'weapon.{i}.name'] = item['name']
+        for part,source in [('critical','critical'),('type','damage_type'),('range','range')]:
+            data[f'weapon.{i}.{part}'] = item.get(source,'')
+        data[f'weapon.{i}.notes'] = '\n'.join(value for value in [item.get('special',''),item.get('notes','')] if value and value!='—')
         data[f'weapon.{i}.damage'] = item.get('small_damage' if small else 'damage','')
         if item['id'] == inputs.get('weapon'):
             data[f'weapon.{i}.attack'] = values.get('weapon_attack','')

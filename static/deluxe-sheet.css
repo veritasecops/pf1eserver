@@ -109,3 +109,5 @@
 .character-delete-dialog .row { justify-content:flex-end; flex-wrap:wrap; gap:10px; }
 @media(max-width:650px) { .deluxe-character-title { font-size:1.625rem; margin-bottom:12px; } .deluxe-toolbar-main { gap:8px; } .character-delete-dialog { padding:22px; } }
 @media print { .deluxe-character-title,.character-delete-dialog { display:none !important; } }
+
+.ds-weapon-reference{display:block;margin:4px 6px 6px;font-size:0.875rem;line-height:1.35;text-decoration:underline;color:var(--ink);white-space:normal}.ds-weapon-reference[hidden]{display:none}.ds-weapon-reference:focus-visible{outline:2px solid currentColor;outline-offset:3px}

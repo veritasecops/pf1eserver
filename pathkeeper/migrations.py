@@ -99,4 +99,13 @@ def migrate(admin_engine):
                 db.add(RuleCatalog(id=1, data=default_catalog()))
             db.add(SchemaMigration(version=9, name="editable_feat_skill_and_weapon_catalog"))
             db.commit()
-    print("Database migrations applied through 009 (editable rules catalog).")
+        if not db.get(SchemaMigration, 10):
+            from copy import deepcopy
+            from .weapons import merge_weapon_tables
+            record = db.get(RuleCatalog, 1)
+            updated = deepcopy(record.data)
+            updated['weapons'] = merge_weapon_tables(updated['weapons'])
+            record.data = updated
+            db.add(SchemaMigration(version=10, name="simple_martial_exotic_weapon_tables_and_links"))
+            db.commit()
+    print("Database migrations applied through 010 (expanded weapon tables and links).")

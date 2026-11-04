@@ -182,7 +182,10 @@ def calculate(data, rolls, catalog=None):
     equipment = [{"id":key,"quantity":quantity,**EQUIPMENT[key]} for key,quantity in data["equipment"].items() if quantity]
     for item in equipment:
         if not item.get("enabled",True): error(8,f"{item['name']} is archived; remove it from starting equipment.")
-    spent = sum(item["cost"]*item["quantity"] for item in equipment) + data["extra_spending"]
+    spent = sum((item["cost"] or 0)*item["quantity"] for item in equipment) + data["extra_spending"]
+    for item in equipment:
+        if item.get('cost') is None: warnings.append(f"{item['name']} has a special or variable price ({item.get('cost_text','see reference')}); enter its actual cost under Other equipment cost.")
+        if item.get('weight') is None: warnings.append(f"{item['name']} has an unspecified weight; its weight is excluded from the inventory total. Record the actual weight on the sheet.")
     if spent > gold: error(8, "Equipment costs exceed starting wealth.")
     for slot in ("armor","shield","weapon"):
         if data[slot] and not data["equipment"].get(data[slot]): error(8, f"Add the equipped {slot} to inventory first.")
@@ -210,8 +213,14 @@ def calculate(data, rolls, catalog=None):
     attack_mod = modifiers["dex"] if weapon.get("ranged") or weapon.get("finesse") and any(FEATS.get(name,{}).get("finesse") for name in feat_names) else modifiers["str"]
     weapon_focus = effects("selected_weapon",data["weapon"])
     damage_mod = 0 if weapon.get("ranged") else modifiers["str"]
-    if weapon.get("bow"): damage_mod = min(0,modifiers["str"])
-    if weapon.get("two_handed") and damage_mod > 0: damage_mod = floor(damage_mod*1.5)
+    if weapon.get('ranged') and weapon.get('add_strength'): damage_mod = modifiers['str']
+    composite_penalty = 0
+    if weapon.get("bow"):
+        rating = weapon.get('strength_rating')
+        damage_mod = min(modifiers['str'],rating) if rating is not None else min(0,modifiers['str'])
+        if rating is not None and modifiers['str'] < rating: composite_penalty = -2
+    if weapon.get("two_handed") and not weapon.get("ranged") and damage_mod > 0: damage_mod = floor(damage_mod*1.5)
+    if weapon.get("damage") in {"—","see text","See text",""}: damage_mod = 0
     if armor or shield: warnings.append("Confirm armor/shield proficiency and spell failure; nonproficiency and spell failure are not applied automatically.")
     if weapon: warnings.append("Attack assumes weapon proficiency. Conditional combat actions and temporary effects are applied during play.")
     if data["class_id"] in {"druid","shifter"} and data["armor"] in {"chain-shirt","scale-mail","studded-leather"}: warnings.append("Review the class's restrictions on metal armor with your GM.")
@@ -236,10 +245,10 @@ def calculate(data, rolls, catalog=None):
             "hp":hp,"skill_budget":skill_budget,"ranks_used":ranks_used,"class_skills":sorted(class_skills),"skill_totals":skill_totals,
             "general_slots":general_slots,"bonus_feat":bonus,"automatic_feats":automatic,"feats":feat_entries,
             "gold_cp":gold,"spent_cp":spent,"remaining_cp":gold-spent,"equipment":equipment,
-            "weight":sum(item["weight"]*item["quantity"]*(.5 if small and item["kind"] in {"armor","shield","weapon"} else 1) for item in equipment),
+            "weight":sum((item["weight"] or 0)*item["quantity"]*(.5 if small and item["kind"] in {"armor","shield","weapon"} else 1) for item in equipment),
             "ac":ac,"touch_ac":10+dex_ac+small+dodge+monk_ac,"flat_ac":10+armor.get("armor",0)+shield.get("shield",0)+min(0,dex_ac)+small+monk_ac,
             "armor_check_penalty":acp,"saves":saves,"initiative":initiative,"bab":bab,"melee":bab+modifiers["str"]+small,
             "ranged":bab+modifiers["dex"]+small,"cmb":bab+modifiers["str"]-small,"cmd":10+bab+modifiers["str"]+modifiers["dex"]-small+dodge+monk_ac,
-            "weapon_attack":bab+attack_mod+small+weapon_focus,"weapon_damage":weapon.get("small_damage" if small else "damage",("1d4" if small else "1d6") if data["class_id"] == "monk" else ("1d2" if small else "1d3")),
+            "weapon_attack":bab+attack_mod+small+weapon_focus+composite_penalty,"weapon_damage":weapon.get("small_damage" if small else "damage",("1d4" if small else "1d6") if data["class_id"] == "monk" else ("1d2" if small else "1d3")),
             "damage_modifier":damage_mod,"speed":speed,"automatic_languages":languages,"bonus_languages":max(0,modifiers["int"]),
             "caster":caster,"spell_count":spell_count,"cantrip_count":cantrip_count,"spell_dc":11+modifiers.get(caster,0),"errors":errors,"warnings":list(dict.fromkeys(warnings))}

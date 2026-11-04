@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components.html' import icon, field, csrf_input %}
-{% block extra_head %}<link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/deluxe-sheet.css?v=20261104-character-actions-1">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/deluxe-sheet.css?v=20261104-weapon-links-1">{% endblock %}
 {% block content %}
 <header class="character-sheet-banner">
 <img class="character-sheet-background" data-character-header-background src="{{ header_background_url }}" alt="">
@@ -24,4 +24,4 @@
 <footer class="deluxe-bottom"><span class="hint">Character #{{ character.id }} · Created {{ character.created_at|date }}</span><div class="row"><a class="button" href="/characters/{{ character.id }}/edit">Manage character</a>{% if character.sheet_data and character.level == 1 %}<a class="button" href="/characters/{{ character.id }}/sheet/edit">Creation wizard</a>{% endif %}{% if can_delete %}<button class="button danger" type="button" id="open-character-delete" aria-haspopup="dialog" aria-controls="delete-character">{{ icon('trash') }}Delete character</button>{% endif %}</div></footer>
 {% if can_delete %}<dialog class="character-delete-dialog" id="delete-character" aria-labelledby="delete-character-title" aria-describedby="delete-character-description"><h2 id="delete-character-title">Delete character</h2><p id="delete-character-description">Deletion is permanent. Type <strong id="delete-character-name">{{ character.name }}</strong> to confirm.</p><form method="post" action="/characters/{{ character.id }}/delete" class="stack">{{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ character.version }}">{{ field('Character name to confirm', 'confirm_name', required=true, attrs='autofocus') }}<div class="row"><button class="button" type="button" id="cancel-character-delete">Cancel</button><button class="button danger" type="submit">{{ icon('trash') }}Delete character</button></div></form></dialog>{% endif %}
 {% endblock %}
-{% block page_scripts %}<script src="/static/character-portrait.js?v=20261104-header-pencil-1" defer></script><script src="/static/deluxe-sheet.js?v=20261104-character-actions-1" defer></script><script src="/static/character-actions.js?v=20261104-character-actions-1" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/character-portrait.js?v=20261104-header-pencil-1" defer></script><script src="/static/deluxe-sheet.js?v=20261104-weapon-links-1" defer></script><script src="/static/character-actions.js?v=20261104-weapon-links-1" defer></script>{% endblock %}

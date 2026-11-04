@@ -11,7 +11,7 @@ EFFECTS = {
 }
 
 
-def default_catalog():
+def default_catalog(legacy=False):
     feats, skills = deepcopy(FEATS), deepcopy(SKILLS)
     for name, meta in feats.items():
         meta.update(enabled=True, monk=name in MONK_BONUS, repeatable=name in {'Skill Focus','Weapon Focus'}, effects={})
@@ -25,7 +25,9 @@ def default_catalog():
     for key, meta in skills.items():
         meta.update(enabled=True, bonus=0, trained=key in trained or key.startswith('knowledge-'),
                     classes=[name for name,cls in CLASSES.items() if key in cls['skills']])
-    return {'feats':feats, 'skills':skills, 'weapons':{key:{**deepcopy(value),'enabled':True} for key,value in EQUIPMENT.items() if value['kind']=='weapon'}}
+    from .weapons import table_weapons
+    weapons = {key:{**deepcopy(value),'enabled':True} for key,value in EQUIPMENT.items() if value['kind']=='weapon'} if legacy else deepcopy(table_weapons())
+    return {'feats':feats, 'skills':skills, 'weapons':weapons}
 
 
 def load_catalog(db):
@@ -57,4 +59,4 @@ def effect_total(feats, catalog, target, choice=None):
 
 
 def character_catalog(character):
-    return (character.sheet_data or {}).get('catalog') or default_catalog()
+    return (character.sheet_data or {}).get('catalog') or default_catalog(legacy=True)

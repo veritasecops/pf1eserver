@@ -44,7 +44,7 @@ function harness() {
     clearTimeout: id => timers.delete(id),
     fetch: (url, options) => new Promise((resolve, reject) => calls.push({ url, options, resolve, reject }))
   });
-  function change(value) { fields['ability.dex.score'].value = value; listeners.input(); }
+  function change(value) { fields['ability.dex.score'].value = value; listeners.input({ target: fields['ability.dex.score'] }); }
   function run(delay) {
     const entry = [...timers].find(([,timer]) => timer.delay === delay);
     assert.ok(entry, `Expected a ${delay}ms timer`);

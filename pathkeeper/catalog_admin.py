@@ -10,6 +10,7 @@ from .database import get_db
 from .models import Guard, RuleCatalog, utcnow
 from .pf1_data import ABILITIES, CLASSES
 from .rule_catalog import EFFECTS, default_catalog
+from .weapons import safe_weapon_url, WEAPON_CATEGORIES, WEAPON_GROUPS
 from .security import administrator, audit, context, field, integer, read_form
 from .ui import redirect, render
 
@@ -38,7 +39,7 @@ def editor(ctx, record, kind, key, item, errors=(), new=False):
     response = render(ctx,'catalog_edit.html',title='Add catalog entry' if new else 'Edit '+item.get('name',key),
                       kinds=KINDS,kind=kind,key=key,item=item,new=new,version=record.version,
                       abilities=ABILITIES,classes=CLASSES,skills=record.data['skills'],feats=record.data['feats'],
-                      effects=EFFECTS,errors=errors)
+                      effects=EFFECTS,errors=errors,weapon_url=safe_weapon_url,weapon_categories=WEAPON_CATEGORIES,weapon_groups=WEAPON_GROUPS)
     if errors: response.status_code=422
     return response
 
@@ -52,8 +53,12 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     kind_check(kind)
     search=request.query_params.get('q','').strip()[:100]
     items=[(key,item) for key,item in record.data[kind].items() if search.casefold() in item.get('name',key).casefold()]
+    group=request.query_params.get('group','') if kind=='weapons' else ''
+    category=request.query_params.get('category','') if kind=='weapons' else ''
+    if group in WEAPON_GROUPS: items=[(key,item) for key,item in items if item.get('group')==group]
+    if category in WEAPON_CATEGORIES: items=[(key,item) for key,item in items if item.get('category')==category]
     items.sort(key=lambda pair:pair[1].get('name',pair[0]).casefold())
-    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,version=record.version)
+    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category)
 
 
 @router.get('/{kind}/new')
@@ -116,12 +121,30 @@ def parse_entry(form,kind,key,catalog):
         if set(classes)-set(CLASSES): raise HTTPException(422,'Choose valid classes.')
         item.update(ability=ability,classes=sorted(set(classes)),armor=form.get('armor')=='on',trained=form.get('trained')=='on',bonus=number('bonus'))
     else:
-        item.update(kind='weapon',cost=number('cost',0,100000000),weight=number('weight',0,100000,True),
-                    group=field(form,'group',100),damage=field(form,'damage',40),small_damage=field(form,'small_damage',40))
-        for part in ('damage','small_damage'):
-            if not re.fullmatch(r'[1-9][0-9]?d(?:2|3|4|6|8|10|12|20)(?:[+-][0-9]{1,3})?',item[part]): raise HTTPException(422,'Use damage dice such as 1d8 or 2d6+1.')
-        for flag in ('ranged','bow','two_handed','finesse'): item[flag]=form.get(flag)=='on'
+        existing=catalog['weapons'].get(key,{})
+        category=str(form.get('category',existing.get('category','ranged' if form.get('ranged')=='on' else 'one-handed')))
+        group=field(form,'group',100)
+        if category not in WEAPON_CATEGORIES or group not in WEAPON_GROUPS: raise HTTPException(422,'Choose a Simple, Martial, or Exotic weapon category.')
+        item.update(kind='gear' if category=='ammunition' else 'weapon',category=category,group=group,
+                    cost=None if 'cost' in form and not str(form['cost']).strip() else number('cost',0,100000000),
+                    weight=None if 'weight' in form and not str(form['weight']).strip() else number('weight',0,100000,True),
+                    damage=field(form,'damage',120),small_damage=field(form,'small_damage',120))
+        for name,maximum in {'critical':120,'range':120,'damage_type':120,'special':1000,'source':300,
+                             'cost_text':120,'weight_text':120,'notes':3000,'url':1000}.items():
+            item[name]=field(form,name,maximum,required=False) if name in form else existing.get(name,'')
+        if item['url'] and not safe_weapon_url(item['url']): raise HTTPException(422,'Weapon link must be an HTTP or HTTPS URL without credentials or spaces.')
+        aliases=field(form,'aliases',2000,required=False) if 'aliases' in form else '\n'.join(existing.get('aliases',[]))
+        item['aliases']=list(dict.fromkeys(name.strip() for name in aliases.splitlines() if name.strip()))
+        if len(item['aliases'])>20 or any(len(name)>100 for name in item['aliases']): raise HTTPException(422,'Use up to 20 aliases of 100 characters each.')
+        if existing and existing['name']!=item['name']:
+            item['aliases']=list(dict.fromkeys([*item['aliases'],existing['name']]))
+        for flag in ('ranged','bow','two_handed','finesse','thrown','add_strength'): item[flag]=form.get(flag)=='on'
+        rating=str(form.get('strength_rating',existing.get('strength_rating') if existing.get('strength_rating') is not None else '')).strip()
+        item['strength_rating']=number('strength_rating',0,20) if rating else None
+        if item['strength_rating'] is not None and 'strength_rating' not in form: item['strength_rating']=existing.get('strength_rating')
         if item['bow'] and not item['ranged']: raise HTTPException(422,'A bow must be a ranged weapon.')
+        if item['strength_rating'] is not None and not item['bow']: raise HTTPException(422,'A composite Strength rating requires a bow.')
+        if category=='ammunition' and any(item[flag] for flag in ('ranged','bow','two_handed','thrown','add_strength')): raise HTTPException(422,'Ammunition is carried as equipment, not equipped as an attack.')
     return item
 
 
@@ -142,7 +165,7 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         raise HTTPException(422,'Use a stable lowercase identifier with letters, numbers and single hyphens, without a -2 ending.')
     if new and any(existing.casefold()==key.casefold() for existing in record.data[kind]): raise HTTPException(409,'That catalog identifier already exists.')
     if not new and key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
-    if new and len(record.data[kind]) >= (75 if kind=='skills' else 200): raise HTTPException(422,'The skill catalog supports 75 entries; the other catalogs support 200.')
+    if new and len(record.data[kind]) >= (75 if kind=='skills' else 1000 if kind=='weapons' else 200): raise HTTPException(422,'The skill catalog supports 75 entries; feats support 200 and weapons support 1000.')
     if new and kind=='weapons':
         from .pf1_data import EQUIPMENT
         if key in EQUIPMENT: raise HTTPException(409,'That identifier is already used by equipment.')
@@ -152,7 +175,7 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         if error.status_code!=422: raise
         item={**record.data[kind].get(key,{}),**{k:str(v) for k,v in form.items() if k not in {'csrf','version'}}}
         item.update(enabled=form.get('enabled')=='on',effects={target:form.get('effect.'+target,0) for target in [*EFFECTS,*('skill:'+s for s in record.data['skills'])]},classes=form.getlist('classes'))
-        for flag in ('combat','monk','repeatable','finesse','armor','trained','ranged','bow','two_handed'): item[flag]=form.get(flag)=='on'
+        for flag in ('combat','monk','repeatable','finesse','armor','trained','ranged','bow','two_handed','thrown','add_strength'): item[flag]=form.get(flag)=='on'
         return editor(ctx,record,kind,key,item,[error.detail],new)
     updated=deepcopy(record.data)
     updated[kind][key]=item

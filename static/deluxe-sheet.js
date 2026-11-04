@@ -17,6 +17,18 @@
     errors.hidden = false;
   };
   const applyTotals = result => {
+    if (result.weapon_links) {
+      for (const link of form.querySelectorAll('[data-weapon-reference]')) {
+        const row = link.dataset.weaponReference;
+        const reference = result.weapon_links[row];
+        const name = form.elements.namedItem(`weapon.${row}.name`)?.value.trim();
+        link.hidden = !reference || reference.name !== name;
+        if (!link.hidden) {
+          link.href = reference.url;
+          link.setAttribute('aria-label', `Reference for ${reference.name}`);
+        } else link.removeAttribute('href');
+      }
+    }
     const locked = new Set(result.readonly);
     for (const input of form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"])')) {
       input.readOnly = locked.has(input.name);
@@ -121,7 +133,14 @@
     status.textContent = saving ? 'Saving newer changes…' : 'Unsaved changes';
     timer = setTimeout(save, 400);
   };
-  form.addEventListener('input', markDirty);
+  form.addEventListener('input', event => {
+    const row = /^weapon\.(\d+)\.name$/.exec(event.target.name || '');
+    if (row) {
+      const link = form.querySelector(`[data-weapon-reference="${row[1]}"]`);
+      if (link) { link.hidden = true; link.removeAttribute('href'); }
+    }
+    markDirty();
+  });
   form.addEventListener('change', markDirty);
   form.addEventListener('focusout', () => { if (dirty && !saving && !blocked) save(); });
   form.addEventListener('submit', event => { event.preventDefault(); save(); });
