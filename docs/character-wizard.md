@@ -16,7 +16,7 @@ Ability generation and starting wealth use dedicated buttons that save their pro
 
 The signed-in user automatically owns every new character, including characters created by GMs and Admins. Choose an optional campaign. Campaign access is checked again when the character is finalized.
 
-Ability methods include point buy with 10, 15, 20, or 25 points; standard 4d6 dropping one lowest die; classic 3d6; heroic 2d6 plus 6; and GM-approved manual scores. Point-buy scores range from 7 to 18 before race adjustments. The wizard blocks overspending and reports unused points.
+Ability methods include point buy with 10, 15, 20, or 25 points; standard 4d6 dropping one lowest die; classic 3d6; heroic 2d6 plus 6; and GM-approved manual scores. Point-buy scores range from 7 to 18 before race adjustments. When Point buy is selected, step 4 displays a reference table of costs for base scores 7–18. Negative costs return points to the budget. The wizard blocks overspending and reports unused points.
 
 Rolled methods generate six scores. Assign each score once. Changing the browser's score fields cannot change the stored server result. Race adjustments are applied after generation. Ability modifiers use the final adjusted scores.
 
