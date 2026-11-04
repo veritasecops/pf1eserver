@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .database import commit, get_db
 from .models import Campaign, Character, Invitation, Membership, User, utcnow
-from .security import (audit, authenticated, can_manage_campaign, context, digest, email_field,
+from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
                        field, get_campaign, get_character, integer, is_member, read_form)
 from .ui import redirect, render
 from .notifications import application_link, invitation_email
@@ -296,7 +296,8 @@ async def character_page(character_id: int, request: Request, db: Session = Depe
     character = get_character(ctx, character_id)
     return render(ctx, "character.html", title=character.name, character=character,
                   owner=db.get(User, character.owner_id), campaign=db.get(Campaign, character.campaign_id) if character.campaign_id else None,
-                  sheet=character.sheet_data, sheet_abilities=ABILITIES, sheet_skills=SKILLS)
+                  sheet=character.sheet_data, sheet_abilities=ABILITIES, sheet_skills=SKILLS,
+                  can_delete=can_delete_character(ctx.user, character))
 
 
 @router.get("/characters/{character_id}/edit")
@@ -328,6 +329,8 @@ async def character_update(character_id: int, request: Request, db: Session = De
 async def character_delete(character_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     character = get_character(ctx, character_id)
+    if not can_delete_character(ctx.user, character):
+        raise HTTPException(403, "Only the character's owner or an Admin can delete it.")
     form = await read_form(ctx)
     verify_version(form, character)
     if field(form, "confirm_name") != character.name:

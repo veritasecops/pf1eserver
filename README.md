@@ -8,7 +8,7 @@ Python administration and identity foundation for a Pathfinder First Edition pla
 - Revocable server-side sessions, rotated opaque cookies, CSRF protection, throttling, and immediate disabled-account enforcement.
 - TOTP enrollment with QR/manual entry, encrypted secrets, replay prevention, one-time hashed recovery codes, and Admin-controlled resets.
 - Admin-only user creation, editing, disable/enable, deletion, role assignment, password resets, and activity log. Admins require TOTP. The last active Admin is protected.
-- Player: full CRUD on owned characters. Game Master: full CRUD on owned campaigns, owned characters, and joined members' characters assigned to owned campaigns. Admin: all users, campaigns, and characters.
+- Player: full CRUD on owned characters. Game Master: full CRUD on owned campaigns and characters; can view and edit joined members' characters assigned to owned campaigns. Only a character's owner or an Admin can delete it. Admin: all users, campaigns, and characters.
 - Email-bound, single-use, seven-day invitations; revocation and member removal. A GM can create a joined member's character in that GM's campaign. Removing membership detaches the member's characters.
 - Basic campaigns and a first-level character wizard with private resumable drafts, server-generated visual d4/d6/d8/d10/d12/d20/d100 rolls, ability generation, core races, core/base/alternate classes, skill budgets, feats, maximum starting HP, starting wealth, starter gear, combat values, descriptions, and spell choices. Third-party class links are excluded. See `/help/character-wizard` for calculations and GM-reviewed choices.
 - Searchable public help, printable articles/full manual, and downloadable manual. Help does not query the database.

@@ -278,6 +278,10 @@ def get_campaign(ctx, campaign_id, manage=False):
     return record
 
 
+def can_delete_character(account, character):
+    return account.role == "admin" or character.owner_id == account.id
+
+
 def can_manage_character(db, account, character):
     if account.role == "admin" or character.owner_id == account.id:
         return True

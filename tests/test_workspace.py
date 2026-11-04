@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from pathkeeper.database import engine
-from pathkeeper.models import Campaign, Character, Invitation, Membership, User, utcnow
+from pathkeeper.models import AuditEvent, Campaign, Character, Invitation, Membership, User, utcnow
 from .test_accounts import account_form
 
 
@@ -68,6 +68,36 @@ def test_player_cannot_manage_others_or_create_campaigns(env):
         assert record is not None
 
 
+@pytest.mark.parametrize("actor", ["player", "gm", "admin"])
+def test_character_deletion_is_visible_to_owners_and_admins_and_requires_confirmation(env, actor):
+    account = getattr(env, actor)
+    character = seed_character(env.player if actor == "admin" else account)
+    survivor = seed_character(env.player2, name="Keep this character")
+    client = env.login(account)
+    path = f"/characters/{character.id}"
+    page = client.get(path)
+    assert 'href="#delete-character"' in page.text
+    assert page.text.count('id="delete-character"') == 1
+    assert page.text.index("<body") < page.text.index('id="delete-character"')
+    values = {"confirm_name": character.name, "version": character.version}
+    assert env.post(client, path + "/delete", values, use_csrf=False).status_code == 403
+    assert env.post(client, path + "/delete", {**values, "confirm_name": "Wrong name"}).status_code == 422
+    assert env.post(client, path + "/delete", {**values, "version": character.version + 1}).status_code == 409
+    with Session(engine()) as db:
+        assert db.get(Character, character.id) is not None
+        assert db.scalar(select(AuditEvent).where(AuditEvent.event == "character.deleted")) is None
+    response = env.post(client, path + "/delete", values)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/characters"
+    assert client.get(path).status_code == 404
+    with Session(engine()) as db:
+        assert db.get(Character, character.id) is None
+        assert db.get(Character, survivor.id) is not None
+        event = db.scalar(select(AuditEvent).where(AuditEvent.event == "character.deleted"))
+        assert event.actor_id == account.id
+        assert character.name in event.detail
+
+
 def test_gm_campaign_crud_and_unrelated_campaign_boundary(env):
     c = env.login(env.gm)
     created = env.post(c, "/campaigns", {"name": "GM world", "description": "A world", "setting": "North", "owner_id": env.gm2.id})
@@ -104,7 +134,10 @@ def test_gm_can_manage_only_joined_assigned_characters(env):
         record = db.get(Character, assigned.id)
         assert env.post(c, f"/characters/{record.id}", char_form(record, campaign_id="")).status_code == 403
         version = record.version
-    assert env.post(c, f"/characters/{assigned.id}/delete", {"confirm_name": "GM edited", "version": version}).status_code == 303
+    assert "Delete character" not in c.get(f"/characters/{assigned.id}").text
+    assert env.post(c, f"/characters/{assigned.id}/delete", {"confirm_name": "GM edited", "version": version}).status_code == 403
+    with Session(engine()) as db:
+        assert db.get(Character, assigned.id) is not None
 
 
 def test_gm_creates_character_for_joined_member_only_in_owned_campaign(env):

@@ -1,0 +1,276 @@
+/* Original artwork and parchment are local assets. No remote fonts or images. */
+:root {
+  --paper: #e8d8b6;
+  --white: #f7edda;
+  --ink: #34271f;
+  --muted: #70583f;
+  --line: #c6ac7a;
+  --violet: #7b241b;
+  --pale: #ecddbc;
+  --night: #29130f;
+  --green: #3c6244;
+  --red: #8c271e;
+  --gold: #b68a43;
+  --heading-font: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  background: linear-gradient(#e8d8b64d, #e8d8b64d), url("/static/images/parchment.jpg") repeat;
+  background-size: auto, 640px 640px;
+}
+h1, h2, h3, h4, .brand strong, .stat-card strong, .pw-stat-row strong {
+  font-family: var(--heading-font);
+}
+h1 { font-weight: 600; letter-spacing: -.6px; }
+h2 { font-size: 20px; }
+h3 { font-size: 16px; }
+.overline, .eyebrow, .nav-section, .build-tag {
+  font-family: var(--heading-font);
+  font-weight: 700;
+  letter-spacing: 1.6px;
+}
+.overline, .eyebrow { font-size: 10px; }
+.card, .stat-card, .pw-choice, .pw-class-choice, .pw-ability {
+  background: #f6ead0 url("/static/images/parchment.jpg") repeat;
+  background-size: 640px 640px;
+  border-color: var(--line);
+  border-radius: 3px;
+  box-shadow: 0 3px 12px #38200e0d, inset 0 0 0 3px #fff7df66;
+}
+.card-heading { border-bottom: 1px solid var(--line); }
+.card-heading h2 { font-size: 19px; }
+.page-heading { border-bottom: 3px double var(--gold); padding-bottom: 24px; }
+.page-heading p, .section-heading p, .prose, .help-body { color: #604b36; }
+.section-heading { border-bottom: 1px solid var(--line); padding-bottom: 13px; }
+.page-heading > .row { flex-wrap: wrap; }
+.page-heading > .row:first-child { flex-wrap: nowrap; }
+
+.button {
+  border: 1px solid #a17b43;
+  border-radius: 3px;
+  background: linear-gradient(#f9edce, #e7d2a7);
+  color: #543b22;
+  font-family: var(--heading-font);
+  font-size: 13px;
+  box-shadow: inset 0 0 0 2px #fff7e04d, 0 2px 3px #38200e0d;
+}
+.button:hover { background: #ead5a9; }
+.button.primary, .pw-dice-tray .primary {
+  color: #fff0cf;
+  background: linear-gradient(#8c3023, #651d16);
+  border-color: #b68a43;
+  box-shadow: inset 0 0 0 2px #e3bb6433, 0 2px 4px #210d1426;
+}
+.button.primary:hover, .pw-dice-tray .primary:hover { background: #54170f; }
+.button.danger { background: #f0d8bf; border-color: #a85b3e; color: #7b2118; }
+.text-button { color: var(--violet); font-size: 13px; }
+.icon-button { border-radius: 3px; }
+.icon-button:hover { background: #e6d1a9; color: #6b2018; }
+:where(a, button, summary):focus-visible {
+  outline: 3px solid #9a5a19;
+  outline-offset: 4px;
+}
+input, select, textarea {
+  background: #fff8e9;
+  color: var(--ink);
+  border-color: #bda174;
+  border-radius: 3px;
+  font-size: 13px;
+  box-shadow: inset 0 2px 4px #63451e09;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #8a4e26;
+  box-shadow: 0 0 0 3px #b8894240;
+}
+input::placeholder { color: #816e56; opacity: 1; }
+.field > span { color: #59412d; font-size: 12px; font-weight: 600; }
+.field small, .inline-note, .account-note, .login-footer { color: #715b43; }
+.field small { font-size: 11px; }
+.badge, .count {
+  background: #ecdcba;
+  color: #634623;
+  border-color: #c3a369;
+  border-radius: 2px;
+}
+.badge.role-admin { color: #76271b; background: #f1d8be; border-color: #bd8951; }
+.badge.role-gm { color: #705020; background: #f0dfad; border-color: #b8944d; }
+.badge.role-player, .badge.green { color: #355338; background: #e2e6c8; border-color: #9aa476; }
+.avatar, .avatar.large, .avatar.extra-large {
+  border-radius: 3px;
+  border: 1px solid #a7854c;
+  background: linear-gradient(135deg, #ead09c, #d5ba7f);
+  color: #6e251b;
+  box-shadow: inset 0 0 0 3px #fff2c74d;
+}
+.large-icon, .large-icon.compact, .mini-icon, .empty-icon, .stat-icon {
+  border-radius: 3px;
+  color: #7b3420;
+  background: #e6d3ac;
+  border: 1px solid #c4a66f;
+}
+.stat-card { border-top: 3px solid #a77b3b; }
+.stat-card:nth-child(n) .stat-icon { background: #e6d3ac; color: #754225; }
+.stat-card strong { font-size: 31px; color: #70251b; }
+.empty h3 { color: #5b351e; }
+.empty p, .foundation-note { color: #70583f; }
+.notice, .pw-note { background: #efdfb9; border-color: #c4a46a; color: #624a2a; border-radius: 3px; }
+.flash, .email-notice, .pw-ready { background: #e1e5c8; border-color: #a9b286; color: #38533a; border-radius: 3px; }
+.error, .pw-message, .pw-review-errors { background: #f1dac3; border-color: #bf8b66; color: #7b291c; border-radius: 3px; }
+.danger-card { border-color: #b27a53; }
+.danger-card h2, .delete-details summary { color: #86291d; }
+.toast { background: #3c1b13; color: #f7e9c5; border: 1px solid var(--gold); border-radius: 3px; }
+
+/* Oxblood leather and brass navigation. */
+.sidebar {
+  background: linear-gradient(100deg, #210d09ec, #40130df5), url("/static/images/parchment.jpg") repeat;
+  background-size: auto, 640px 640px;
+  color: #dfc69e;
+  border-right: 3px double #a47a3a;
+}
+.brand { color: #f8e7be; }
+.brand strong { font-weight: 600; letter-spacing: .1px; }
+.brand small, .login-story .brand small { color: #d0b784; }
+.sidebar .brand { padding-bottom: 26px; border-bottom: 3px double #a47a3a; margin-bottom: 8px; }
+.nav-section { color: #c6a263; font-size: 10px; }
+.nav-link { color: #e1cba8; border-radius: 2px; font-size: 13px; }
+.nav-link .icon { color: #bfa065; }
+.nav-link:hover { background: #643124; color: #fff2cf; }
+.nav-link.selected { background: linear-gradient(90deg, #7a2c20, #531b13); color: #fff2cf; box-shadow: inset 3px 0 #d0ac63; }
+.nav-link.selected .icon { color: #eacb85; }
+.sidebar nav { scrollbar-color: #98723d transparent; }
+.sidebar-profile { border-color: #81552e; }
+.sidebar-profile .avatar { background: #674123; color: #f5d998; }
+.sidebar-profile strong { color: #f0d9b0; }
+.sidebar-profile small, .build-tag { color: #c1a47a; }
+.topbar, .public-header {
+  background: linear-gradient(#45150f, #30110c);
+  border-bottom: 3px double #bd9654;
+  color: #f2dcb6;
+}
+.topbar .breadcrumb, .topbar .breadcrumb strong, .topbar .icon-button, .topbar .breadcrumb > span { color: #ead2a8; }
+.topbar .icon-button:hover { background: #643124; color: #fff1c8; }
+.public-header .brand.dark-text { color: #f8e7be; }
+
+/* Large illustration on the welcome page; quieter paper for working screens. */
+.adventure-heading, .pw-heading, .campaign-hero {
+  background: linear-gradient(90deg, #251109ed, #31150bbf 55%, #24120b26), url("/static/images/citadel-dusk.jpg") center 45% / cover;
+  border: 1px solid #a77d3b;
+  border-bottom: 3px double #d3ac62;
+  border-radius: 3px;
+  color: #fff0cf;
+  padding: 36px;
+  min-height: 230px;
+  box-shadow: inset 0 0 0 5px #d1a35026, 0 4px 15px #3c1b131a;
+}
+.adventure-heading h1, .pw-heading h1, .campaign-hero h1 { color: #fff0cf; text-shadow: 0 2px 8px #160b07; }
+.adventure-heading .overline, .pw-heading .overline { color: #edcd8a; }
+.adventure-heading p, .pw-heading p, .campaign-hero p { color: #f0ddbd; max-width: 600px; }
+.adventure-heading .button, .campaign-hero .button { flex-shrink: 0; }
+.pw-heading { min-height: 185px; padding: 28px; }
+.pw-heading .pw-save-state { color: #efdfb9; }
+.pw-heading .pw-save-dot { background: #c3ce8d; }
+.campaign-cover, .campaign-card:nth-child(3n+2) .campaign-cover, .campaign-card:nth-child(3n+3) .campaign-cover {
+  height: 165px;
+  background: linear-gradient(0deg, #30120c80, #30120c08), url("/static/images/citadel-dusk.jpg") center 40% / cover;
+  border-bottom: 3px double #a98549;
+}
+.campaign-card:nth-child(3n+2) .campaign-cover { background-position: center, left 55%; }
+.campaign-card:nth-child(3n+3) .campaign-cover { background-position: center, right 35%; }
+.campaign-cover::before, .campaign-cover::after { display: none; }
+.campaign-cover .badge { background: #f1dfb9ed; color: #5f361f; border: 1px solid #a77b3b; }
+.cover-symbol { color: #f1d79fa6; }
+.campaign-card:hover, .help-card:hover { border-color: #8d582e; }
+.campaign-card footer, .character-tile footer, .character-class { color: #6c4b30; }
+.campaign-card footer small, .character-tile footer small { color: #775d42; }
+.tabs .active { border-bottom-width: 3px; }
+.filter-bar, th { background: #e9d8b3; color: #654b30; }
+.filter-bar.standalone { background: transparent; }
+th { font-size: 10px; font-weight: 700; }
+td small, .table-footer, .mfa-status, .search-input .icon { color: #70583f; }
+.mfa-status.enabled, .security-enabled, .status.active { color: #3c6244; }
+.qr-container { background: #fff; }
+.recovery-grid code, .help-body code { color: #6d281b; background: #ecddbb; border-color: #c0a06b; border-radius: 2px; }
+.help-body pre { background: #2e1b13; color: #f2dfb8; border: 1px solid #a68445; border-radius: 3px; }
+.help-body pre code { background: none; color: inherit; }
+.help-sidebar h3, .help-toc a, .help-meta { color: #765234; }
+.help-sidebar a { color: #64462e; border-radius: 2px; }
+.help-sidebar a.active, .help-sidebar a:hover { background: #ddc18d; color: #71261a; }
+.help-card .icon { color: #93592f; }
+
+/* Sign-in becomes the cover of an adventure book. */
+.login-story {
+  background: linear-gradient(0deg, #210e08ed 0%, #25120980 45%, #25120926 70%, #210e08b3 100%), url("/static/images/citadel-dusk.jpg") 62% center / cover;
+  border-right: 3px double #c49b56;
+  color: #fff0cf;
+}
+.login-art { display: none; }
+.login-story .brand { position: relative; z-index: 1; }
+.login-story-copy .eyebrow { color: #f0cb82; }
+.login-story-copy h1 { font-weight: 600; text-shadow: 0 2px 12px #170b05; }
+.login-story-copy p { color: #f0dabc; }
+.login-pills span { color: #f0d8ac; border-color: #d3ac6280; border-radius: 2px; background: #29130f80; }
+.login-story > footer { color: #dec18a; }
+.login-panel { background: linear-gradient(#f4e8cd99, #f4e8cd99), url("/static/images/parchment.jpg") repeat; background-size: auto, 640px 640px; }
+.login-card { padding: 30px 0; border-top: 3px double #b38b48; border-bottom: 3px double #b38b48; }
+.login-card .text-button.reveal-password, .login-security { color: #775538; }
+.login-footer { font-size: 10px; letter-spacing: .5px; }
+
+/* The character builder shares the same materials and heraldic colors. */
+.pw-stage-heading { border-bottom-color: var(--line); }
+.pw-stage-heading h2 { font-family: var(--heading-font); }
+.pw-level, .pw-class-skill { background: #e9d6ac; border-color: #bb9453; color: #76271b; border-radius: 2px; }
+.pw-steps button { color: #745c42; }
+.pw-steps button > span { background: #f7ebce; border-color: #bba070; }
+.pw-steps [aria-current=step] > span { background: #78281c; border-color: #ad8346; box-shadow: 0 0 0 4px #d7bd8880; }
+.pw-dice-tray {
+  background: radial-gradient(ellipse at 60% 0%, #673320, #23150e 85%);
+  border: 3px double #b08a46;
+  border-radius: 4px;
+  box-shadow: inset 0 0 28px #10090680, 0 4px 10px #3420111a;
+}
+.pw-dice-title, .pw-dice-result small, .pw-dice-controls label, .pw-percentile-note { color: #e3c594; }
+.pw-live-dot { background: #e0b970; box-shadow: 0 0 8px #d6a94880; }
+.pw-dice-types button { color: #e3c594; background: #2e1c12; border-color: #8e6837; border-radius: 2px; }
+.pw-dice-types button[aria-pressed=true] { color: #fff0ca; border-color: #d8b064; background: #7c3523; }
+.pw-dice-controls input { background: #352116; color: #fff0ca; border-color: #9b7541; }
+.pw-dice-hero { background: radial-gradient(ellipse, #e6cfa3, #f5e9cf); border-color: #bda06d; border-radius: 3px; }
+.pw-dice-hero svg { fill: #b68a4312; stroke: #975a2b; }
+.pw-dice-hero span, .pw-mini-abilities small, .pw-roll-history summary { color: #7e3d23; }
+.pw-mini-abilities span, .pw-preview-stats span, .pw-source, .pw-discard, .pw-stat-row span,
+.pw-ability > span, .pw-ability .field > span, .pw-ability > p, .pw-choice small, .pw-choice p,
+.pw-class-choice > span, .pw-class-choice > small, .pw-roll-groups span, .pw-sheet-list,
+.pw-sheet-list small, .pw-sheet-grid h4, .pw-review-lines span, .pw-review-warnings { color: #715338; }
+.pw-note strong, .pw-stat-row strong, .pw-choice-symbol, .pw-roll-groups strong { color: #792e1c; }
+.pw-stat-row, .pw-roll-groups > div, .pw-sheet-abilities { background: #eddfbf; border-color: #c4a56c; border-radius: 3px; }
+.pw-roll-groups i { border-color: #bea16e; background: #fff3d9; }
+.pw-choice:hover, .pw-class-choice:hover { background: #ebd8af; border-color: #986633; }
+.pw-choice.selected, .pw-class-choice.selected { border-color: #883e24; background: #e6ce9e; box-shadow: inset 0 0 0 2px #a77b3b40; }
+.pw-hp-orb { background: radial-gradient(ellipse, #f7ebc9, #dfbd7a); border-color: #b1853c; box-shadow: 0 0 0 10px #e9d8b3, 0 0 0 12px #b59152; }
+.pw-hp-orb strong { color: #7b281a; }
+.pw-hp-orb > span, .pw-hp-orb small, .pw-empty-symbol { color: #78512a; }
+.pw-review-errors h3, .pw-review-errors button { color: #832b1e; }
+
+@media (max-width: 950px) {
+  .adventure-heading { min-height: 210px; padding: 28px; flex-wrap: wrap; }
+}
+@media (max-width: 760px) {
+  .adventure-heading, .pw-heading, .campaign-hero { padding: 24px 20px; }
+  .adventure-heading h1, .pw-heading h1 { font-size: 30px; }
+  .adventure-heading p, .pw-heading p { font-size: 12px; }
+  .login-story { min-height: 260px; border-right: 0; border-bottom: 3px double #c49b56; background-position: center, 65% 38%; }
+  .login-story-copy { margin-top: 40px; max-width: 100%; }
+  .login-story-copy h1 { max-width: 100%; font-size: 33px; }
+  .login-story-copy h1 br { display: block; }
+  .login-card { padding-top: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  body, .login-panel, .card, .stat-card, .pw-ability, .pw-sheet-abilities { background: white !important; color: black !important; box-shadow: none; }
+  .adventure-heading, .pw-heading, .campaign-hero { background: white; color: black; min-height: 0; padding: 12px; }
+  .adventure-heading h1, .pw-heading h1, .adventure-heading p, .pw-heading p, .pw-heading .overline { color: black; text-shadow: none; }
+}

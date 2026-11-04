@@ -18,6 +18,6 @@ A GM-created character owned by a joined player remains that player's record. If
 
 ## Delete
 
-An authorized manager can open Delete character, type its name, and confirm. Deletion is permanent; there is no trash or undo. An Admin deleting the user account also deletes all characters owned by that user.
+The character's owner or an Admin can select **Delete character** at the top of the character page, type its name, and confirm. A GM can delete their own characters, but cannot delete another user's character through campaign management access. Deletion is permanent; there is no trash or undo. An Admin deleting the user account also deletes all characters owned by that user.
 
 Character notes are visible to anyone permitted to manage that character. There is no separate private-note visibility field or export/import workflow in this foundation. Concurrent changes are protected by record versions; reload and reapply your changes if a conflict appears.
