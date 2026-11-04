@@ -225,6 +225,9 @@ def parse_sheet(form, locked=None, catalog=None):
                     values[key] = str(int(number))
                 if (key.endswith('.ranks') or key in {'hp.total','hp.nonlethal','experience','next_level'}) and (number != int(number) or number < 0): raise InvalidOperation
             except (InvalidOperation,ValueError): errors.append(f'{meta["label"]}: enter a valid number'+(' from 1 to 40.' if key == 'level' else '.'))
+    from .treasure import treasure
+    try: treasure(values)
+    except HTTPException as error: errors.append(error.detail)
     for key in ('name','level'):
         if not values.get(key): errors.append(f'{FIELDS[key]["label"]} is required.')
     if len(str(values)) > 150000: errors.append('The sheet is too large. Shorten the notes before saving.')
@@ -235,7 +238,10 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     cls = next((c for c in CLASSES.values() if c['name'].casefold() == character.class_name.casefold()),{})
     values = values if values is not None else sheet_values(character,owner,campaign,gm)
     catalog = character_catalog(character)
-    return dict(deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
+    from .treasure import COIN_TYPES, treasure
+    try: treasure_gp=format(Decimal(treasure(values))/100,'.2f').rstrip('0').rstrip('.')
+    except HTTPException: treasure_gp=None
+    return dict(coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog,(character.sheet_data or {}).get('input',{}).get('class_id','')) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

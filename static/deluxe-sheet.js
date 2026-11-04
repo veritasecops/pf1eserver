@@ -159,6 +159,7 @@
       saveError = '';
       errors.hidden = true;
       status.textContent = 'All changes saved';
+      form.dispatchEvent(new Event('sheetpurchase'));
     }
   };
 
