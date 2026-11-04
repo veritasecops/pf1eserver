@@ -14,7 +14,7 @@ Ability generation and starting wealth use dedicated buttons that save their pro
 
 ## Sheet and ability scores
 
-Choose the character owner and optional campaign. Players create their own characters. GMs can create a joined player's character only in one of their owned campaigns. Admins can choose any owner. Campaign ownership and membership are checked again when the character is finalized.
+The signed-in user automatically owns every new character, including characters created by GMs and Admins. Choose an optional campaign. Campaign access is checked again when the character is finalized.
 
 Ability methods include point buy with 10, 15, 20, or 25 points; standard 4d6 dropping one lowest die; classic 3d6; heroic 2d6 plus 6; and GM-approved manual scores. Point-buy scores range from 7 to 18 before race adjustments. The wizard blocks overspending and reports unused points.
 

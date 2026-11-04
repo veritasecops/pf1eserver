@@ -14,13 +14,13 @@ Players cannot create or modify campaigns, invite or remove members, manage user
 
 Game Masters can create, read, edit, and delete their own campaigns, and manage those campaigns' invitations and members. They retain full access to their own characters.
 
-After another user joins one of their campaigns, a GM can create that user's character in that campaign and read or update that user's characters assigned there. Only a character's owner or an Admin can delete it. The GM cannot access the user's standalone characters or characters in unrelated campaigns. Removing the member detaches those assigned characters and ends the GM's campaign-based access.
+After another user joins one of their campaigns, a GM can read or update that user's characters assigned there. Only a character's owner or an Admin can delete it. The GM cannot access the user's standalone characters or characters in unrelated campaigns. Removing the member detaches those assigned characters and ends the GM's campaign-based access.
 
 A GM cannot move another user's existing character between campaigns or transfer its ownership. Character owners can move their own records; Admins can manage ownership and assignment across the instance. Joining someone else's campaign does not make a GM the owner of that other campaign.
 
 ## Admin
 
-Admins can manage every user, campaign, and character, including creation, editing, disabling/deleting users, campaign ownership transfers, and character owner changes. They can create and revoke invitations and remove members in any campaign.
+Admins can manage every user, campaign, and character, including editing, disabling/deleting users, campaign ownership transfers, and character owner changes. New characters always belong to the Admin creating them. They can create and revoke invitations and remove members in any campaign.
 
 Admins require TOTP. Sensitive account changes require current-password and factor confirmation. The last active Admin is protected against deletion, disabling, and demotion. These protections prevent accidental administrative lockout while preserving management of the remaining accounts.
 

@@ -249,19 +249,17 @@ async def characters_page(request: Request, db: Session = Depends(get_db)):
                   draft_races=RACES, draft_classes=CLASSES, search=search)
 
 
-def character_options(ctx):
+def character_options(ctx, include_owners=True):
     campaigns = list(ctx.db.scalars(campaigns_query(ctx.user).order_by(Campaign.name)))
-    if ctx.user.role == "admin":
+    if include_owners and ctx.user.role == "admin":
         owners = list(ctx.db.scalars(select(User).order_by(User.name)))
-    elif ctx.user.role == "gm":
-        owners = list(ctx.db.scalars(select(User).outerjoin(Membership, Membership.user_id == User.id).outerjoin(Campaign, Campaign.id == Membership.campaign_id).where(or_(User.id == ctx.user.id, Campaign.owner_id == ctx.user.id)).distinct().order_by(User.name)))
     else:
         owners = []
     return {"campaigns": campaigns, "owners": owners}
 
 
 def character_values(ctx, form, existing=None):
-    if ctx.user.role == "admin" or ctx.user.role == "gm" and not existing and form.get("owner_id"):
+    if existing and ctx.user.role == "admin":
         owner_id = integer(form, "owner_id", 1, 2**63 - 1)
     else:
         owner_id = existing.owner_id if existing else ctx.user.id
@@ -277,10 +275,6 @@ def character_values(ctx, form, existing=None):
             raise HTTPException(404, "Campaign not found.")
         if ctx.user.role != "admin" and owner_id == ctx.user.id and not is_member(ctx.db, ctx.user, campaign):
             raise HTTPException(403, "Join the campaign before assigning a character.")
-    if not existing and ctx.user.role == "gm" and owner_id != ctx.user.id:
-        campaign = ctx.db.get(Campaign, campaign_id) if campaign_id else None
-        if not campaign or campaign.owner_id != ctx.user.id or not ctx.db.get(Membership, (campaign_id, owner_id)):
-            raise HTTPException(403, "Create another user's character only after they join one of your campaigns, and assign it to that campaign.")
     return {"name": field(form, "name"), "owner_id": owner_id, "campaign_id": campaign_id,
             "ancestry": field(form, "ancestry", 100, False), "class_name": field(form, "class_name", 100, False),
             "level": integer(form, "level", 1, 40), "notes": field(form, "notes", 20000, False)}

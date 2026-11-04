@@ -140,16 +140,21 @@ def test_gm_can_manage_only_joined_assigned_characters(env):
         assert db.get(Character, assigned.id) is not None
 
 
-def test_gm_creates_character_for_joined_member_only_in_owned_campaign(env):
+@pytest.mark.parametrize("actor", ["player", "gm", "admin"])
+def test_direct_character_creation_ignores_another_owner_for_every_role(env,actor):
     campaign = seed_campaign(env.gm, members=[env.player])
-    c = env.login(env.gm)
-    response = env.post(c, "/characters", char_form(owner_id=env.player.id, campaign_id=campaign.id))
+    account = getattr(env,actor)
+    c = env.login(account)
+    response = env.post(c, "/characters", char_form(owner_id=env.player2.id, campaign_id=campaign.id))
     assert response.status_code == 303
     with Session(engine()) as db:
         record = db.get(Character, int(response.headers["location"].rsplit("/", 1)[1]))
-        assert record.owner_id == env.player.id and record.campaign_id == campaign.id
-    assert env.post(c, "/characters", char_form(owner_id=env.player2.id, campaign_id=campaign.id)).status_code == 403
-    assert env.post(c, "/characters", char_form(owner_id=env.player.id)).status_code == 403
+        assert record.owner_id == account.id and record.campaign_id == campaign.id
+    response = env.post(c, "/characters", char_form(owner_id=env.player2.id))
+    assert response.status_code == 303
+    with Session(engine()) as db:
+        record = db.get(Character,int(response.headers["location"].rsplit("/",1)[1]))
+        assert record.owner_id == account.id and record.campaign_id is None
 
 
 def test_joined_gm_cannot_edit_other_gms_campaign(env):

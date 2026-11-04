@@ -259,31 +259,48 @@ def test_wizard_uses_existing_campaign_and_character_permissions(env):
     assert result.status_code==200
     with Session(engine()) as db:
         character=db.get(Character,int(result.json()["location"].rsplit('/',1)[1]))
-        assert character.owner_id==env.player.id and character.campaign_id==campaign.id
+        assert character.owner_id==env.gm.id and character.campaign_id==campaign.id
     # Another GM cannot view that sheet or begin an editing draft.
     other=env.login(env.gm2)
     assert other.get(result.json()["location"]+"/sheet/edit").status_code==404
 
 
-def test_gm_cannot_create_for_an_unjoined_owner(env):
-    campaign=seed_campaign(env.gm)
-    c,draft_id,version,data=start(env,env.gm)
-    data=fighter(data)
-    data.update(owner_id=env.player.id,campaign_id=campaign.id)
-    saved=save(env,c,draft_id,version,data)
-    assert finish(env,c,draft_id,saved.json()["version"]).status_code==403
+@pytest.mark.parametrize("actor", ["gm", "admin"])
+def test_legacy_creation_draft_cannot_assign_another_owner(env,actor):
+    account = getattr(env,actor)
+    client,draft_id,_,data = start(env,account)
+    data = fighter(data)
+    data["owner_id"] = env.player2.id
+    with Session(engine()) as db:
+        draft = db.get(CharacterDraft,draft_id)
+        draft.data = data
+        db.commit()
+        version = draft.version
+    page = client.get(f"/characters/drafts/{draft_id}")
+    boot = json.loads(re.search(r'<script type="application/json" id="pw-bootstrap">(.*?)</script>',page.text,re.S).group(1))
+    assert boot["data"]["owner_id"] == account.id and "owners" not in boot
+    response = finish(env,client,draft_id,version)
+    assert response.status_code == 200
+    with Session(engine()) as db:
+        character = db.get(Character,int(response.json()["location"].rsplit("/",1)[1]))
+        assert character.owner_id == account.id
+        assert character.sheet_data["input"]["owner_id"] == account.id
 
 
-def test_player_cannot_forge_character_owner(env):
-    c,draft_id,version,data=start(env)
+@pytest.mark.parametrize("actor", ["player", "gm", "admin"])
+def test_new_character_always_belongs_to_its_creator(env,actor):
+    account = getattr(env,actor)
+    c,draft_id,version,data=start(env,account)
     data=fighter(data)
-    data["owner_id"]=env.admin.id
+    data["owner_id"]=env.player2.id
     saved=save(env,c,draft_id,version,data)
+    with Session(engine()) as db:
+        assert db.get(CharacterDraft,draft_id).data["owner_id"] == account.id
     result=finish(env,c,draft_id,saved.json()["version"])
     assert result.status_code==200
     with Session(engine()) as db:
         character=db.scalar(select(Character))
-        assert character.owner_id==env.player.id and character.sheet_data["input"]["owner_id"]==env.player.id
+        assert character.owner_id==account.id and character.sheet_data["input"]["owner_id"]==account.id
 
 
 def test_wealth_roll_is_bound_to_class_and_ability_assignment_is_unique(env):

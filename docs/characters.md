@@ -2,7 +2,7 @@
 
 Open Characters and select **Add character** to start a new draft. The [character wizard](/help/character-wizard) guides you through a first-level sheet with visual dice, ability scores, race, class, skills, feats, HP, gear, combat values, description, and spells. Your drafts save as you go and appear with a **Draft** badge under **Draft characters** on the Characters page. Click a draft to continue editing it. You can keep multiple unfinished characters; Add character always starts a new one. Drafts remain private to their creator. Existing basic records remain supported.
 
-Players create their own characters. GMs create their own characters, or may select a joined member as owner when creating a character assigned to one of the GM's own campaigns. Admins may select any user as owner and manage campaign assignment globally.
+Every new character belongs to the signed-in creator, including Game Masters and Admins. Choose an optional campaign during creation.
 
 ## Own records and GM access
 
@@ -14,7 +14,7 @@ Joining a campaign alone does not expose all the player's characters. A GM does 
 
 Open a character and select **Edit character** for identity, notes, and permitted assignment changes. Wizard-built first-level sheets also offer **Edit creation sheet** for game choices. Their race, class, and level are read-only in the basic editor to protect calculated data. Legacy records retain basic class/level editing. The owner can move an existing character between joined campaigns or choose No campaign. A GM editing someone else's character cannot change its campaign or owner. Admins can change both.
 
-A GM-created character owned by a joined player remains that player's record. If the player is removed from the campaign, the character detaches and the GM loses access. Campaign deletion also detaches characters rather than deleting them.
+A character assigned to a GM's campaign remains its owner's record. If the player is removed from the campaign, the character detaches and the GM loses access. Campaign deletion also detaches characters rather than deleting them.
 
 ## Delete
 

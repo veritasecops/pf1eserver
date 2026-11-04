@@ -44,14 +44,14 @@ def roll_history(db, draft_id):
 
 
 def display_wizard(ctx, draft):
-    options = character_options(ctx)
+    options = character_options(ctx,include_owners=False)
     rolls = roll_history(ctx.db, draft.id)
-    boot = {"draft_id":draft.id,"version":draft.version,"data":draft.data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
-            "computed":calculate(draft.data,rolls),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
+    data = {**draft.data,"owner_id":ctx.user.id} if draft.mode == "create" else draft.data
+    boot = {"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
+            "computed":calculate(data,rolls),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":CLASSES,"skills":SKILLS,"feats":FEATS,"equipment":EQUIPMENT,"alignments":ALIGNMENTS,
             "point_cost":POINT_COST,"spell_suggestions":SPELL_SUGGESTIONS,"monk_bonus":MONK_BONUS,
-            "owners":[{"id":owner.id,"name":owner.name} for owner in options["owners"]],
             "campaigns":[{"id":campaign.id,"name":campaign.name} for campaign in options["campaigns"]]}
     return render(ctx,"character_wizard.html",title="Character creation",draft=draft,boot=boot,outline=OUTLINE)
 
@@ -112,6 +112,8 @@ async def saved_form(ctx,draft):
         raise HTTPException(409,"This draft changed in another window. Reload to continue with the latest version.")
     try: payload = json.loads(str(form.get("payload","")))
     except (ValueError,TypeError): raise HTTPException(422,"The character draft could not be read.") from None
+    if draft.mode == "create" and isinstance(payload,dict):
+        payload["owner_id"] = ctx.user.id
     return form,clean(payload,ctx.user.id)
 
 
