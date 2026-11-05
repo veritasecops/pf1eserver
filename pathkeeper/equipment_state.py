@@ -30,3 +30,16 @@ def sync_equipped(character,values,previous):
         for key in group['fields']: values[key]=selected
     for key in equipped_values(values):
         if not values.get(key.removesuffix('equipped')+'name','').strip(): values[key]=''
+    from .equipment_effects import active_armor
+    for entries in active_armor(character, values).values():
+        if len(entries) <= 1: continue
+        newly_equipped = [row for row, _ in entries if previous.get(f'armor.{row}.equipped') != '1']
+        if len(newly_equipped) != 1:
+            raise HTTPException(422, 'Equip only one suit of armor and one shield at a time.')
+        for row, _ in entries:
+            if row == newly_equipped[0]: continue
+            key = f'armor.{row}.equipped'
+            values[key] = ''
+            for group in equipment_groups(character, values):
+                if key in group['fields']:
+                    for field in group['fields']: values[field] = ''

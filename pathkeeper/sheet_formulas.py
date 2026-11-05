@@ -9,6 +9,7 @@ def sheet_formulas(character, values):
     race=base_speed_race(character)
     speed_source=(f"Base speed is {race['speed']} ft. because {race['name']} has a racial land speed of {race['speed']} ft. This is the speed before class bonuses, armor, or other movement adjustments." if race else 'The character’s previously recorded base speed is preserved because a supported race could not be identified.')
     formulas={
+        'load.total':'Add the weights of every named gear entry. The total stays blank while any item has an unknown or unrecorded weight.',
         'speed.base':speed_source,
         'player':'The name of the account that owns this character.',
         'class_name':'The class recorded for this character.',
@@ -45,12 +46,13 @@ def sheet_formulas(character, values):
             formulas[f'skill.{row}.total']=f'{meta["name"]} total = {ability} modifier + invested ranks + miscellaneous modifier. Add +3 if this is a class skill and at least one rank is invested. The miscellaneous field holds recorded racial, feat, armor-check, and other adjustments.'
     for level in range(10):
         formulas[f'spell.{level}.known']='Count the nonblank lines in this level’s spell list. Each nonblank line counts as one spell.'
-    inventory=(character.play_data or {}).get('weapon_inventory',[])
+    from .character_weapons import inventory as current_inventory
+    inventory=current_inventory(character,values,character_catalog(character))
     for row in range(6):
         entry=next((item for item in inventory if item.get('row')==row),None)
         for part in ('name','quantity','attack','critical','type','range','ammunition','damage'):
             formulas[f'weapon.{row}.{part}']='Supplied by the weapon inventory or saved character creation sheet; add weapons through Add Equipment.'
-        if entry and 'fields' not in entry:
+        if entry and ('fields' not in entry or values.get(f'weapon.{row}.equipped')=='1' and entry['item'].get('damage')):
             item=entry['item']
             formulas[f'weapon.{row}.quantity']='The total number of copies of this weapon recorded in inventory.'
             formulas[f'weapon.{row}.attack']='Weapon attack bonus = base attack bonus + attack ability modifier + Armor Class size modifier + supported feat attack bonuses for this weapon. Ranged weapons use Dexterity; melee weapons use Strength, or Dexterity with Weapon Finesse for an eligible weapon. Use temporary ability modifiers when entered. Bows apply −2 if Strength is below the bow’s rating.'

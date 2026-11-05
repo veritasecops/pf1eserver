@@ -91,7 +91,7 @@ def apply_inventory(character, values):
         except InvalidOperation: return None
     def ability(key):
         return number(f'ability.{key}.temp_mod' if values.get(f'ability.{key}.temp_score','')!='' else f'ability.{key}.mod')
-    for entry in (character.play_data or {}).get('weapon_inventory',[]):
+    for entry in inventory(character, values, catalog):
         if entry.get('armor_row') is not None:
             prefix=f"armor.{entry['armor_row']}."
             fields=entry.get('armor_fields') or armor_fields(entry['item'],entry['quantity'],values.get('size',''))
@@ -101,7 +101,7 @@ def apply_inventory(character, values):
         row=entry.get('row')
         if row is None: continue
         prefix=f'weapon.{row}.'
-        if 'fields' in entry:
+        if 'fields' in entry and not (values.get(prefix+'equipped')=='1' and entry['item'].get('damage')):
             for part,value in entry['fields'].items(): values[prefix+part]=value
         else:
             item=entry['item']
@@ -229,18 +229,19 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
         changes[f'gear.{gear_row}.weight']=str(weight*gear_quantity*(.5 if str(values.get('size','')).casefold()=='small' and item['kind'] in {'weapon','armor','shield'} else 1)) if weight is not None else values.get(f'gear.{gear_row}.weight','') or item.get('weight_text','Special')
         values.update(changes)
     changes.update(deduct_coins(values,cost))
-    character.play_data={**(character.play_data or {}),**changes,'weapon_inventory':entries,
+    from .equipment_effects import persist_effects
+    character.play_data={**(character.play_data or {}),**persist_effects(character,values),**changes,'weapon_inventory':entries,
                          'weapon_purchase':{'id':request_id,'actor':ctx.user.id,'fingerprint':fingerprint,'version':character.version+1}}
     audit(db,ctx.user,'character.weapons_purchased',f'Purchased {sum(quantities.values())} equipment units for {cost} copper pieces on {character.name}.')
     commit(db)
     return purchase_response(ctx,character)
 
 
-def purchase_response(ctx,character):
+def purchase_response(ctx,character,changed_fields=()):
     from .workspace import autosave_response
     response=autosave_response(ctx,character)
     body=json.loads(response.body)
     values=character_values(ctx,character)
-    body['purchase_fields']={key:value for key,value in values.items() if key.startswith(('weapon.','armor.','gear.')) or key in {'money.pp','money.gp','money.sp','money.cp'}}
+    body['purchase_fields']={key:value for key,value in values.items() if key.startswith(('weapon.','armor.','gear.')) or key in {'money.pp','money.gp','money.sp','money.cp'} or key in changed_fields}
     from fastapi.responses import JSONResponse
     return JSONResponse(body,headers={'Cache-Control':'no-store'})

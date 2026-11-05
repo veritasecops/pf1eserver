@@ -72,7 +72,7 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     response = env.post(client,f'/characters/{character.id}/play-sheet',form.values)
     assert response.status_code == 303
     saved = SheetForm(client.get(response.headers['location']).text)
-    assert all(saved.values[key] == value for key,value in form.values.items() if key not in saved.readonly | {'version'})
+    assert {key:(saved.values.get(key),value) for key,value in form.values.items() if key not in saved.readonly | {'version'} and saved.values.get(key)!=value} == {}
     assert saved.values['version'] == '2'
     assert saved.values['ability.str.mod'] == '-4'
     assert saved.values['initiative.total'] == '-1'

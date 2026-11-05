@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function harness() {
+function harness(equipmentEffects = null) {
   const fields = {
     version: { name: 'version', value: '1' },
     'ability.dex.score': { name: 'ability.dex.score', value: '10', readOnly: false },
@@ -32,6 +32,7 @@ function harness() {
     'sheet-character-name': { textContent: 'Hero' },
     'print-sheet': { addEventListener: () => {} }
   };
+  if(equipmentEffects)nodes['sheet-equipment-effects']={textContent:JSON.stringify(equipmentEffects)};
   const browserWindow = { addEventListener: (name, fn) => { windows[name] = fn; } };
   vm.runInNewContext(fs.readFileSync('static/deluxe-sheet.js', 'utf8'), {
     document: { getElementById: id => nodes[id], querySelector: () => null, querySelectorAll: () => [] },
@@ -153,4 +154,22 @@ test('purchase flush rejects conflicts instead of opening with unsaved edits', a
   h.calls[0].resolve({ok:false,status:409,redirected:false,headers:{get:()=> 'application/json'},json:async()=>({detail:'Character changed elsewhere.'})});
   await assert.rejects(flush,/changed elsewhere/);
   assert.equal(h.sheet.hasPending,true);
+});
+
+
+test('rapid edits retain the displayed equipment baseline until the matching save applies', async () => {
+  const h=harness({'ac.armor':'0'});
+  h.change('18');const first=h.run(400);
+  assert.equal(h.calls[0].options.headers['X-Equipment-Effects'],'{"ac.armor":"0"}');
+  h.change('20');
+  const reply=h.response(2,'4','4');const initial=reply.json;
+  reply.json=async()=>({...await initial(),equipment_effects:{'ac.armor':'2'}});
+  h.calls[0].resolve(reply);await first;
+  const second=h.run(0);
+  assert.equal(h.calls[1].options.headers['X-Equipment-Effects'],'{"ac.armor":"0"}');
+  const latest=h.response(3,'5','5');const current=latest.json;
+  latest.json=async()=>({...await current(),equipment_effects:{'ac.armor':'5'}});
+  h.calls[1].resolve(latest);await second;
+  h.change('22');h.run(400);
+  assert.equal(h.calls[2].options.headers['X-Equipment-Effects'],'{"ac.armor":"5"}');
 });

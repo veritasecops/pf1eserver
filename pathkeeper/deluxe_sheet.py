@@ -262,7 +262,8 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     try: treasure_gp=format(Decimal(treasure(values))/100,'.2f').rstrip('0').rstrip('.')
     except HTTPException: treasure_gp=None
     from .equipment_state import equipment_groups
-    return dict(equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
+    from .equipment_effects import contributions
+    return dict(equipment_effects=contributions(character,values),equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog,(character.sheet_data or {}).get('input',{}).get('class_id','')) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

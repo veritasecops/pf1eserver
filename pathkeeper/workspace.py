@@ -22,6 +22,7 @@ from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
 from .sheet_formulas import sheet_formulas
 from .equipment_state import equipment_groups, equipped_values, sync_equipped
+from .equipment_effects import contributions, persist_effects
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
 
 router = APIRouter()
@@ -340,7 +341,24 @@ async def read_play_sheet(ctx, character, form=None):
     values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),load_catalog(db).get('deities',{}),current.get('deity',''))
     if not errors:
         sync_equipped(character,values,current)
-        recalculate(character, values)
+        from .equipment_effects import validate_armor
+        validate_armor(character, values)
+        encoded = ctx.request.headers.get('x-equipment-effects')
+        keep = [key for key in ('ac.dex', 'speed.armor') if not encoded and values[key] != current[key]]
+        if encoded:
+            from .equipment_effects import number
+            from decimal import Decimal
+            try:
+                shown = json.loads(encoded)
+                actual = contributions(character, current)
+                if not isinstance(shown, dict) or set(shown) != set(actual): raise ValueError
+                for key, amount in shown.items():
+                    value = Decimal(str(amount))
+                    if not value.is_finite() or abs(value) > 1000000000: raise ValueError
+                    values[key] = format(number(values[key]) - value + number(actual[key]), 'f')
+            except (ValueError, TypeError, ArithmeticError):
+                raise HTTPException(422, 'Reload the sheet to refresh equipment modifiers.') from None
+        recalculate(character, values, equipment_previous=contributions(character, current), equipment_keep=keep)
     return values, errors, baseline(character, owner, campaign, gm)
 
 
@@ -371,7 +389,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         # response was lost after the transaction committed.
         db.refresh(character,with_for_update=True)
         character = get_character(ctx,character_id)
-        fingerprint = digest(json.dumps(sorted((key,value) for key,value in form.multi_items() if key != 'csrf')))
+        fingerprint = digest(json.dumps([sorted((key,value) for key,value in form.multi_items() if key != 'csrf'), request.headers.get('x-equipment-effects','')]))
         previous = (character.play_data or {}).get('autosave',{})
         if previous.get('id') == save_id and previous.get('actor') == ctx.user.id:
             if previous.get('version') != character.version:
@@ -386,9 +404,9 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase") if key in (character.play_data or {})}
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal") if key in (character.play_data or {})}
     character.play_data = {"calculation_version":1, **metadata, **{key:value for key,value in values.items()
-                           if key not in core | {"player"} and value != base[key]}}
+                           if key not in core | {"player"} and value != base[key]}, **persist_effects(character, values)}
     for key in core:
         setattr(character, key, int(values[key]) if key == "level" else values[key])
     if character.sheet_data:
@@ -411,6 +429,7 @@ def autosave_response(ctx, character):
     locked = calculated_fields(character,values)
     return JSONResponse({'version':character.version,'name':character.name,'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values),
+                         'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
                          'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
                          'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db))},
                         headers={'Cache-Control':'no-store'})

@@ -4,6 +4,8 @@
   const status = document.getElementById('sheet-save-status');
   const errors = document.getElementById('sheet-autosave-errors');
   const retry = document.getElementById('retry-sheet-save');
+  const effectsBoot=document.getElementById('sheet-equipment-effects');
+  let equipmentEffects=effectsBoot?JSON.parse(effectsBoot.textContent):null;
   let dirty = Boolean(document.querySelector('.deluxe-errors:not([hidden])'));
   let timer;
   let revision = 0;
@@ -20,6 +22,10 @@
     errors.hidden = false;
   };
   const applyTotals = result => {
+    if(result.equipment_effects)equipmentEffects=result.equipment_effects;
+    for (const [name,value] of Object.entries(result.equipment_fields||{})) {
+      const input=form.elements.namedItem(name);if(input)input.value=value;
+    }
     for (const kind of ['weapon','armor']) {
     if (result[kind+'_links']) {
       for (const link of form.querySelectorAll(`[data-${kind}-reference]`)) {
@@ -59,7 +65,7 @@
     }
     // Retry the identical payload and identifier if a response was lost. A
     // subsequent edit waits for its acknowledgement before using the new version.
-    const job = failed || { body: new FormData(form), id: saveId(), revision };
+    const job = failed || { body: new FormData(form), id: saveId(), revision, effects:equipmentEffects?JSON.stringify(equipmentEffects):null };
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     saving = true;
@@ -71,7 +77,7 @@
         body: job.body,
         signal: controller.signal,
         credentials: 'same-origin',
-        headers: { Accept: 'application/json', 'X-Sheet-Save-Id': job.id }
+        headers: { Accept: 'application/json', 'X-Sheet-Save-Id': job.id, ...(job.effects?{'X-Equipment-Effects':job.effects}:{}) }
       });
       if (response.status >= 500 || response.status === 429) throw new Error('Temporary save failure');
       if (response.redirected || !response.headers.get('content-type')?.includes('application/json')) {

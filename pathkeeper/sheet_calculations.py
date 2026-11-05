@@ -18,7 +18,7 @@ def base_speed_race(character):
 def calculated_fields(character, values):
     SKILLS = character_catalog(character)["skills"]
     locked = {'player','class_name','speed.base','initiative.total','initiative.dex','cmb.total','cmd.total',
-              'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int'}
+              'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int','load.total'}
     for ability in ABILITIES:
         locked.update({f'ability.{ability}.mod',f'ability.{ability}.temp_mod'})
     for save in ('fortitude','reflex','will'):
@@ -46,7 +46,7 @@ def calculated_fields(character, values):
 SIZE_MODIFIERS = {'fine':8,'diminutive':4,'tiny':2,'small':1,'medium':0,'large':-1,'huge':-2,'gargantuan':-4,'colossal':-8}
 
 
-def recalculate(character, values):
+def recalculate(character, values, equipment_previous=None, equipment_keep=()):
     """Recompute from editable components; a missing essential input stays blank."""
     race=base_speed_race(character)
     if race: values['speed.base']=str(race['speed'])
@@ -109,9 +109,10 @@ def recalculate(character, values):
         write('cmd.size',-size)
     total('cmb.total',['cmb.bab','cmb.str','cmb.size'],['cmb.misc'])
     total('cmd.total',['cmd.bab','cmd.str','cmd.dex','cmd.size'],['cmd.misc'],10)
+    from .equipment_effects import apply_effects
+    apply_effects(character, values, equipment_previous, equipment_keep)
     ac_parts = ['ac.armor','ac.shield','ac.dex','ac.size','ac.natural','ac.deflection','ac.dodge','ac.misc']
-    # AC's DEX entry remains an input because maximum Dexterity from equipped
-    # armor and conditional effects cannot be inferred from the free-text rows.
+    total('cmd.total',['cmd.bab','cmd.str','cmd.dex','cmd.size'],['cmd.misc'],10)
     total('ac.total',[],ac_parts,10)
     total('ac.touch',[],['ac.dex','ac.size','ac.deflection','ac.dodge','ac.misc'],10)
     # Positive Dexterity and dodge bonuses don't apply while flat-footed.
@@ -130,5 +131,7 @@ def recalculate(character, values):
     write('skill_points.total',None if base is None or intelligence is None or misc is None else max(Decimal(1),base+intelligence)+misc)
     for level in range(10):
         write(f'spell.{level}.known',len([line for line in values.get(f'spell.{level}.list','').splitlines() if line.strip()]))
+    weights = [number(f'gear.{row}.weight') for row in range(56) if values.get(f'gear.{row}.name', '').strip()]
+    write('load.total', None if any(weight is None for weight in weights) else sum(weights, Decimal(0)))
     from .character_weapons import apply_inventory
     return apply_inventory(character,values)
