@@ -35,16 +35,15 @@ def saved_xp(character, speed):
 
 def apply_advancement(values, speed):
     xp = int(Decimal(values["experience"] or "0"))
-    level = level_for(xp, speed)
+    level = int(values["level"])
     thresholds = XP_TRACKS[speed]
-    values.update(experience=str(xp), level=str(level),
+    values.update(experience=str(xp),
                   next_level=str(thresholds[level]) if level < len(thresholds) else "")
 
 
-def set_track(character, old_speed, new_speed):
+def preserve_xp(character, old_speed):
     xp = saved_xp(character, old_speed)
     character.play_data = {**(character.play_data or {}), "experience": str(xp)}
-    character.level = level_for(xp, new_speed)
 
 
 def detach_characters(db, campaign, owner_id=None):
@@ -55,5 +54,9 @@ def detach_characters(db, campaign, owner_id=None):
     if owner_id is not None:
         query = query.where(Character.owner_id == owner_id)
     for character in db.scalars(query.order_by(Character.id).with_for_update()):
-        set_track(character, campaign.xp_speed, "slow")
+        preserve_xp(character, campaign.xp_speed)
         character.campaign_id = None
+
+
+def eligible(character, campaign):
+    return level_for(saved_xp(character, track(campaign)), track(campaign)) > character.level

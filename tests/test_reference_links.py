@@ -23,7 +23,7 @@ def test_all_default_reference_links_use_aon():
         assert all('.aonprd.com/' in item['url'] for item in entries.values())
     assert OUTLINE == 'https://www.aonprd.com/Rules.aspx?ID=83'
     assert {'omdura', 'vampire-hunter'}.isdisjoint(CLASSES)
-    assert len(CLASSES) == 23
+    assert len(CLASSES) == 49
     assert all(value['url'].startswith('https://www.aonprd.com/ClassDisplay.aspx?') for value in CLASSES.values())
 
 

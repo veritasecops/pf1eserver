@@ -50,7 +50,9 @@ def equipment(catalog):
     return {**EQUIPMENT, **catalog['weapons'], **catalog.get('armor',{})}
 
 
-def class_skills(catalog, class_id):
+def class_skills(catalog, class_id, expert_skills=()):
+    if class_id == "expert":
+        return list(expert_skills)
     return [key for key,meta in catalog['skills'].items() if class_id in meta.get('classes',[])]
 
 

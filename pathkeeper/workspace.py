@@ -8,8 +8,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
-from .advancement import XP_TRACKS, apply_advancement, detach_characters, set_track, track
+from .advancement import XP_TRACKS, apply_advancement, detach_characters, preserve_xp, track
 from .database import commit, get_db
+from . import level_up
 from .models import Campaign, Character, CharacterDraft, Invitation, Membership, User, utcnow
 from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
                        field, get_campaign, get_character, integer, is_member, read_form)
@@ -142,7 +143,7 @@ async def campaign_update(campaign_id: int, request: Request, db: Session = Depe
     speed = campaign_xp_speed(form, campaign.xp_speed)
     if speed != campaign.xp_speed:
         for character in db.scalars(select(Character).where(Character.campaign_id == campaign.id).order_by(Character.id).with_for_update()):
-            set_track(character, campaign.xp_speed, speed)
+            preserve_xp(character, campaign.xp_speed)
             character.version += 1
         campaign.xp_speed = speed
     campaign.name = field(form, "name")
@@ -314,7 +315,7 @@ async def character_create(request: Request, db: Session = Depends(get_db)):
     form = await read_form(ctx)
     character = Character(**character_values(ctx, form))
     speed = track(db.get(Campaign, character.campaign_id)) if character.campaign_id else "slow"
-    set_track(character, speed, speed)
+    preserve_xp(character, speed)
     db.add(character)
     audit(db, ctx.user, "character.created", f"Created character {character.name}.")
     commit(db)
@@ -337,6 +338,8 @@ def render_character(ctx, character, values=None, errors=()):
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       header_background_url=header_background_url(ctx.db,character),default_header_background=DEFAULT_HEADER_BACKGROUND,
                       can_edit_header_background=ctx.user.id == character.owner_id,
+                      can_level_up=ctx.user.id == character.owner_id and level_up.available(character, campaign),
+                      advancement_history=(character.play_data or {}).get("advancement_history", []),
                       armor_links=sheet_armor_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
                       weapon_links=sheet_weapon_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
                       **view_context(character, owner, campaign, gm, values, errors,deity_catalog=load_catalog(ctx.db).get('deities',{})))
@@ -422,11 +425,11 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal") if key in (character.play_data or {})}
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history") if key in (character.play_data or {})}
     character.play_data = {"calculation_version":1, **metadata, **{key:value for key,value in values.items()
                            if key not in core | {"player", "next_level"} and value != base[key]}, **persist_effects(character, values), "experience": values["experience"]}
-    for key in core:
-        setattr(character, key, int(values[key]) if key == "level" else values[key])
+    for key in core - {"level"}:
+        setattr(character, key, values[key])
     if character.sheet_data:
         character.sheet_data = {**character.sheet_data, "input":{**character.sheet_data["input"],
                                 "name":character.name, "notes":character.notes}}
@@ -445,12 +448,58 @@ def autosave_response(ctx, character):
     gm = ctx.db.get(User,campaign.owner_id) if campaign else None
     values = sheet_values(character,owner,campaign,gm)
     locked = calculated_fields(character,values)
-    return JSONResponse({'version':character.version,'name':character.name,'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
+    return JSONResponse({'version':character.version,'name':character.name,
+                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign),'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values),
                          'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
                          'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
                          'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db))},
                         headers={'Cache-Control':'no-store'})
+
+
+def level_up_character(ctx, character_id):
+    character = get_character(ctx, character_id)
+    if character.owner_id != ctx.user.id:
+        raise HTTPException(403, "Only the character's owner can advance their level.")
+    return character
+
+
+def render_level_up(ctx, character, advancement, form=None, errors=()):
+    response = render(ctx, "level_up.html", title="Level up", character=character, advancement=advancement,
+                      abilities=ABILITIES, class_index=level_up.CLASS_INDEX, feat_index=level_up.FEAT_INDEX,
+                      submitted=form or {}, errors=errors)
+    if errors:
+        response.status_code = 422
+    return response
+
+
+@router.get("/characters/{character_id}/level-up")
+async def character_level_up_page(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = level_up_character(ctx, character_id)
+    return render_level_up(ctx, character, level_up.plan(ctx, character))
+
+
+@router.post("/characters/{character_id}/level-up")
+async def character_level_up_submit(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = level_up_character(ctx, character_id)
+    form = await read_form(ctx, max_fields=200)
+    campaign_id = character.campaign_id
+    if campaign_id:
+        db.get(Campaign, campaign_id, with_for_update=True, populate_existing=True)
+    db.refresh(character, with_for_update=True)
+    verify_version(form, character)
+    if character.campaign_id != campaign_id or character.owner_id != ctx.user.id:
+        raise HTTPException(409, "The character's campaign or owner changed. Reload the wizard.")
+    advancement = level_up.plan(ctx, character)
+    if not advancement or integer(form, "target", 2, 20) != advancement["target"]:
+        raise HTTPException(409, "The character is no longer eligible for this level. Reload the wizard.")
+    errors = level_up.submit(character, advancement, form)
+    if errors:
+        return render_level_up(ctx, character, advancement, form, errors)
+    audit(db, ctx.user, "character.level_up", f"{character.name} advanced to level {character.level}.")
+    return redirect(ctx, f"/characters/{character.id}", f"Advanced to level {character.level}.")
 
 
 @router.get("/characters/{character_id}/edit")
@@ -467,13 +516,14 @@ async def character_update(character_id: int, request: Request, db: Session = De
     form = await read_form(ctx)
     verify_version(form, character)
     values = character_values(ctx, form, character)
+    if (character.play_data or {}).get("advancement_history") and values["class_name"] != character.class_name:
+        raise HTTPException(422, "The class is fixed after completing a level-up wizard.")
     if character.sheet_data and any(values[key] != getattr(character,key) for key in ("ancestry","class_name")):
         raise HTTPException(422,"Use Edit creation sheet to change race or class.")
     old_speed = track(db.get(Campaign, character.campaign_id)) if character.campaign_id else "slow"
-    new_speed = track(db.get(Campaign, values["campaign_id"])) if values["campaign_id"] else "slow"
     for key, value in values.items():
         setattr(character, key, value)
-    set_track(character, old_speed, new_speed)
+    preserve_xp(character, old_speed)
     if character.sheet_data:
         character.sheet_data = {**character.sheet_data,"input":{**character.sheet_data["input"],"name":character.name,
                                 "notes":character.notes,"owner_id":character.owner_id,"campaign_id":character.campaign_id}}

@@ -9,7 +9,7 @@ def sheet_formulas(character, values):
     race=base_speed_race(character)
     speed_source=(f"Base speed is {race['speed']} ft. because {race['name']} has a racial land speed of {race['speed']} ft. This is the speed before class bonuses, armor, or other movement adjustments." if race else 'The character’s previously recorded base speed is preserved because a supported race could not be identified.')
     formulas={
-        'level':'Character level is the highest XP threshold met on the campaign advancement track.',
+        'level':'Character level is the last completed level. XP on the campaign track unlocks the next level-up wizard.',
         'next_level':'Total XP required for the next level on the campaign advancement track. Blank at level 20.',
         'load.total':'Add the weights of every named gear entry. The total stays blank while any item has an unknown or unrecorded weight.',
         'speed.base':speed_source,

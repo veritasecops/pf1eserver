@@ -143,14 +143,14 @@ def migrate(admin_engine):
             db.add(SchemaMigration(version=15, name="admin_feat_skill_and_deity_reference_links"))
             db.commit()
         if not db.get(SchemaMigration, 16):
-            from .advancement import set_track, track
+            from .advancement import preserve_xp, track
 
             speeds = {campaign.id: track(campaign) for campaign in db.scalars(select(Campaign))}
             editable = {}
             for character in db.scalars(select(Character).order_by(Character.id).with_for_update()):
                 speed = speeds.get(character.campaign_id, "slow")
                 previous_version = character.version
-                set_track(character, speed, speed)
+                preserve_xp(character, speed)
                 if character.level == 1:
                     editable[character.id] = (previous_version, character)
             db.flush()
@@ -163,4 +163,18 @@ def migrate(admin_engine):
                         draft.existing_version = character.version
             db.add(SchemaMigration(version=16, name="campaign_experience_advancement"))
             db.commit()
-    print("Database migrations applied through 016 (campaign experience advancement).")
+        if not db.get(SchemaMigration, 17):
+            from copy import deepcopy
+            from .pf1_data import ADDED_CLASSES, CLASSES
+
+            record = db.get(RuleCatalog, 1)
+            catalog = deepcopy(record.data)
+            for key, skill in catalog["skills"].items():
+                skill["classes"] = list(dict.fromkeys([
+                    *skill.get("classes", []),
+                    *(class_id for class_id in sorted(ADDED_CLASSES) if key in CLASSES[class_id]["skills"]),
+                ]))
+            record.data = catalog
+            db.add(SchemaMigration(version=17, name="expanded_class_skill_catalog"))
+            db.commit()
+    print("Database migrations applied through 017 (expanded class skill catalog).")

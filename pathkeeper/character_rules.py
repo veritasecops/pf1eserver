@@ -4,14 +4,14 @@ from math import floor
 
 from fastapi import HTTPException
 
-from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, POINT_COST, RACES, SKILLS
+from .pf1_data import ABILITIES, ALIGNMENTS, CLASS_PROGRESSIONS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, POINT_COST, RACES, SKILLS
 
 
 def defaults(owner_id):
     return {"name":"", "owner_id":owner_id, "campaign_id":None, "method":"point_buy", "point_budget":15,
             "abilities":{key:10 for key in ABILITIES}, "ability_roll":"", "assignments":list(range(6)),
             "race":"human", "flex_ability":"str", "class_id":"", "favored_bonus":"hp", "vigilante_specialization":"stalker",
-            "skills":{}, "skill_specialties":"", "feats":[], "bonus_feat":{},
+            "skills":{}, "expert_skills":[], "skill_specialties":"", "feats":[], "bonus_feat":{},
             "adaptability":"perception", "wealth_method":"average", "wealth_roll":"", "manual_gold":0,
             "equipment":{}, "equipment_prices":{}, "armor":"", "shield":"", "weapon":"", "extra_spending":0,
             "inventory_notes":"", "alignment":"N", "age":"", "gender":"", "appearance":"",
@@ -62,6 +62,13 @@ def clean(payload, owner_id, catalog=None):
     if not isinstance(data["skills"], dict) or set(data["skills"]) - set(SKILLS):
         raise HTTPException(422, "Choose skills from the skill list.")
     data["skills"] = {key:bounded_int(value,0,1,"First-level skill ranks") for key,value in data["skills"].items()}
+    expert_skills = data["expert_skills"]
+    if not isinstance(expert_skills, list) or len(expert_skills) > 10 or any(
+        not isinstance(key, str) or key not in SKILLS for key in expert_skills
+    ) or len(set(expert_skills)) != len(expert_skills):
+        raise HTTPException(422, "Select up to ten different Expert class skills.")
+    if data["class_id"] != "expert":
+        data["expert_skills"] = []
     if not isinstance(data["adaptability"],str) or data["adaptability"] not in SKILLS:
         raise HTTPException(422, "Choose a skill for half-elf adaptability.")
     if not isinstance(data["feats"], list) or len(data["feats"]) > 2:
@@ -122,9 +129,10 @@ def calculate(data, rolls, catalog=None):
     if not data["name"]: error(10, "Give your character a name.")
     if not cls: error(4, "Choose a class.")
     else:
+        if data["class_id"] == "antipaladin" and data["alignment"] != "CE": error(10, "A standard antipaladin must be chaotic evil.")
         if data["class_id"] == "paladin" and data["alignment"] != "LG": error(10, "A standard paladin must be lawful good.")
-        if data["class_id"] == "monk" and not data["alignment"].startswith("L"): error(10, "A standard monk must have a lawful alignment.")
-        if data["class_id"] == "barbarian" and data["alignment"].startswith("L"): error(10, "A standard barbarian cannot have a lawful alignment.")
+        if data["class_id"] in {"monk", "monk-unchained"} and not data["alignment"].startswith("L"): error(10, "A standard monk must have a lawful alignment.")
+        if data["class_id"] in {"barbarian", "barbarian-unchained"} and data["alignment"].startswith("L"): error(10, "A standard barbarian cannot have a lawful alignment.")
         if data["class_id"] in {"druid","shifter"} and "N" not in data["alignment"]: error(10, "A standard druid or shifter must have a neutral alignment component.")
     general_slots = 1 + (data["race"] == "human")
     feat_entries = [entry for entry in data["feats"] if entry.get("name","").strip()]
@@ -172,8 +180,12 @@ def calculate(data, rolls, catalog=None):
         if kind == 'weapon' and choice in EQUIPMENT and not EQUIPMENT[choice].get('enabled',True): error(6,'Choose an available weapon for the feat.')
     ranks_used = sum(data["skills"].values())
     if ranks_used != skill_budget: error(5, f"Allocate exactly {skill_budget} skill ranks; {ranks_used} are assigned.")
-    class_skills = set(skill_list(catalog,data["class_id"]))
+    if data["class_id"] == "expert" and len(data.get("expert_skills", ())) != 10:
+        error(4, "Choose ten Expert class skills.")
+    class_skills = set(skill_list(catalog, data["class_id"], data.get("expert_skills", ())))
     gold = (cls["wealth_dice"] * 3500 if cls else 0)
+    if cls and not cls["wealth_dice"] and data["wealth_method"] != "manual":
+        error(8, "Enter GM-approved starting wealth for this NPC class.")
     if data["wealth_method"] == "rolled":
         wealth = rolls.get(data["wealth_roll"])
         if not wealth or wealth["purpose"] != "wealth" or wealth["result"].get("class_id") != data["class_id"]:
@@ -199,7 +211,7 @@ def calculate(data, rolls, catalog=None):
     acp = armor.get("acp",0) + shield.get("acp",0)
     small = race["size"] == "Small"
     dodge = effects("dodge")
-    monk_ac = modifiers["wis"] if data["class_id"] == "monk" and not armor and not shield else 0
+    monk_ac = modifiers["wis"] if data["class_id"] in {"monk", "monk-unchained"} and not armor and not shield else 0
     ac = 10 + armor.get("armor",0) + shield.get("shield",0) + dex_ac + small + dodge + monk_ac
     skill_totals = {}
     for key, metadata in SKILLS.items():
@@ -230,19 +242,20 @@ def calculate(data, rolls, catalog=None):
     if weapon: warnings.append("Attack assumes weapon proficiency. Conditional combat actions and temporary effects are applied during play.")
     if data["class_id"] in {"druid","shifter"} and data["armor"] in {"chain-shirt","scale-mail","studded-leather"}: warnings.append("Review the class's restrictions on metal armor with your GM.")
     caster = cls["caster"] if cls else ""
-    spell_count = None
-    if data["class_id"] in {"wizard","witch","magus"}: spell_count = 3 + max(0,modifiers["int"])
-    elif data["class_id"] == "alchemist": spell_count = 2 + max(0,modifiers["int"])
-    elif data["class_id"] in {"bard","sorcerer","summoner","inquisitor","oracle"}: spell_count = 2
+    progression = CLASS_PROGRESSIONS.get(data["class_id"], {})
+    starting_known = progression["levels"][0].get("known", {}) if progression else {}
+    spell_count = starting_known.get("1")
+    if progression.get("book"):
+        spell_count = progression["book"] + 1 + max(0, modifiers["int"]) if progression["book"] == 2 else 2 + max(0, modifiers["int"])
     if spell_count is not None and len(data["spells"]) != spell_count: error(11, f"Record {spell_count} starting first-level spells or formulae, one per line.")
     if len(set(name.casefold() for name in data["spells"])) != len(data["spells"]): error(11, "Choose different starting spells rather than repeating the same name.")
     if caster:
         if scores[caster] < 11: warnings.append(f"{ABILITIES[caster]} is below 11; you cannot cast first-level spells using the normal class rules.")
         warnings.append("Confirm spell names, class lists, opposition schools, domain/mystery additions, and prepared spells with your GM.")
-    speed = race["speed"] + (10 if data["class_id"] == "barbarian" and armor.get("category") != "heavy" else 0)
+    speed = race["speed"] + (10 if data["class_id"] in {"barbarian", "barbarian-unchained"} and armor.get("category") != "heavy" else 0)
     if armor.get("category") in {"medium","heavy"} and data["race"] != "dwarf": speed = armor.get("speed_"+str(speed)) or {20:15,30:20,40:30}.get(speed,speed)
-    cantrip_count = 4 if data["class_id"] in {"bard","sorcerer","summoner","inquisitor","oracle"} else None
-    if cantrip_count is not None and len(data["cantrips"]) != cantrip_count: error(11, "Record four different starting cantrips or orisons.")
+    cantrip_count = starting_known.get("0")
+    if cantrip_count is not None and len(data["cantrips"]) != cantrip_count: error(11, f"Record {cantrip_count} different starting cantrips or orisons.")
     if len(set(name.casefold() for name in data["cantrips"])) != len(data["cantrips"]): error(11,"Do not repeat cantrip or orison names.")
     if data["class_id"] == "oracle" and len(data["spells"]) != 2: error(11,"Record two chosen first-level oracle spells; record the free cure/inflict spell separately in spell notes.")
     languages = race["languages"] + (", Druidic" if data["class_id"] == "druid" else "")

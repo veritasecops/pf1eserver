@@ -217,6 +217,8 @@ async def roll(draft_id: str,request: Request,db: Session = Depends(get_db)):
     elif purpose == "wealth":
         class_id = str(form.get("class_id",""))
         if class_id not in CLASSES: raise HTTPException(422,"Choose a class before rolling wealth.")
+        if not CLASSES[class_id]["wealth_dice"]:
+            raise HTTPException(422, "Enter GM-approved starting wealth for this NPC class.")
         dice = [secrets.randbelow(6)+1 for _ in range(CLASSES[class_id]["wealth_dice"])]
         result = {"dice":dice,"sides":6,"class_id":class_id,"total":sum(dice)*10,"gold_cp":sum(dice)*1000,"modifier":0}
     elif purpose == "free":
@@ -248,18 +250,17 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     values = character_values(ctx,{"name":data["name"],"owner_id":str(data["owner_id"]),"campaign_id":str(data["campaign_id"] or ""),
                                   "ancestry":RACES[data["race"]]["name"],"class_name":CLASSES[data["class_id"]]["name"],"level":"1","notes":data["notes"]},existing)
     data["owner_id"],data["campaign_id"] = values["owner_id"],values["campaign_id"]
-    from .advancement import set_track, track
+    from .advancement import preserve_xp, track
 
     if existing:
         db.refresh(existing, with_for_update=True)
         if existing.version != draft.existing_version:
             raise HTTPException(409, "The character changed after this draft began. Start a fresh editing draft.")
     old_speed = track(db.get(Campaign, existing.campaign_id)) if existing and existing.campaign_id else "slow"
-    new_speed = track(db.get(Campaign, values["campaign_id"])) if values["campaign_id"] else "slow"
     character = existing or Character(**values)
     if existing:
         for key,value in values.items(): setattr(character,key,value)
-    set_track(character, old_speed, new_speed)
+    preserve_xp(character, old_speed)
     active_rolls = set()
     if data["method"] in {"standard","classic","heroic"}: active_rolls.add(data["ability_roll"])
     if data["wealth_method"] == "rolled": active_rolls.add(data["wealth_roll"])

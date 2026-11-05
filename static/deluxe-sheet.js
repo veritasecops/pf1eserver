@@ -3,6 +3,7 @@
   if (!form) return;
   const status = document.getElementById('sheet-save-status');
   const errors = document.getElementById('sheet-autosave-errors');
+  const levelUp = document.getElementById('character-level-up');
   const retry = document.getElementById('retry-sheet-save');
   const effectsBoot=document.getElementById('sheet-equipment-effects');
   let equipmentEffects=effectsBoot?JSON.parse(effectsBoot.textContent):null;
@@ -22,6 +23,7 @@
     errors.hidden = false;
   };
   const applyTotals = result => {
+    if (levelUp && typeof result.can_level_up === 'boolean') levelUp.hidden = !result.can_level_up;
     if(result.equipment_effects)equipmentEffects=result.equipment_effects;
     for (const [name,value] of Object.entries(result.equipment_fields||{})) {
       const input=form.elements.namedItem(name);if(input)input.value=value;
@@ -144,15 +146,25 @@
     currentSave = runSave();
     return currentSave;
   };
+  levelUp?.addEventListener('click', async event => {
+    if (!window.PathkeeperSheet.hasPending) return;
+    event.preventDefault();
+    try {
+      await window.PathkeeperSheet.flush();
+      if (!levelUp.hidden) window.location.assign(levelUp.href);
+    } catch (error) {
+      showError(error.message);
+    }
+  });
   window.PathkeeperSheet = {
     get hasPending() { return dirty || saving; },
     async flush() {
       clearTimeout(timer);
-      if (blocked) throw new Error('Reload the character before purchasing.');
-      if (!form.checkValidity()) throw new Error('Complete the required sheet fields before purchasing.');
+      if (blocked) throw new Error('Reload the character before continuing.');
+      if (!form.checkValidity()) throw new Error('Complete the required sheet fields before continuing.');
       do {
         if (saving) await currentSave; else await save();
-        if (blocked || failed || saveError) throw new Error(saveError || 'Save the sheet before purchasing.');
+        if (blocked || failed || saveError) throw new Error(saveError || 'Save the sheet before continuing.');
       } while (dirty || saving);
     },
     applyPurchase(result) {

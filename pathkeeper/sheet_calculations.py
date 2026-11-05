@@ -119,7 +119,7 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
     parts = [number(part,Decimal(0)) for part in ac_parts if part not in {'ac.dex','ac.dodge'}]
     ac_dex = number('ac.dex',Decimal(0))
     write('ac.flat',None if ac_dex is None or any(p is None for p in parts) else Decimal(10)+sum(parts)+min(Decimal(0),ac_dex))
-    class_skills = set(skill_list(catalog,snapshot.get('input',{}).get('class_id',''))) if snapshot else set(cls.get('skills',[]))
+    class_skills = set(skill_list(catalog, snapshot.get('input',{}).get('class_id',''), snapshot.get('input',{}).get('expert_skills',()))) if snapshot else set(cls.get('skills',[]))
     for key,meta in SKILLS.items():
         for row in (key,key+'-2') if key in {'craft','perform','profession'} else (key,):
             write(f'skill.{row}.ability',modifier(meta['ability']))

@@ -1,4 +1,7 @@
 """First-level creation facts. Source links are kept with the data; prose is original."""
+import json
+from pathlib import Path
+
 from .reference_links import class_reference
 
 ABILITIES = {"str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma"}
@@ -63,6 +66,33 @@ CLASSES = {
     "ninja": class_record("Ninja",8,8,0,[0,2,0],4,"acrobatics appraise bluff climb craft diplomacy disable-device disguise escape-artist intimidate knowledge-local knowledge-nobility linguistics perception perform profession sense-motive sleight-of-hand stealth swim use-magic-device",group="Alternate",choices="Record poison use and sneak attack."),
     "samurai": class_record("Samurai",10,4,1,[2,0,0],5,"bluff climb craft diplomacy handle-animal intimidate profession ride sense-motive swim",group="Alternate",choices="Choose order and mount; record resolve."),
 }
+# Archives of Nethys class tables, including the separate Unchained variants.
+CLASS_PROGRESSIONS = json.loads((Path(__file__).parent / "data" / "class_progressions.json").read_text())
+ADDED_CLASSES = CLASS_PROGRESSIONS.keys() - CLASSES.keys()
+for class_id, profile in CLASS_PROGRESSIONS.items():
+    if class_id in CLASSES:
+        continue
+    first = profile["levels"][0]
+    CLASSES[class_id] = {
+        "name": profile["name"], "url": profile["url"], "group": profile["group"],
+        "hd": profile["hd"], "ranks": profile["ranks"], "wealth_dice": profile["wealth_dice"],
+        "bab": first["bab"], "saves": first["saves"], "skills": sorted(
+            (set(profile["skills"]) & SKILLS.keys()) |
+            (set(KNOWLEDGE) if "knowledge-all" in profile["skills"] else set())
+        ),
+        "caster": profile["caster"] if first.get("slots") or first.get("known") else "",
+        "choices": first["features"], "automatic_feats": [], "bonus_feat": "",
+    }
+for class_id, bonus in {
+    "monk-unchained": "monk",
+}.items():
+    CLASSES[class_id]["bonus_feat"] = bonus
+for class_id, feats in {
+    "brawler": ["Improved Unarmed Strike"], "monk-unchained": ["Improved Unarmed Strike", "Stunning Fist"],
+    "rogue-unchained": ["Weapon Finesse"], "skald": ["Scribe Scroll"],
+}.items():
+    CLASSES[class_id]["automatic_feats"] = feats
+
 ALIGNMENTS = {"LG":"Lawful good", "NG":"Neutral good", "CG":"Chaotic good", "LN":"Lawful neutral", "N":"True neutral", "CN":"Chaotic neutral", "LE":"Lawful evil", "NE":"Neutral evil", "CE":"Chaotic evil"}
 FEATS = {
     "Improved Initiative": {"combat": True, "hint": "+4 initiative."},
