@@ -11,7 +11,7 @@ from .character_rules import bounded_int, calculate, clean, defaults
 from .database import commit, get_db
 from .rule_catalog import load_catalog, equipment, class_skills
 from .deities import deity_choices, choose_deity
-from .models import Character, CharacterDraft, DiceRoll, RuleCatalog, utcnow
+from .models import Campaign, Character, CharacterDraft, DiceRoll, RuleCatalog, utcnow
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, SPELL_SUGGESTIONS, STEPS
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
 from .ui import redirect, render
@@ -248,9 +248,18 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     values = character_values(ctx,{"name":data["name"],"owner_id":str(data["owner_id"]),"campaign_id":str(data["campaign_id"] or ""),
                                   "ancestry":RACES[data["race"]]["name"],"class_name":CLASSES[data["class_id"]]["name"],"level":"1","notes":data["notes"]},existing)
     data["owner_id"],data["campaign_id"] = values["owner_id"],values["campaign_id"]
+    from .advancement import set_track, track
+
+    if existing:
+        db.refresh(existing, with_for_update=True)
+        if existing.version != draft.existing_version:
+            raise HTTPException(409, "The character changed after this draft began. Start a fresh editing draft.")
+    old_speed = track(db.get(Campaign, existing.campaign_id)) if existing and existing.campaign_id else "slow"
+    new_speed = track(db.get(Campaign, values["campaign_id"])) if values["campaign_id"] else "slow"
     character = existing or Character(**values)
     if existing:
         for key,value in values.items(): setattr(character,key,value)
+    set_track(character, old_speed, new_speed)
     active_rolls = set()
     if data["method"] in {"standard","classic","heroic"}: active_rolls.add(data["ability_roll"])
     if data["wealth_method"] == "rolled": active_rolls.add(data["wealth_roll"])

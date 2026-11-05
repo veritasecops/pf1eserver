@@ -268,9 +268,9 @@ def is_member(db, account, campaign):
     return account.role == "admin" or campaign.owner_id == account.id or db.get(Membership, (campaign.id, account.id)) is not None
 
 
-def get_campaign(ctx, campaign_id, manage=False):
+def get_campaign(ctx, campaign_id, manage=False, lock=False):
     account = authenticated(ctx)
-    record = ctx.db.get(Campaign, campaign_id)
+    record = ctx.db.get(Campaign, campaign_id, with_for_update=lock, populate_existing=lock)
     if not record or not is_member(ctx.db, account, record):
         raise HTTPException(404, "Campaign not found.")
     if manage and not can_manage_campaign(account, record):

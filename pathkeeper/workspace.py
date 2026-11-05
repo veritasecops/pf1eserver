@@ -5,9 +5,10 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
+from .advancement import XP_TRACKS, apply_advancement, detach_characters, set_track, track
 from .database import commit, get_db
 from .models import Campaign, Character, CharacterDraft, Invitation, Membership, User, utcnow
 from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
@@ -26,6 +27,13 @@ from .equipment_effects import contributions, persist_effects
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
 
 router = APIRouter()
+
+
+def campaign_xp_speed(form, default="slow"):
+    speed = form.get("xp_speed", default)
+    if not isinstance(speed, str) or speed not in XP_TRACKS:
+        raise HTTPException(422, "Choose Slow, Medium, or Fast XP advancement.")
+    return speed
 
 
 def campaigns_query(account):
@@ -78,7 +86,7 @@ async def campaign_new(request: Request, db: Session = Depends(get_db)):
     if account.role == "player":
         raise HTTPException(403, "Only Game Masters and Admins can create campaigns.")
     owners = list(db.scalars(select(User).where(User.role.in_(["gm", "admin"]), User.active.is_(True)).order_by(User.name))) if account.role == "admin" else []
-    return render(ctx, "campaign_form.html", title="Create campaign", campaign=None, owners=owners)
+    return render(ctx, "campaign_form.html", title="Create campaign", campaign=None, owners=owners, xp_tracks=XP_TRACKS)
 
 
 @router.post("/campaigns")
@@ -92,7 +100,7 @@ async def campaign_create(request: Request, db: Session = Depends(get_db)):
     owner = db.get(User, owner_id)
     if not owner or not owner.active or owner.role not in {"gm", "admin"}:
         raise HTTPException(422, "Choose an active Game Master or Admin as owner.")
-    campaign = Campaign(owner_id=owner_id, name=field(form, "name"), description=field(form, "description", 20000, False), setting=field(form, "setting", 150, False))
+    campaign = Campaign(xp_speed=campaign_xp_speed(form), owner_id=owner_id, name=field(form, "name"), description=field(form, "description", 20000, False), setting=field(form, "setting", 150, False))
     db.add(campaign)
     audit(db, account, "campaign.created", f"Created campaign {campaign.name}.")
     commit(db)
@@ -117,20 +125,26 @@ async def campaign_edit(campaign_id: int, request: Request, db: Session = Depend
     ctx = context(request, db)
     campaign = get_campaign(ctx, campaign_id, manage=True)
     owners = list(db.scalars(select(User).where(User.role.in_(["gm", "admin"]), User.active.is_(True)).order_by(User.name))) if ctx.user.role == "admin" else []
-    return render(ctx, "campaign_form.html", title="Edit campaign", campaign=campaign, owners=owners)
+    return render(ctx, "campaign_form.html", title="Edit campaign", campaign=campaign, owners=owners, xp_tracks=XP_TRACKS)
 
 
 @router.post("/campaigns/{campaign_id}")
 async def campaign_update(campaign_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
-    campaign = get_campaign(ctx, campaign_id, manage=True)
     form = await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
     verify_version(form, campaign)
     if ctx.user.role == "admin":
         owner = db.get(User, integer(form, "owner_id", 1, 2**63 - 1))
         if not owner or not owner.active or owner.role not in {"gm", "admin"}:
             raise HTTPException(422, "Choose an active Game Master or Admin as owner.")
         campaign.owner_id = owner.id
+    speed = campaign_xp_speed(form, campaign.xp_speed)
+    if speed != campaign.xp_speed:
+        for character in db.scalars(select(Character).where(Character.campaign_id == campaign.id).order_by(Character.id).with_for_update()):
+            set_track(character, campaign.xp_speed, speed)
+            character.version += 1
+        campaign.xp_speed = speed
     campaign.name = field(form, "name")
     campaign.setting = field(form, "setting", 150, False)
     campaign.description = field(form, "description", 20000, False)
@@ -141,12 +155,13 @@ async def campaign_update(campaign_id: int, request: Request, db: Session = Depe
 @router.post("/campaigns/{campaign_id}/delete")
 async def campaign_delete(campaign_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
-    campaign = get_campaign(ctx, campaign_id, manage=True)
     form = await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
     verify_version(form, campaign)
     if field(form, "confirm_name") != campaign.name:
         raise HTTPException(422, "Type the campaign's name to confirm deletion.")
     audit(db, ctx.user, "campaign.deleted", f"Deleted campaign {campaign.name}. Characters were detached, not deleted.")
+    detach_characters(db, campaign)
     db.delete(campaign)
     return redirect(ctx, "/campaigns", "Campaign deleted. Its characters remain with their owners.")
 
@@ -228,12 +243,12 @@ async def invitation_accept(token: str, request: Request, db: Session = Depends(
 @router.post("/campaigns/{campaign_id}/members/{user_id}/remove")
 async def member_remove(campaign_id: int, user_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
-    campaign = get_campaign(ctx, campaign_id, manage=True)
     await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
     if user_id == campaign.owner_id:
         raise HTTPException(422, "The campaign owner cannot be removed.")
     db.execute(delete(Membership).where(Membership.campaign_id == campaign_id, Membership.user_id == user_id))
-    db.execute(update(Character).where(Character.campaign_id == campaign_id, Character.owner_id == user_id).values(campaign_id=None, version=Character.version + 1))
+    detach_characters(db, campaign, user_id)
     audit(db, ctx.user, "member.removed", "Removed a campaign member and detached their characters.")
     return redirect(ctx, f"/campaigns/{campaign.id}", "Member removed. Their characters remain in their account.")
 
@@ -282,14 +297,14 @@ def character_values(ctx, form, existing=None):
     if existing and ctx.user.role != "admin" and existing.owner_id != ctx.user.id and campaign_id != existing.campaign_id:
         raise HTTPException(403, "Only the character's owner or an Admin can move it between campaigns.")
     if campaign_id:
-        campaign = ctx.db.get(Campaign, campaign_id)
+        campaign = ctx.db.get(Campaign, campaign_id, with_for_update=True, populate_existing=True)
         if not campaign or ctx.user.role != "admin" and not is_member(ctx.db, ctx.user, campaign):
             raise HTTPException(404, "Campaign not found.")
         if ctx.user.role != "admin" and owner_id == ctx.user.id and not is_member(ctx.db, ctx.user, campaign):
             raise HTTPException(403, "Join the campaign before assigning a character.")
     return {"name": field(form, "name"), "owner_id": owner_id, "campaign_id": campaign_id,
             "ancestry": field(form, "ancestry", 100, False), "class_name": field(form, "class_name", 100, False),
-            "level": integer(form, "level", 1, 40), "notes": field(form, "notes", 20000, False)}
+            "level": existing.level if existing else integer(form, "level", 1, 20), "notes": field(form, "notes", 20000, False)}
 
 
 @router.post("/characters")
@@ -298,6 +313,8 @@ async def character_create(request: Request, db: Session = Depends(get_db)):
     authenticated(ctx)
     form = await read_form(ctx)
     character = Character(**character_values(ctx, form))
+    speed = track(db.get(Campaign, character.campaign_id)) if character.campaign_id else "slow"
+    set_track(character, speed, speed)
     db.add(character)
     audit(db, ctx.user, "character.created", f"Created character {character.name}.")
     commit(db)
@@ -340,6 +357,7 @@ async def read_play_sheet(ctx, character, form=None):
     locked = calculated_fields(character, current)
     values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),load_catalog(db).get('deities',{}),current.get('deity',''))
     if not errors:
+        apply_advancement(values, track(campaign))
         sync_equipped(character,values,current)
         from .equipment_effects import validate_armor
         validate_armor(character, values)
@@ -406,7 +424,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     core = {"name", "ancestry", "class_name", "level", "notes"}
     metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal") if key in (character.play_data or {})}
     character.play_data = {"calculation_version":1, **metadata, **{key:value for key,value in values.items()
-                           if key not in core | {"player"} and value != base[key]}, **persist_effects(character, values)}
+                           if key not in core | {"player", "next_level"} and value != base[key]}, **persist_effects(character, values), "experience": values["experience"]}
     for key in core:
         setattr(character, key, int(values[key]) if key == "level" else values[key])
     if character.sheet_data:
@@ -449,10 +467,13 @@ async def character_update(character_id: int, request: Request, db: Session = De
     form = await read_form(ctx)
     verify_version(form, character)
     values = character_values(ctx, form, character)
-    if character.sheet_data and any(values[key] != getattr(character,key) for key in ("ancestry","class_name","level")):
-        raise HTTPException(422,"Use Edit creation sheet to change race or class. Level advancement is outside the first-level creation wizard.")
+    if character.sheet_data and any(values[key] != getattr(character,key) for key in ("ancestry","class_name")):
+        raise HTTPException(422,"Use Edit creation sheet to change race or class.")
+    old_speed = track(db.get(Campaign, character.campaign_id)) if character.campaign_id else "slow"
+    new_speed = track(db.get(Campaign, values["campaign_id"])) if values["campaign_id"] else "slow"
     for key, value in values.items():
         setattr(character, key, value)
+    set_track(character, old_speed, new_speed)
     if character.sheet_data:
         character.sheet_data = {**character.sheet_data,"input":{**character.sheet_data["input"],"name":character.name,
                                 "notes":character.notes,"owner_id":character.owner_id,"campaign_id":character.campaign_id}}

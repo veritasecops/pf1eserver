@@ -68,6 +68,7 @@ class Campaign(Base):
     name: Mapped[str] = mapped_column(String(150))
     description: Mapped[str] = mapped_column(LONG_TEXT, default="")
     setting: Mapped[str] = mapped_column(String(150), default="")
+    xp_speed: Mapped[str] = mapped_column(String(6), default="slow", server_default="slow")
     version: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     __mapper_args__ = {"version_id_col": version}

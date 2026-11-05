@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from fastapi import HTTPException
 
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, RACES, SKILLS
+from .advancement import XP_SOURCE, apply_advancement, saved_xp, track
 from .sheet_calculations import calculated_fields, recalculate, base_speed_race
 from .sheet_formulas import sheet_formulas
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
@@ -200,6 +201,8 @@ def sheet_values(character, owner, campaign=None, gm=None):
     values.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes,player=owner.name)
     alignment = values['alignment']
     values['alignment'] = next((key for key,label in ALIGNMENTS.items() if alignment.casefold() in {key.casefold(),label.casefold()}),'')
+    values["experience"] = str(saved_xp(character, track(campaign)))
+    apply_advancement(values, track(campaign))
     return recalculate(character, values)
 
 
@@ -263,7 +266,7 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     except HTTPException: treasure_gp=None
     from .equipment_state import equipment_groups
     from .equipment_effects import contributions
-    return dict(equipment_effects=contributions(character,values),equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
+    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog,(character.sheet_data or {}).get('input',{}).get('class_id','')) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

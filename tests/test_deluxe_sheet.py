@@ -137,7 +137,7 @@ def test_sheet_rejects_csrf_stale_invalid_and_incomplete_saves(env):
     path = f'/characters/{character.id}/play-sheet'
     assert env.post(client,path,{**values,'csrf':'wrong'},use_csrf=False).status_code == 403
     assert env.post(client,path,{**values,'version':'99'}).status_code == 409
-    for changes in [{'alignment':'invalid'},{'level':'41'},{'hp.current':'NaN'},{'hp.current':'1e9999999'},{'skill.climb.ranks':'-1'},{'ancestry':'x'*101},{'notes':'x'*10001}]:
+    for changes in [{'alignment':'invalid'},{'experience':'-1'},{'hp.current':'NaN'},{'hp.current':'1e9999999'},{'skill.climb.ranks':'-1'},{'ancestry':'x'*101},{'notes':'x'*10001}]:
         response = env.post(client,path,{**values,'homeland':'Preserved entry',**changes})
         assert response.status_code == 422
         assert 'Preserved entry' in response.text and 'Check these fields' in response.text

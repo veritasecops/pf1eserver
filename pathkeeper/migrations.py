@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Character, CharacterDraft, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration
+from .models import AccountToken, Campaign, Character, CharacterDraft, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration
 
 
 def remove_manual_class_fields(db):
@@ -53,6 +53,7 @@ def migrate(admin_engine):
     for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog):
         model.__table__.create(admin_engine, checkfirst=True)
     additions = {
+        "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'"},
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
         "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL"},
@@ -141,4 +142,25 @@ def migrate(admin_engine):
             add_admin_reference_links(db)
             db.add(SchemaMigration(version=15, name="admin_feat_skill_and_deity_reference_links"))
             db.commit()
-    print("Database migrations applied through 015 (admin catalog reference links).")
+        if not db.get(SchemaMigration, 16):
+            from .advancement import set_track, track
+
+            speeds = {campaign.id: track(campaign) for campaign in db.scalars(select(Campaign))}
+            editable = {}
+            for character in db.scalars(select(Character).order_by(Character.id).with_for_update()):
+                speed = speeds.get(character.campaign_id, "slow")
+                previous_version = character.version
+                set_track(character, speed, speed)
+                if character.level == 1:
+                    editable[character.id] = (previous_version, character)
+            db.flush()
+            for draft in db.scalars(select(CharacterDraft).where(
+                CharacterDraft.mode == "edit", CharacterDraft.finalized_at.is_(None)
+            )):
+                if draft.editing_id in editable:
+                    previous_version, character = editable[draft.editing_id]
+                    if draft.existing_version == previous_version:
+                        draft.existing_version = character.version
+            db.add(SchemaMigration(version=16, name="campaign_experience_advancement"))
+            db.commit()
+    print("Database migrations applied through 016 (campaign experience advancement).")

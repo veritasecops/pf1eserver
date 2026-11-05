@@ -17,7 +17,7 @@ def base_speed_race(character):
 
 def calculated_fields(character, values):
     SKILLS = character_catalog(character)["skills"]
-    locked = {'player','class_name','speed.base','initiative.total','initiative.dex','cmb.total','cmd.total',
+    locked = {'level','next_level','player','class_name','speed.base','initiative.total','initiative.dex','cmb.total','cmd.total',
               'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int','load.total'}
     for ability in ABILITIES:
         locked.update({f'ability.{ability}.mod',f'ability.{ability}.temp_mod'})
@@ -37,7 +37,7 @@ def calculated_fields(character, values):
     locked.update(f'spell.{level}.known' for level in range(10))
     # These are calculated by the first-level wizard. At later levels they need
     # manual advancement because hit-die rolls and class progression aren't recorded.
-    if character.level == 1 and (character.sheet_data or {}).get('computed'):
+    if int(values.get("level") or character.level) == 1 and (character.sheet_data or {}).get('computed'):
         locked.update(key for key in ('hp.total','bab','skill_points.base',
                       'save.fortitude.base','save.reflex.base','save.will.base') if values.get(key,'') != '')
     return locked
@@ -82,7 +82,7 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
             write(f'ability.{ability}.{mod}',None if value is None else floor((value-10)/2))
     cls = class_record(character)
     snapshot = character.sheet_data or {}
-    if character.level == 1 and snapshot.get('computed') and cls:
+    if int(values.get("level") or character.level) == 1 and snapshot.get('computed') and cls:
         con = modifier('con')
         inputs = snapshot.get('input',{})
         feats = snapshot['computed'].get('feats',[])
