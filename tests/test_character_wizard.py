@@ -339,7 +339,7 @@ def test_wizard_edit_preserves_sheet_and_detects_stale_character(env):
     assert finish(env,c,edit_id,edit_version).status_code==409
 
 
-@pytest.mark.parametrize("override",[{"abilities":[]},{"armor":[]},{"extra_class_skills":["perception"]},{"class_notes":"Legacy class notes"},{"adaptability":[]},{"point_budget":15.0},{"class_id":"armiger"},{"scores":{"str":99}}])
+@pytest.mark.parametrize("override",[{"abilities":[]},{"armor":[]},{"extra_class_skills":["perception"]},{"class_notes":"Legacy class notes"},{"adaptability":[]},{"point_budget":15.0},{"class_id":"armiger"},{"class_id":"omdura"},{"class_id":"vampire-hunter"},{"scores":{"str":99}}])
 def test_malformed_or_third_party_draft_inputs_are_rejected(env,override):
     c,draft_id,version,data=start(env)
     data.update(override)

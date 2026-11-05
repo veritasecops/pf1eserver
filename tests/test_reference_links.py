@@ -22,8 +22,9 @@ def test_all_default_reference_links_use_aon():
         assert len(entries) == (279 if group == 'weapons' else 72)
         assert all('.aonprd.com/' in item['url'] for item in entries.values())
     assert OUTLINE == 'https://www.aonprd.com/Rules.aspx?ID=83'
-    assert {key for key, value in CLASSES.items() if not value['url']} == {'omdura', 'vampire-hunter'}
-    assert all(not value['url'] or value['url'].startswith('https://www.aonprd.com/ClassDisplay.aspx?') for value in CLASSES.values())
+    assert {'omdura', 'vampire-hunter'}.isdisjoint(CLASSES)
+    assert len(CLASSES) == 23
+    assert all(value['url'].startswith('https://www.aonprd.com/ClassDisplay.aspx?') for value in CLASSES.values())
 
 
 def test_reference_normalization_custom_urls_and_unknown_pages():
@@ -99,3 +100,34 @@ def test_unknown_stored_link_rolls_back_without_partial_migration(env):
             migrate_reference_links(db)
         db.rollback()
         assert db.get(RuleCatalog, 1).data['weapons']['longsword']['url'] == OLD
+
+
+@pytest.mark.parametrize('class_id', ['omdura', 'vampire-hunter'])
+def test_unreferenced_classes_are_absent_and_cannot_roll_wealth(env, class_id):
+    from .test_character_wizard import start, roll
+    client, draft_id, _, _ = start(env)
+    page = client.get(f'/characters/drafts/{draft_id}')
+    import re
+    boot = json.loads(re.search(r'id="pw-bootstrap">(.*?)</script>', page.text, re.S).group(1))
+    assert class_id not in boot['classes']
+    assert all(item['url'] for item in boot['classes'].values())
+    assert roll(env, client, draft_id, purpose='wealth', class_id=class_id).status_code == 422
+
+
+def test_removed_class_skill_memberships_are_cleaned_without_losing_other_edits(env):
+    from pathkeeper.reference_links import remove_unreferenced_classes
+    catalog = default_catalog()
+    catalog['skills']['climb'].update(classes=['omdura', 'fighter', 'vampire-hunter'], bonus=7)
+    with Session(engine()) as db:
+        db.add(RuleCatalog(id=1, data=catalog))
+        db.commit()
+        record = db.get(RuleCatalog, 1)
+        before = record.version
+        remove_unreferenced_classes(db)
+        db.commit()
+        assert record.data['skills']['climb']['classes'] == ['fighter']
+        assert record.data['skills']['climb']['bonus'] == 7
+        assert record.version == before + 1
+        remove_unreferenced_classes(db)
+        db.commit()
+        assert record.version == before + 1

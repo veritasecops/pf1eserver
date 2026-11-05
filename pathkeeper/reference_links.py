@@ -98,3 +98,19 @@ def migrate_reference_links(db):
             if draft.existing_version == previous:
                 draft.existing_version = character.version
     db.info.pop('rule_catalog', None)
+
+
+def remove_unreferenced_classes(db):
+    from copy import deepcopy
+    from sqlalchemy import select
+    from .models import RuleCatalog
+
+    removed = {'omdura', 'vampire-hunter'}
+    for record in db.scalars(select(RuleCatalog).with_for_update()):
+        updated = deepcopy(record.data)
+        for skill in updated.get('skills', {}).values():
+            if 'classes' in skill:
+                skill['classes'] = [key for key in skill['classes'] if key not in removed]
+        if updated != record.data:
+            record.data = updated
+    db.info.pop('rule_catalog', None)

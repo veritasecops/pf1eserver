@@ -131,4 +131,9 @@ def migrate(admin_engine):
             migrate_reference_links(db)
             db.add(SchemaMigration(version=13, name="archives_of_nethys_reference_links"))
             db.commit()
-    print("Database migrations applied through 013 (Archives of Nethys reference links).")
+        if not db.get(SchemaMigration, 14):
+            from .reference_links import remove_unreferenced_classes
+            remove_unreferenced_classes(db)
+            db.add(SchemaMigration(version=14, name="remove_classes_without_aon_references"))
+            db.commit()
+    print("Database migrations applied through 014 (classes with AoN references).")

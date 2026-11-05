@@ -233,7 +233,7 @@ def calculate(data, rolls, catalog=None):
     spell_count = None
     if data["class_id"] in {"wizard","witch","magus"}: spell_count = 3 + max(0,modifiers["int"])
     elif data["class_id"] == "alchemist": spell_count = 2 + max(0,modifiers["int"])
-    elif data["class_id"] in {"bard","sorcerer","summoner","inquisitor","oracle","omdura"}: spell_count = 2
+    elif data["class_id"] in {"bard","sorcerer","summoner","inquisitor","oracle"}: spell_count = 2
     if spell_count is not None and len(data["spells"]) != spell_count: error(11, f"Record {spell_count} starting first-level spells or formulae, one per line.")
     if len(set(name.casefold() for name in data["spells"])) != len(data["spells"]): error(11, "Choose different starting spells rather than repeating the same name.")
     if caster:
@@ -241,7 +241,7 @@ def calculate(data, rolls, catalog=None):
         warnings.append("Confirm spell names, class lists, opposition schools, domain/mystery additions, and prepared spells with your GM.")
     speed = race["speed"] + (10 if data["class_id"] == "barbarian" and armor.get("category") != "heavy" else 0)
     if armor.get("category") in {"medium","heavy"} and data["race"] != "dwarf": speed = armor.get("speed_"+str(speed)) or {20:15,30:20,40:30}.get(speed,speed)
-    cantrip_count = 4 if data["class_id"] in {"bard","sorcerer","summoner","inquisitor","oracle","omdura"} else None
+    cantrip_count = 4 if data["class_id"] in {"bard","sorcerer","summoner","inquisitor","oracle"} else None
     if cantrip_count is not None and len(data["cantrips"]) != cantrip_count: error(11, "Record four different starting cantrips or orisons.")
     if len(set(name.casefold() for name in data["cantrips"])) != len(data["cantrips"]): error(11,"Do not repeat cantrip or orison names.")
     if data["class_id"] == "oracle" and len(data["spells"]) != 2: error(11,"Record two chosen first-level oracle spells; record the free cure/inflict spell separately in spell notes.")
