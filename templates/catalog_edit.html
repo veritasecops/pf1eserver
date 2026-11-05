@@ -11,6 +11,8 @@
 {% if new %}{{ text('key','Feat name' if kind == 'feats' else 'Stable identifier',key,'This identifier cannot be renamed after creation. Use lowercase words separated by hyphens for skills and weapons.') }}{% else %}<input type="hidden" name="key" value="{{ key }}"><p>Stable identifier: <strong>{{ key }}</strong></p>{% endif %}
 {% if kind != 'feats' %}{{ text('name','Display name',item.get('name','')) }}{% endif %}
 {{ check('enabled','Available for selection') }}<p class="hint">Archiving preserves saved selections and existing character snapshots. Archived feats cannot be selected when completing a new character.</p>
+{% if kind in ['feats','skills'] %}{{ text('url','Reference URL',item.get('url',''),'Link to the individual AoN entry, or another reference for a custom entry.','url') }}{% endif %}
+{% if kind in ['feats','skills','deities'] and weapon_url(item.get('url','')) %}<p><a class="text-button" href="{{ weapon_url(item.url) }}" target="_blank" rel="noopener noreferrer">Open reference ↗</a></p>{% endif %}
 {% if kind == 'feats' %}
 {{ text('hint','Effect and conditional rules',item.get('hint',''),'Describe conditional effects here. This text is shown in the wizard; only the numerical modifiers below are calculated.') }}
 <div class="form-grid">{{ check('combat','Combat feat (eligible for fighter bonus slot)') }}{{ check('monk','Eligible for first-level monk bonus slot') }}{{ check('repeatable','Repeatable with different skill or weapon choices') }}{{ check('finesse','Use Dexterity to attack with eligible finesse weapons') }}</div>
@@ -28,7 +30,7 @@
 <div class="form-grid">{% for id,cls in classes.items() %}<label class="checkbox"><input type="checkbox" name="classes" value="{{ id }}" {% if id in item.get('classes',[]) %}checked{% endif %}> {{ cls.name }}</label>{% endfor %}</div>
 <div class="inline-note">Racial bonuses and size adjustments remain part of the race rules: keen senses +2 Perception; half-orc +2 Intimidate; halfling +2 Acrobatics/Climb; Small size +4 Stealth and +2 Fly. Feat modifiers are edited in the Feats catalog. The trained-only marker describes usability; the wizard does not simulate individual skill actions.</div>
 {% elif kind == 'deities' %}
-{{ text('url','Description link',item.get('url',''),'The individual deity or Atheism article linked from PathfinderWiki.','url') }}
+{{ text('url','Description link',item.get('url',''),'The individual AoN page when available; other description links are retained.','url') }}
 <p class="hint">Atheism represents a belief without a deity. Archiving removes a choice from new selections while retaining it on characters that already selected it.</p>
 {% if item.get('sections') %}<p>Source sections: {{ item.sections|join(' · ') }}</p>{% endif %}
 {% if item.get('regions') %}<p>Regions: {{ item.regions|join(' · ') }}</p>{% endif %}

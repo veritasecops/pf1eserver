@@ -25,6 +25,10 @@ def default_catalog(legacy=False):
     for key, meta in skills.items():
         meta.update(enabled=True, bonus=0, trained=key in trained or key.startswith('knowledge-'),
                     classes=[name for name,cls in CLASSES.items() if key in cls['skills']])
+    from .reference_links import reference_links
+    for group, entries in [('feats', feats), ('skills', skills)]:
+        for key, url in reference_links()[group].items():
+            entries[key]['url'] = url
     from .weapons import table_weapons
     weapons = {key:{**deepcopy(value),'enabled':True} for key,value in EQUIPMENT.items() if value['kind']=='weapon'} if legacy else deepcopy(table_weapons())
     from .armor import table_armor

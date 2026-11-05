@@ -136,4 +136,9 @@ def migrate(admin_engine):
             remove_unreferenced_classes(db)
             db.add(SchemaMigration(version=14, name="remove_classes_without_aon_references"))
             db.commit()
-    print("Database migrations applied through 014 (classes with AoN references).")
+        if not db.get(SchemaMigration, 15):
+            from .reference_links import add_admin_reference_links
+            add_admin_reference_links(db)
+            db.add(SchemaMigration(version=15, name="admin_feat_skill_and_deity_reference_links"))
+            db.commit()
+    print("Database migrations applied through 015 (admin catalog reference links).")

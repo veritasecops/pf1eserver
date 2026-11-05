@@ -93,6 +93,11 @@ def parse_entry(form,kind,key,catalog):
                 return float(value)
             except (ValueError,InvalidOperation): raise HTTPException(422,f'{name}: enter a number from {low} to {high}, with at most two decimal places.') from None
         return integer({name:raw},name,low,high)
+    if kind in {'feats', 'skills'}:
+        existing = catalog[kind].get(key, {})
+        item['url'] = field({'url': form.get('url', existing.get('url', ''))}, 'url', 1000, required=False)
+        if item['url'] and not safe_weapon_url(item['url']):
+            raise HTTPException(422, 'Reference link must be a safe HTTP or HTTPS URL.')
     if kind=='feats':
         item.update(hint=field(form,'hint',1000,required=False),combat=form.get('combat')=='on',
                     monk=form.get('monk')=='on',repeatable=form.get('repeatable')=='on',finesse=form.get('finesse')=='on')

@@ -114,3 +114,25 @@ def remove_unreferenced_classes(db):
         if updated != record.data:
             record.data = updated
     db.info.pop('rule_catalog', None)
+
+
+def add_admin_reference_links(db):
+    """Fill verified references without replacing custom or unmatched links."""
+    from copy import deepcopy
+    from sqlalchemy import select
+    from .models import RuleCatalog
+
+    links = reference_links()
+    for record in db.scalars(select(RuleCatalog).with_for_update()):
+        updated = deepcopy(record.data)
+        for group in ('feats', 'skills', 'deities'):
+            for key, url in links[group].items():
+                item = updated.get(group, {}).get(key)
+                if item is None:
+                    continue
+                old = item.get('url', '')
+                if not old or group == 'deities' and old == links['legacy_deity_urls'][key]:
+                    item['url'] = url
+        if updated != record.data:
+            record.data = updated
+    db.info.pop('rule_catalog', None)
