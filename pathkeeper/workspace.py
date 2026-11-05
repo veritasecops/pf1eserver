@@ -338,7 +338,7 @@ def render_character(ctx, character, values=None, errors=()):
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       header_background_url=header_background_url(ctx.db,character),default_header_background=DEFAULT_HEADER_BACKGROUND,
                       can_edit_header_background=ctx.user.id == character.owner_id,
-                      can_level_up=ctx.user.id == character.owner_id and level_up.available(character, campaign),
+                      can_level_up=ctx.user.id == character.owner_id and level_up.available(character, campaign, load_catalog(ctx.db)),
                       advancement_history=(character.play_data or {}).get("advancement_history", []),
                       armor_links=sheet_armor_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
                       weapon_links=sheet_weapon_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
@@ -449,7 +449,7 @@ def autosave_response(ctx, character):
     values = sheet_values(character,owner,campaign,gm)
     locked = calculated_fields(character,values)
     return JSONResponse({'version':character.version,'name':character.name,
-                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign),'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
+                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign, load_catalog(ctx.db)),'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values),
                          'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
                          'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),

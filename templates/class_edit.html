@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% from 'components.html' import csrf_input %}
+{% macro input(label, name, type='text', min=none, max=none, required=true) %}
+<label class="field"><span>{{ label }}</span><input name="{{ name }}" type="{{ type }}" value="{{ values.get(name, '') }}"{% if min is not none %} min="{{ min }}"{% endif %}{% if max is not none %} max="{{ max }}"{% endif %}{% if required %} required{% endif %}></label>
+{% endmacro %}
+{% macro area(label, name, rows=3) %}
+<label class="field"><span>{{ label }}</span><textarea name="{{ name }}" rows="{{ rows }}">{{ values.get(name, '') }}</textarea></label>
+{% endmacro %}
+{% block content %}
+{% include 'admin_tabs.html' %}
+<a class="text-button back-link" href="/administration/catalog?kind=classes">Back to Character Classes</a>
+<div class="page-heading"><div><h1>Edit {{ values.name }}</h1><p>Class ID {{ key }} · Catalog version {{ version }}</p></div></div>
+{% if errors %}<div class="error" role="alert">{{ errors|join(' ') }}</div>{% endif %}
+<form method="post" action="/administration/catalog/classes" class="card padded stack">
+  {{ csrf_input(csrf) }}
+  <input type="hidden" name="key" value="{{ key }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  <section class="stack">
+    <h2>Class and character creation</h2>
+    <div class="form-grid">
+      {{ input('Class name', 'name') }}
+      <label class="field"><span>Class group</span><select name="group">{% for group in groups %}<option{% if group == values.group %} selected{% endif %}>{{ group }}</option>{% endfor %}</select></label>
+      {{ input('Reference URL', 'url', 'url', required=false) }}
+      {{ input('Hit Die sides', 'hd', 'number', 1, 20) }}
+      {{ input('Base skill ranks per level', 'ranks', 'number', 1, 20) }}
+      {{ input('Starting wealth dice (d6 × 10 gp)', 'wealth_dice', 'number', 0, 20) }}
+      {{ input('Starting base attack bonus', 'bab', 'number', 0, 20) }}
+      {% for save in saves %}{{ input('Starting ' ~ save|capitalize ~ ' save', save, 'number', 0, 20) }}{% endfor %}
+      <label class="field"><span>Starting bonus feat type</span><select name="bonus_feat">{% for type in bonus_feats %}<option value="{{ type }}"{% if type == values.bonus_feat %} selected{% endif %}>{{ type|capitalize or 'None' }}</option>{% endfor %}</select></label>
+      <label class="field"><span>Spellcasting ability</span><select name="casting_ability"><option value="">None</option>{% for key,label in abilities.items() %}<option value="{{ key }}"{% if key == values.casting_ability %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      {{ input('Caster level offset (subtract from class level)', 'caster_delay', 'number', 0, 19) }}
+      {{ input('Starting spellbook entries before Intelligence bonus', 'starting_book', 'number', 0, 20) }}
+      {{ input('Spellbook or formula entries gained per level', 'book', 'number', 0, 20) }}
+      {{ input('First spell replacement level (0 for none)', 'swap_first', 'number', 0, 20) }}
+      {{ input('Levels between spell replacements (0 for none)', 'swap_frequency', 'number', 0, 20) }}
+      <label class="checkbox"><input type="checkbox" name="swap_lower"{% if values.swap_lower %} checked{% endif %}> Replacement must be below the highest spell level</label>
+    </div>
+    {{ area('Creation guidance', 'choices') }}
+    {{ area('Automatic starting feats (one per line)', 'automatic_feats') }}
+    <details><summary>Class skills</summary>
+      {% if key == 'expert' %}<p>Experts choose ten class skills during character creation.</p>
+      {% else %}<div class="form-grid">{% for id, skill in skills %}<label class="checkbox"><input type="checkbox" name="class_skills" value="{{ id }}"{% if id in selected_skills %} checked{% endif %}> {{ skill.name }}</label>{% endfor %}</div>{% endif %}
+    </details>
+  </section>
+  <section class="stack">
+    <h2>Level progression</h2>
+    <p>Enter total base attack and saves for each level. For spell counts, use spell level=count pairs such as 0=4, 1=2. A count of zero can mark a spell level available through bonus slots.</p>
+    {% for level in range(1, 21) %}
+    {% set prefix = 'level.' ~ level ~ '.' %}
+    <details{% if errors %} open{% endif %}><summary>Level {{ level }}</summary>
+      <div class="form-grid">
+        {{ input('Base attack bonus', prefix ~ 'bab', 'number', 0, 40) }}
+        {% for save in saves %}{{ input(save|capitalize ~ ' base save', prefix ~ save, 'number', 0, 40) }}{% endfor %}
+        {% for field, label in spell_fields.items() %}{{ input(label, prefix ~ field, required=false) }}{% endfor %}
+      </div>
+      {{ area('Class features', prefix ~ 'features', 2) }}
+      {% if level > 1 %}{{ area('Required class choices (one prompt per line)', prefix ~ 'choices', 2) }}{% endif %}
+      {{ area('Other progression statistics (one label=value per line)', prefix ~ 'statistics', 2) }}
+    </details>
+    {% endfor %}
+  </section>
+  <div class="form-actions"><a class="button" href="/administration/catalog?kind=classes">Cancel</a><button class="button primary">Save character class</button></div>
+</form>
+{% endblock %}

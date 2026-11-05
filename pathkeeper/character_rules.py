@@ -4,7 +4,8 @@ from math import floor
 
 from fastapi import HTTPException
 
-from .pf1_data import ABILITIES, ALIGNMENTS, CLASS_PROGRESSIONS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, POINT_COST, RACES, SKILLS
+from .class_catalog import class_profile, creation_class
+from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, POINT_COST, RACES, SKILLS
 
 
 def defaults(owner_id):
@@ -105,7 +106,7 @@ def calculate(data, rolls, catalog=None):
     MONK_BONUS = [name for name,meta in FEATS.items() if meta.get('monk')]
     errors, warnings = [], []
     def error(step, message): errors.append({"step":step,"message":message})
-    race, cls = RACES[data["race"]], CLASSES.get(data["class_id"])
+    race, cls = RACES[data["race"]], creation_class(catalog, data["class_id"])
     base = dict(data["abilities"])
     method = data["method"]
     if method in {"standard","classic","heroic"}:
@@ -188,7 +189,7 @@ def calculate(data, rolls, catalog=None):
         error(8, "Enter GM-approved starting wealth for this NPC class.")
     if data["wealth_method"] == "rolled":
         wealth = rolls.get(data["wealth_roll"])
-        if not wealth or wealth["purpose"] != "wealth" or wealth["result"].get("class_id") != data["class_id"]:
+        if not wealth or wealth["purpose"] != "wealth" or wealth["result"].get("class_id") != data["class_id"] or len(wealth["result"].get("dice", ())) != (cls["wealth_dice"] if cls else 0):
             error(8, "Roll starting wealth for the selected class.")
         else: gold = wealth["result"]["gold_cp"]
     elif data["wealth_method"] == "manual":
@@ -242,11 +243,11 @@ def calculate(data, rolls, catalog=None):
     if weapon: warnings.append("Attack assumes weapon proficiency. Conditional combat actions and temporary effects are applied during play.")
     if data["class_id"] in {"druid","shifter"} and data["armor"] in {"chain-shirt","scale-mail","studded-leather"}: warnings.append("Review the class's restrictions on metal armor with your GM.")
     caster = cls["caster"] if cls else ""
-    progression = CLASS_PROGRESSIONS.get(data["class_id"], {})
+    progression = class_profile(catalog, data["class_id"]) if cls else {}
     starting_known = progression["levels"][0].get("known", {}) if progression else {}
     spell_count = starting_known.get("1")
-    if progression.get("book"):
-        spell_count = progression["book"] + 1 + max(0, modifiers["int"]) if progression["book"] == 2 else 2 + max(0, modifiers["int"])
+    if progression.get("starting_book"):
+        spell_count = progression["starting_book"] + max(0, modifiers["int"])
     if spell_count is not None and len(data["spells"]) != spell_count: error(11, f"Record {spell_count} starting first-level spells or formulae, one per line.")
     if len(set(name.casefold() for name in data["spells"])) != len(data["spells"]): error(11, "Choose different starting spells rather than repeating the same name.")
     if caster:

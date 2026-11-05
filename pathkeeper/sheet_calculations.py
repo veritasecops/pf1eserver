@@ -2,12 +2,13 @@
 from decimal import Decimal, InvalidOperation
 from math import floor
 
-from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
+from .class_catalog import class_key, creation_class
+from .pf1_data import ABILITIES, RACES
 from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
 
 
-def class_record(character):
-    return next((cls for cls in CLASSES.values() if cls['name'].casefold() == character.class_name.casefold()), {})
+def class_record(character, catalog):
+    return creation_class(catalog, class_key(character, catalog)) or {}
 
 
 def base_speed_race(character):
@@ -80,7 +81,7 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
         for score,mod in [('score','mod'),('temp_score','temp_mod')]:
             value = number(f'ability.{ability}.{score}')
             write(f'ability.{ability}.{mod}',None if value is None else floor((value-10)/2))
-    cls = class_record(character)
+    cls = class_record(character, catalog)
     snapshot = character.sheet_data or {}
     if int(values.get("level") or character.level) == 1 and snapshot.get('computed') and cls:
         con = modifier('con')

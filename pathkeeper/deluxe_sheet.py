@@ -3,9 +3,9 @@ from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
 
-from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, RACES, SKILLS
+from .pf1_data import ABILITIES, ALIGNMENTS, EQUIPMENT, RACES, SKILLS
 from .advancement import XP_SOURCE, apply_advancement, saved_xp, track
-from .sheet_calculations import calculated_fields, recalculate, base_speed_race
+from .sheet_calculations import class_record, calculated_fields, recalculate, base_speed_race
 from .sheet_formulas import sheet_formulas
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
 
@@ -101,7 +101,7 @@ def baseline(character, owner, campaign=None, gm=None):
                 player=owner.name,campaign=campaign.name if campaign else '',gm=gm.name if gm else '')
     sheet = character.sheet_data or {}
     inputs,values = sheet.get('input',{}),sheet.get('computed',{})
-    cls = next((value for value in CLASSES.values() if value['name'].casefold() == character.class_name.casefold()),{})
+    cls = class_record(character, catalog)
     race = base_speed_race(character)
     data['speed.base']=str(race['speed']) if race else ''
     if not values: return data
@@ -255,9 +255,9 @@ def parse_sheet(form, locked=None, catalog=None, deity_catalog=None, current_dei
 
 
 def view_context(character, owner, campaign=None, gm=None, values=None, errors=(), deity_catalog=None):
-    cls = next((c for c in CLASSES.values() if c['name'].casefold() == character.class_name.casefold()),{})
-    values = values if values is not None else sheet_values(character,owner,campaign,gm)
     catalog = character_catalog(character)
+    cls = class_record(character, catalog)
+    values = values if values is not None else sheet_values(character,owner,campaign,gm)
     from .deities import deity_choices
     choices,selected=deity_choices(deity_catalog if deity_catalog is not None else catalog.get('deities',{}),values.get('deity',''))
     values={**values,'deity':selected}

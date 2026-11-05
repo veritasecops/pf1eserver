@@ -73,7 +73,7 @@
     <p>Base slots at level {{ target }} · {% for level, slots in advancement.current.slots|dictsort %}{{ level }}: {{ slots }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     {% endif %}
     {% if advancement.current.get('prepared') %}
-    <p>Arcanist spells prepared · {% for level, count in advancement.current.prepared|dictsort %}{{ level }}: {{ count }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    <p>Spells prepared · {% for level, count in advancement.current.prepared|dictsort %}{{ level }}: {{ count }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     {% endif %}
     {% if advancement.known %}<p>Enter new spells known, one per line. Use Other class changes for bonus spells from a bloodline, mystery, or similar feature.</p>{% endif %}
     {% if profile.book %}<p>Enter {{ profile.book }} new spellbook, familiar, or formula-book entries, one per line, under the appropriate spell levels.</p>{% endif %}

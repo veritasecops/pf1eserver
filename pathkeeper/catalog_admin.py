@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .database import get_db
+from .class_catalog import class_profile
+from .class_editor import editor as class_editor, parse_class
 from .models import Guard, RuleCatalog, utcnow
 from .pf1_data import ABILITIES, CLASSES
 from .rule_catalog import EFFECTS, default_catalog
@@ -16,7 +18,7 @@ from .security import administrator, audit, context, field, integer, read_form
 from .ui import redirect, render
 
 router = APIRouter(prefix='/administration/catalog')
-KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','deities':'Deities'}
+KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','deities':'Deities','classes':'Character Classes'}
 
 
 def record_for(ctx, lock=False):
@@ -53,7 +55,8 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     kind=request.query_params.get('kind','feats')
     kind_check(kind)
     search=request.query_params.get('q','').strip()[:100]
-    items=[(key,item) for key,item in record.data[kind].items() if search.casefold() in item.get('name',key).casefold()]
+    entries = {key: class_profile(record.data, key) for key in CLASSES} if kind == 'classes' else record.data[kind]
+    items=[(key,item) for key,item in entries.items() if search.casefold() in item.get('name',key).casefold()]
     group=request.query_params.get('group','') if kind=='weapons' else ''
     category=request.query_params.get('category','') if kind=='weapons' else ''
     if group in WEAPON_GROUPS: items=[(key,item) for key,item in items if item.get('group')==group]
@@ -67,6 +70,8 @@ async def new_entry(kind: str, request: Request, db: Session = Depends(get_db)):
     ctx=context(request,db)
     administrator(ctx)
     kind_check(kind)
+    if kind == 'classes':
+        raise HTTPException(404, 'Select a character class to edit.')
     return editor(ctx,record_for(ctx),kind,'',{'enabled':True,'ability':'str','kind':'weapon'},new=True)
 
 
@@ -76,6 +81,10 @@ async def edit_entry(kind: str, key: str, request: Request, db: Session = Depend
     administrator(ctx)
     kind_check(kind)
     record=record_for(ctx)
+    if kind == 'classes':
+        if key not in CLASSES:
+            raise HTTPException(404, 'Character class not found.')
+        return class_editor(ctx, record, key)
     if key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
     return editor(ctx,record,kind,key,record.data[kind][key])
 
@@ -188,11 +197,32 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
     ctx=context(request,db)
     administrator(ctx)
     kind_check(kind)
-    form=await read_form(ctx,max_fields=200)
+    form=await read_form(ctx,max_fields=500 if kind == 'classes' else 200)
     record=record_for(ctx,True)
     if integer(form,'version',1,2**31-1)!=record.version: raise HTTPException(409,'The catalog changed in another window. Reload before saving.')
     new=form.get('new')=='1'
     key=field(form,'key',100 if kind=='feats' else 60)
+    if kind == 'classes':
+        if new or key not in CLASSES:
+            raise HTTPException(404, 'Character class not found.')
+        try:
+            item, skills = parse_class(form, key, record.data)
+        except HTTPException as error:
+            if error.status_code != 422:
+                raise
+            return class_editor(ctx, record, key, form, [error.detail])
+        updated = deepcopy(record.data)
+        updated.setdefault("classes", {})[key] = item
+        if key != "expert":
+            for skill_key, skill in updated["skills"].items():
+                classes = set(skill.get("classes", [])) - {key}
+                if skill_key in skills:
+                    classes.add(key)
+                skill["classes"] = sorted(classes)
+        record.data = updated
+        record.updated_at, record.updated_by = utcnow(), ctx.user.id
+        audit(db, ctx.user, 'catalog.updated', f'Updated character class {key}.')
+        return redirect(ctx, '/administration/catalog?kind=classes', 'Character class saved.')
     if key.casefold()=='new': raise HTTPException(422,'Choose an identifier other than new.')
     if kind=='feats' and any(char in key for char in '/\\?#'):
         raise HTTPException(422,'Feat names cannot contain slashes, question marks or hash signs.')

@@ -6,8 +6,9 @@ from .advancement import XP_TRACKS, eligible, track
 from .deluxe_sheet import SAVES, sheet_values, skill_rows
 from .equipment_effects import persist_effects
 from .models import Campaign, User
-from .pf1_data import ABILITIES, CLASS_PROGRESSIONS, CLASSES
-from .rule_catalog import character_catalog, class_skills
+from .class_catalog import class_key, class_profile
+from .pf1_data import ABILITIES
+from .rule_catalog import character_catalog, class_skills, load_catalog
 
 CLASS_INDEX = "https://www.aonprd.com/Classes.aspx"
 FEAT_INDEX = "https://www.aonprd.com/Feats.aspx"
@@ -22,37 +23,33 @@ CHOICES = re.compile(
     r"social talent|summon familiar|precise companion|bonus trick|metakinetic master|"
     r"swashbuckler weapon mastery|final revelation|implement mastery)$"
 )
-# First eligible level, frequency, and whether the exchanged spell must be below
-# the highest spell level the character can cast.
-SPELL_SWAPS = {
-    **dict.fromkeys(("bard", "inquisitor", "mesmerist", "skald", "spiritualist", "summoner", "summoner-unchained"), (5, 3, True)),
-    **dict.fromkeys(("hunter", "medium"), (5, 3, False)),
-    **dict.fromkeys(("oracle", "sorcerer"), (4, 2, False)),
-    "bloodrager": (8, 3, False),
-    "psychic": (4, 2, True),
-}
 # Features with scaling numbers or parentheticals still use the same prompts.
 FEATURE_SUFFIX = re.compile(r"\s+(?:\([^)]*\)|[+]?\d.*)$")
 
 
-def class_id_for(character):
-    return next((key for key, cls in CLASSES.items() if cls["name"].casefold() == character.class_name.casefold()), None)
+def feature_choices(level):
+    features = re.split(r",\s*(?![^()]*\))", level["features"]) if level["features"] else []
+    return level.get("choices", [
+        feature for feature in features
+        if CHOICES.fullmatch(feature.lower()) or CHOICES.fullmatch(FEATURE_SUFFIX.sub("", feature.lower()))
+    ])
 
 
-def available(character, campaign):
-    return eligible(character, campaign) and class_id_for(character) is not None
+def available(character, campaign, catalog):
+    return eligible(character, campaign) and class_key(character, catalog) is not None
 
 
 def plan(ctx, character):
     db = ctx.db
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
-    class_id = class_id_for(character)
+    current_catalog = load_catalog(db)
+    class_id = class_key(character, current_catalog)
     if not class_id or not eligible(character, campaign):
         return None
     owner = db.get(User, character.owner_id)
     gm = db.get(User, campaign.owner_id) if campaign else None
     values = sheet_values(character, owner, campaign, gm)
-    profile = CLASS_PROGRESSIONS[class_id]
+    profile = class_profile(current_catalog, class_id)
     target = character.level + 1
     previous, current = profile["levels"][target - 2:target]
     sheet_input = (character.sheet_data or {}).get("input", {})
@@ -61,9 +58,7 @@ def plan(ctx, character):
         bab = 1
     features = re.split(r",\s*(?![^()]*\))", current["features"]) if current["features"] else []
     choices = ["General feat"] if target % 2 else []
-    for feature in features:
-        if CHOICES.fullmatch(feature.lower()) or CHOICES.fullmatch(FEATURE_SUFFIX.sub("", feature.lower())):
-            choices.append(feature)
+    choices.extend(feature_choices(current))
     known = {key: count - previous.get("known", {}).get(key, 0) for key, count in current.get("known", {}).items()
              if count > previous.get("known", {}).get(key, 0)}
     catalog = character_catalog(character)
@@ -72,10 +67,10 @@ def plan(ctx, character):
              key.removesuffix("-2") in trained, int(Decimal(values[f"skill.{key}.ranks"] or 0)))
             for key, item in skill_rows(catalog) if item.get("enabled", True)]
     swaps = {}
-    if class_id in SPELL_SWAPS:
-        first, frequency, lower = SPELL_SWAPS[class_id]
+    if profile["spell_swap"] and profile["casting_ability"]:
+        first, frequency, lower = profile["spell_swap"]
         if target >= first and (target - first) % frequency == 0:
-            casting_score = Decimal(values[f"ability.{profile['caster']}.score"] or 0)
+            casting_score = Decimal(values[f"ability.{profile['casting_ability']}.score"] or 0)
             known_levels = [int(key) for key in current.get("known", {})]
             highest = max(known_levels, default=0)
             for spell_level in sorted(known_levels):
@@ -254,9 +249,9 @@ def submit(character, advancement, form):
     if current.get("slots") or current.get("known"):
         delay = profile["caster_delay"]
         caster_level = max(1, target - delay)
-        old_caster_level = target - 1 - delay if previous.get("slots") or previous.get("known") else 0
+        old_caster_level = max(1, target - 1 - delay) if previous.get("slots") or previous.get("known") else 0
         add("caster_level", caster_level - old_caster_level, old_caster_level)
-        caster = profile["caster"]
+        caster = profile["casting_ability"]
         old_mod = (int(number(f"ability.{caster}.score", 10)) - 10) // 2
         new_mod = old_mod + int(ability == caster and int(number(f"ability.{caster}.score", 10)) % 2 == 1)
         concentration_gain = caster_level - old_caster_level + new_mod - old_mod

@@ -149,3 +149,64 @@ def test_archive_skills_weapons_and_change_class_lists(env):
         cost='1500',weight='4',damage='1d8',small_damage='1d6',group='martial')).status_code==303
     response=save(env,client,draft_id,response.json()['version'],fighter(data))
     assert any('Longsword is archived' in e['message'] for e in response.json()['computed']['errors'])
+
+
+def test_character_class_editor_updates_creation_and_future_advancement(env):
+    from pathkeeper.class_catalog import class_profile
+    from pathkeeper.class_editor import SAVES, SPELL_FIELDS
+    from pathkeeper.level_up import feature_choices
+
+    admin = env.login(env.admin)
+    player, draft_id, version, data = start(env)
+    data = fighter(data)
+    original = calculate(data, {})
+    assert player.get('/administration/catalog?kind=classes').status_code == 403
+    listing = admin.get('/administration/catalog?kind=classes&q=Fighter')
+    assert listing.status_code == 200 and 'Class reference' in listing.text
+    editor = admin.get('/administration/catalog/classes/fighter')
+    assert editor.status_code == 200 and 'name="level.20.bab"' in editor.text
+    profile = class_profile(default_catalog(), 'fighter')
+    form = {field: profile[field] for field in (
+        'name', 'url', 'choices', 'group', 'hd', 'ranks', 'bab', 'wealth_dice',
+        'casting_ability', 'caster_delay', 'book', 'starting_book', 'bonus_feat',
+    )}
+    form.update(key='fighter', version=1, class_skills=[*profile['skills'], 'perception'], automatic_feats='', swap_first=0, swap_frequency=0)
+    form.update(zip(SAVES, profile['saves']))
+    for level, row in enumerate(profile['levels'], 1):
+        prefix = f'level.{level}.'
+        form.update({prefix + key: value for key, value in zip(SAVES, row['saves'])})
+        form[prefix + 'bab'] = row['bab']
+        form[prefix + 'features'] = row['features']
+        form[prefix + 'choices'] = '\n'.join(feature_choices(row))
+        form[prefix + 'statistics'] = '\n'.join(f'{key}={value}' for key, value in row.get('statistics', {}).items())
+        for column in SPELL_FIELDS:
+            form[prefix + column] = ', '.join(f'{key}={value}' for key, value in row.get(column, {}).items())
+    form.update(name='Vanguard', hd=12)
+    assert env.post(admin, '/administration/catalog/classes', {**form, 'hd': 11}).status_code == 422
+    assert env.post(admin, '/administration/catalog/classes', form).status_code == 303
+    assert env.post(admin, '/administration/catalog/classes', form).status_code == 409
+    saved = save(env, player, draft_id, version, data)
+    assert saved.json()['computed']['hp'] == original['hp'] + 2
+    assert 'perception' in saved.json()['computed']['class_skills']
+    made = finish(env, player, draft_id, saved.json()['version'])
+    assert made.status_code == 200, made.text
+    path = made.json()['location']
+    form.update(version=2, hd=10, **{
+        'level.2.bab': 3, 'level.2.features': 'Vanguard training', 'level.2.choices': 'Choose a weapon group',
+    })
+    assert env.post(admin, '/administration/catalog/classes', form).status_code == 303
+    sheet = SheetForm(player.get(path).text)
+    assert sheet.values['class_name'] == 'Vanguard'
+    assert sheet.values['hp.total'] == str(original['hp'] + 2)
+    sheet.values['experience'] = '3000'
+    assert env.post(player, path + '/play-sheet', sheet.values).status_code == 303
+    wizard = player.get(path + '/level-up')
+    assert 'Hit Die result (d10)' in wizard.text and 'Choose a weapon group' in wizard.text
+    sheet = SheetForm(player.get(path).text)
+    response = env.post(player, path + '/level-up', {
+        'version': sheet.values['version'], 'target': 2, 'hit_die': 4, 'favored': 'none',
+        'rank_climb': 1, 'rank_swim': 2, 'choice_0': 'Heavy blades', 'reviewed': '1',
+    })
+    assert response.status_code == 303, response.text
+    sheet = SheetForm(player.get(path).text)
+    assert sheet.values['level'] == '2' and sheet.values['bab'] == '3'
