@@ -1,24 +1,36 @@
-<dialog class="treasure-dialog character-backpack" id="character-backpack" aria-labelledby="backpack-title" data-endpoint="/characters/{{ character.id }}/backpack">
-  <header class="treasure-modal-heading">
-    <h2 id="backpack-title">Backpack</h2>
-    <button class="treasure-close" type="button" data-close-backpack aria-label="Close backpack">×</button>
-  </header>
-  <p class="hint">Record carried items and their value in gold pieces. Equipment purchases such as ammunition, materials, and miscellaneous gear appear here with their catalog details.</p>
-  <form id="backpack-add">
-    <div class="backpack-fields">
-      <label class="field"><span>Item name</span><input name="name" maxlength="150" required autofocus></label>
-      <label class="field"><span>Quantity</span><input name="quantity" type="number" min="1" max="1000000" step="1" value="1" required></label>
-      <label class="field"><span>Value per item (gp)</span><input name="value" type="number" min="0" max="1000000" step="0.01" required></label>
+<dialog class="pw-weapon-picker character-backpack" id="character-backpack" aria-labelledby="backpack-title" data-endpoint="/characters/{{ character.id }}/backpack">
+  <div class="pw-weapon-picker-form">
+    <header class="pw-weapon-picker-heading">
+      <div><h2 id="backpack-title">Backpack</h2><p>Browse carried items or record your own.</p></div>
+      <button class="icon-button" type="button" data-close-backpack aria-label="Close backpack">×</button>
+    </header>
+    <div class="pw-equipment-tabs" role="tablist" aria-label="Backpack item groups">
+      {% for key, label in [('all', 'All items'), ('material', 'Special Materials'), ('misc', 'Miscellaneous')] %}
+      <button type="button" role="tab" id="backpack-tab-{{ key }}" data-backpack-tab="{{ key }}" aria-controls="backpack-results" aria-selected="{{ 'true' if loop.first else 'false' }}"{% if not loop.first %} tabindex="-1"{% endif %}>{{ label }}</button>
+      {% endfor %}
     </div>
-    <div><button class="button primary" type="submit">Add item</button></div>
-    <p id="backpack-error" role="alert" hidden></p>
-  </form>
-  <p id="backpack-empty">Your backpack is empty.</p>
-  <div id="backpack-list" class="table-scroll" hidden>
-    <table class="catalog-table">
-      <thead><tr><th scope="col">Item</th><th scope="col">Qty</th><th scope="col">Value each</th><th scope="col">Total value</th><th scope="col">Actions</th></tr></thead>
-      <tbody></tbody>
-    </table>
+    <div id="backpack-results" role="tabpanel" aria-labelledby="backpack-tab-all">
+      <div class="pw-weapon-filters backpack-filters">
+        <label>Search by name<input type="search" id="backpack-search" autocomplete="off" autofocus></label>
+        <label>Category<select id="backpack-category"><option value="">All categories</option></select></label>
+      </div>
+      <p class="pw-weapon-result-count" id="backpack-status" role="status"></p>
+      <div id="backpack-list" class="pw-weapon-results" tabindex="0" role="region" aria-label="Backpack items">
+        <table>
+          <thead><tr><th scope="col">Item</th><th scope="col">Qty</th><th scope="col">Value each</th><th scope="col">Total value</th><th scope="col">Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <form id="backpack-add" class="pw-weapon-picker-footer">
+      <div class="backpack-fields">
+        <label class="field"><span>Item name</span><input name="name" maxlength="150" required></label>
+        <label class="field"><span>Quantity</span><input name="quantity" type="number" min="1" max="1000000" step="1" value="1" required></label>
+        <label class="field"><span>Value per item (gp)</span><input name="value" type="number" min="0" max="1000000" step="0.01" required></label>
+      </div>
+      <p class="pw-weapon-submit-error" id="backpack-error" role="alert" hidden></p>
+      <div class="pw-weapon-picker-actions"><button class="button primary" type="submit">Add item</button></div>
+    </form>
   </div>
   <script type="application/json" id="backpack-items">{{ backpack_items|tojson }}</script>
 </dialog>

@@ -6,18 +6,43 @@
   const form = document.getElementById('backpack-add');
   const error = document.getElementById('backpack-error');
   const list = document.getElementById('backpack-list');
-  const empty = document.getElementById('backpack-empty');
+  const status = document.getElementById('backpack-status');
+  const search = document.getElementById('backpack-search');
+  const category = document.getElementById('backpack-category');
+  const panel = document.getElementById('backpack-results');
+  const tabs = [...bag.querySelectorAll('[data-backpack-tab]')];
+  let activeTab = tabs[0];
+  let items = JSON.parse(document.getElementById('backpack-items').textContent);
   const submit = form.querySelector('[type="submit"]');
   let pending = null;
   let busy = false;
 
-  function render(items) {
+  function groupItems() {
+    const group = activeTab.dataset.backpackTab;
+    return items.filter(item => group === 'all' || item.catalog?.kind === group);
+  }
+
+  function refreshCategories() {
+    const selected = category.value;
+    const labels = [...new Set(groupItems().flatMap(item => item.catalog?.categories || []))].sort();
+    category.replaceChildren(new Option('All categories', ''), ...labels.map(label => new Option(label, label)));
+    category.value = labels.includes(selected) ? selected : '';
+    window.PathkeeperDropdown?.refresh(category);
+  }
+
+  function render() {
     const gold = copper => (copper / 100).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' gp';
-    empty.hidden = items.length > 0;
-    list.hidden = items.length === 0;
-    list.querySelector('tbody').replaceChildren(...items.map(item => {
+    const query = search.value.trim().toLocaleLowerCase();
+    const matches = groupItems().filter(item => item.name.toLocaleLowerCase().includes(query)
+      && (!category.value || item.catalog?.categories?.includes(category.value)))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    status.textContent = `${matches.length} matching ${matches.length === 1 ? 'entry' : 'entries'}`;
+    const body = list.querySelector('tbody');
+    body.replaceChildren(...matches.map(item => {
       const row = document.createElement('tr');
-      const nameCell = row.insertCell();
+      const nameCell = document.createElement('th');
+      nameCell.scope = 'row';
+      row.append(nameCell);
       const catalog = item.catalog;
       const url = window.PathkeeperDropdown?.referenceURL(catalog?.url);
       const name = document.createElement(url ? 'a' : 'strong');
@@ -66,10 +91,47 @@
       row.insertCell().append(actions);
       return row;
     }));
+    if (!matches.length) {
+      const message = body.insertRow().insertCell();
+      message.colSpan = 5;
+      message.textContent = items.length ? 'No matching items in this view.' : 'Your backpack is empty.';
+    }
   }
 
-  render(JSON.parse(document.getElementById('backpack-items').textContent));
-  bag.addEventListener('backpackchange', event => render(event.detail));
+  function selectTab(tab) {
+    activeTab = tab;
+    for (const button of tabs) {
+      button.tabIndex = button === tab ? 0 : -1;
+      button.setAttribute('aria-selected', String(button === tab));
+    }
+    panel.setAttribute('aria-labelledby', tab.id);
+    category.value = '';
+    refreshCategories();
+    render();
+  }
+
+  for (const tab of tabs) {
+    tab.addEventListener('click', () => selectTab(tab));
+    tab.addEventListener('keydown', event => {
+      const index = tabs.indexOf(tab);
+      const destinations = {Home: 0, End: tabs.length - 1,
+        ArrowLeft: (index + tabs.length - 1) % tabs.length, ArrowRight: (index + 1) % tabs.length};
+      if (!Object.hasOwn(destinations, event.key)) return;
+      event.preventDefault();
+      const destination = tabs[destinations[event.key]];
+      selectTab(destination);
+      destination.focus();
+    });
+  }
+  search.addEventListener('input', render);
+  category.addEventListener('change', render);
+  refreshCategories();
+  render();
+  bag.addEventListener('backpackchange', event => {
+    items = event.detail;
+    refreshCategories();
+    render();
+  });
   opener.addEventListener('click', () => bag.showModal());
   bag.querySelector('[data-close-backpack]').addEventListener('click', () => { if (!busy) bag.close(); });
   bag.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
@@ -100,7 +162,9 @@
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || 'The backpack item could not be saved.');
       window.PathkeeperSheet.applyPurchase(result);
-      render(result.backpack);
+      items = result.backpack;
+      search.value = '';
+      selectTab(tabs[0]);
       pending = null;
       form.reset();
       form.elements.namedItem('name').focus();

@@ -70,9 +70,14 @@
 }
 .backpack-icon:focus-visible .backpack-flap { transform:translateY(-9px) rotate(-15deg); }
 .backpack-icon:focus-visible .backpack-contents { opacity:1; }
-.character-backpack { width:min(760px,calc(100vw - 32px)); }
+.character-backpack .backpack-filters { grid-template-columns:2fr 1fr; }
 .backpack-fields { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; }
-#backpack-list { margin-top:18px; }
+#backpack-list { margin-bottom:12px; }
+#backpack-list th:first-child { width:36%; }
+#backpack-list th:nth-child(2) { width:9%; }
+#backpack-list th:nth-child(3), #backpack-list th:nth-child(4) { width:17%; }
+#backpack-list th:nth-child(5) { width:21%; }
+#backpack-list .ds-item-actions { justify-content:flex-start; }
 @media (max-width:500px) {
   .backpack-fields { grid-template-columns:1fr 1fr; }
   .backpack-fields label:first-child { grid-column:1 / -1; }
