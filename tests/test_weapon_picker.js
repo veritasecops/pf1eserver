@@ -55,3 +55,13 @@ test('mixed armor and weapon carts share treasure and enforce separate row limit
   assert.deepEqual(total({equipment:catalog,quantities:{mail:1,buckler:1},maxNewArmor:1,owned:{mail:1}}).errors,[]);
   assert.equal(total({equipment:catalog,quantities:{mail:1,buckler:1},maxNewArmor:1}).errors.length,1);
 });
+
+test('miscellaneous equipment and variable-cost materials share the cart',()=>{
+  const catalog={...equipment,abacus:{kind:'misc',name:'Abacus',cost:200},adamantine:{kind:'material',name:'Adamantine',cost:null}};
+  const quantities={abacus:2,adamantine:1,dagger:1};
+  assert.equal(total({equipment:catalog,quantities}).errors.length,1);
+  const result=total({equipment:catalog,quantities,prices:{adamantine:'7'},maxNewWeapons:1,maxNewArmor:0});
+  assert.deepEqual(result.errors,[]);
+  assert.equal(result.total,1300);
+  assert.deepEqual(result.prices,{adamantine:700});
+});

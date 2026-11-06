@@ -4,7 +4,7 @@ import html
 import json
 from pathlib import Path
 import re
-from urllib.parse import quote, unquote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 ROOT = "https://www.aonprd.com/"
 GROUPS = {
@@ -13,7 +13,8 @@ GROUPS = {
 }
 ROW = re.compile(r"<tr\b[^>]*>((?:(?!<tr\b).)*?)</tr>", re.I | re.S)
 CELL = re.compile(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", re.I | re.S)
-ITEM = re.compile(r'href="(Equipment(?:Weapons|Armor|Misc)Display\.aspx\?ItemName=[^"]+)"', re.I)
+ITEM = re.compile(r'href="((?:Equipment(?:Weapons|Armor|Misc)Display|SpellbookDisplay|Vehicles)\.aspx\?ItemName=[^"]+)"', re.I)
+MISC_BRANCHES = {"AlchemicalReagents.aspx", "FungalGrafts.aspx", "Spellbooks.aspx", "Vehicles.aspx?ItemName=All"}
 HEADING = re.compile(r'<span id="MainContent_DataListTypes_LabelName_\d+"><h2\b[^>]*>(.*?)</h2>(.*?)(?=<span id="MainContent_DataListTypes_LabelName_|\Z)', re.S)
 
 
@@ -63,14 +64,22 @@ def table_entries(page, group, category):
 
 
 def heading_entries(page, group, category, source):
-    for heading, body in HEADING.findall(page):
+    headings = HEADING.findall(page)
+    if source == "FungalGrafts.aspx":
+        headings = re.findall(r'<h2 class="title">([^<]+)</h2>(.*?)</span>', page, re.S)
+    for heading, body in headings:
         name = clean(heading)
-        values = re.search(r"<b>Price</b>\s*([^;<]+);\s*<b>Weight</b>\s*([^<]+)", body)
+        price = re.search(r"<b>Price</b>\s*([^;<]+)", body)
+        weight = re.search(r"<b>Weight</b>\s*([^<]+)", body)
         # These pages publish the descriptions inline without individual URLs.
         url = f"{ROOT}{source}#:~:text={quote(name, safe='')}"
+        cost = clean(price[1]) if price else ""
+        if group == "Special Materials":
+            rows = [[clean(cell) for cell in CELL.findall(row)] for row in ROW.findall(body)]
+            cost = "; ".join(f"{label} {amount}" for label, amount in rows
+                             if re.match(r"^[+×]?[\d.,]", amount)) if rows and all(len(row) == 2 for row in rows) else ""
         yield dict(name=name, url=url, group=group, categories=[category],
-                   cost_text=clean(values[1]) if values else "",
-                   weight_text=clean(values[2]) if values else "", details="")
+                   cost_text=cost, weight_text=clean(weight[1]) if weight else "", details="")
 
 
 def load(directory):
@@ -82,16 +91,23 @@ def load(directory):
                 add(entries, item)
             continue
         for href, label in re.findall(r'href="([^"]+)"[^>]*><b>([^<]+)</b></a>', index):
-            if not href.startswith(file + ".aspx?") and href != "AlchemicalReagents.aspx":
+            if not href.startswith(file + ".aspx?") and (file != "EquipmentMisc" or href not in MISC_BRANCHES):
                 continue
             category = html.unescape(label)
             page = (directory / f"{file}--{category.replace('/', '_')}.html").read_text()
-            items = list(heading_entries(page, group, category, href) if href == "AlchemicalReagents.aspx"
+            items = list(heading_entries(page, group, category, href) if href in {"AlchemicalReagents.aspx", "FungalGrafts.aspx"}
                          else table_entries(page, group, category))
             if not items:
                 raise ValueError(f"No entries found for {group} / {category}")
             print(f"{group} / {category}: {len(items)} rows")
             for item in items:
+                if category == "Vehicles":
+                    name = parse_qs(urlsplit(item["url"]).query)["ItemName"][0]
+                    detail = directory / "vehicle-details" / f"{name}.html"
+                    if detail.exists():
+                        price = re.search(r"<b>Cost</b>\s*([^<]+)", detail.read_text())
+                        if price:
+                            item["cost_text"] = clean(price[1])
                 add(entries, item)
     return dict(sorted(entries.items()))
 

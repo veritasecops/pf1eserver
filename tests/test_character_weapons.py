@@ -158,3 +158,32 @@ def test_a_new_special_price_requires_agreement_after_a_published_price_changes(
     bought=env.post(client,path,purchase_data(client,character_id,{'longsword':1},{'longsword':2000}))
     assert bought.status_code==200 and treasure(bought.json()['purchase_fields'])==6500
     assert client.get(path).json()['prices']['longsword']==2000
+
+
+def test_special_materials_and_miscellaneous_share_the_equipment_cart(env):
+    client, character_id = setup_sheet(env)
+    path = f'/characters/{character_id}/equipment'
+    state = client.get(path).json()
+    catalog = state['equipment']
+    material = 'special-materials-adamantine'
+    abacus = 'miscellaneous-abacus'
+    assert sum(item['kind'] == 'material' for item in catalog.values()) >= 48
+    assert len({category for item in catalog.values() if item['kind'] == 'misc' for category in item['categories']}) == 28
+    assert catalog[material]['cost'] is None and '+3,000 gp' in catalog[material]['cost_text']
+    assert catalog[abacus]['cost'] == 200 and catalog[abacus]['weight'] == 2
+    assert catalog['miscellaneous-airship']['cost'] == 5000000
+    assert catalog['miscellaneous-fungal-eyes']['cost'] == 1800000
+    cart = {material: 1, abacus: 2, 'dagger': 1}
+    assert env.post(client, path, purchase_data(client, character_id, cart)).status_code == 422
+    payload = purchase_data(client, character_id, cart, {material: 700})
+    response = env.post(client, path, payload)
+    assert response.status_code == 200, response.text
+    fields = response.json()['purchase_fields']
+    assert treasure(fields) == 8700
+    assert 'Adamantine × 1' in fields.values() and 'Abacus × 2' in fields.values()
+    row = next(key for key, value in fields.items() if key.startswith('gear.') and value == 'Abacus × 2')
+    assert float(fields[row.removesuffix('name') + 'weight']) == 4
+    assert response.json()['values']['weapon.0.name'] == 'Dagger'
+    assert env.post(client, path, payload).json()['purchase_fields'] == fields
+    state = client.get(path).json()
+    assert state['owned'][material] == 1 and state['prices'][material] == 700

@@ -13,6 +13,7 @@ from .database import commit, get_db
 from .models import Campaign, Character, RuleCatalog, User
 from .rule_catalog import character_catalog, effect_total, load_catalog, equipment
 from .armor import armor_fields, purchasable
+from .equipment_index import sheet_gear
 from .security import audit, context, digest, get_character, integer, read_form
 
 router = APIRouter()
@@ -150,7 +151,7 @@ def shop_state(ctx,character):
             owned[key]=owned.get(key,0)+entry['quantity']
             if entry.get('agreed_unit_price') is not None: prices[key]=entry['agreed_unit_price']
     return {'version':character.version,'catalog_version':record.version if record else 0,
-            'equipment':{**catalog['weapons'],**catalog.get('armor',{})},'owned':owned,'prices':prices,'budget':treasure(values),
+            'equipment':{**catalog['weapons'],**catalog.get('armor',{}),**sheet_gear(catalog)},'owned':owned,'prices':prices,'budget':treasure(values),
             'maxNewArmor':6-sum(bool(values.get(f'armor.{row}.name','').strip()) for row in range(6)),
             'maxNewWeapons':6-sum(bool(values.get(f'weapon.{row}.name','').strip()) for row in range(6))}
 
@@ -183,20 +184,23 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
     record=db.scalar(select(RuleCatalog).where(RuleCatalog.id==1).with_for_update())
     if integer(form,'catalog_version',0,2**31-1)!=(record.version if record else 0): raise HTTPException(409,'Equipment prices or rules changed. Reload the picker before buying.')
     try: cart=json.loads(str(form.get('payload','')))
-    except (ValueError,TypeError): raise HTTPException(422,'The weapon selection could not be read.') from None
-    if not isinstance(cart,dict) or set(cart)-{'quantities','prices'}: raise HTTPException(422,'Choose weapon quantities and optional agreed prices.')
+    except (ValueError,TypeError): raise HTTPException(422,'The equipment selection could not be read.') from None
+    if not isinstance(cart,dict) or set(cart)-{'quantities','prices'}: raise HTTPException(422,'Choose equipment quantities and optional agreed prices.')
     quantities,prices=cart.get('quantities'),cart.get('prices',{})
-    if not isinstance(quantities,dict) or not quantities or not isinstance(prices,dict) or set(prices)-set(quantities): raise HTTPException(422,'Select at least one weapon or ammunition entry.')
-    prices={key:bounded_int(price,0,100000000,'Agreed weapon price') for key,price in prices.items()}
+    if not isinstance(quantities,dict) or not quantities or not isinstance(prices,dict) or set(prices)-set(quantities): raise HTTPException(422,'Select at least one equipment entry.')
+    prices={key:bounded_int(price,0,100000000,'Agreed equipment price') for key,price in prices.items()}
     catalog=load_catalog(db)
     values=character_values(ctx,character)
     entries=inventory(character,values,catalog)
     changes={}
     cost=0
+    gear = sheet_gear(catalog)
+    existing_equipment = equipment(catalog)
     for key,quantity in quantities.items():
-        item=equipment(catalog).get(key)
-        if not item or not item.get('enabled',True) or not purchasable(item): raise HTTPException(422,'Choose available weapons, armor, shields, or armor extras from the catalog.')
-        quantity=bounded_int(quantity,1,100,'Weapon quantity')
+        item = gear.get(key) or existing_equipment.get(key)
+        if not item or not item.get('enabled',True) or (key not in gear and not purchasable(item)):
+            raise HTTPException(422, 'Choose available equipment from the catalog.')
+        quantity=bounded_int(quantity,1,100,'Equipment quantity')
         bounded_int(sum(entry['quantity'] for entry in entries if entry.get('id')==key)+quantity,1,100,'Total inventory quantity')
         entry=next((entry for entry in entries if entry.get('id')==key),None)
         if item['cost'] is None:
