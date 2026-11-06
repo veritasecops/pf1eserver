@@ -130,3 +130,38 @@ def test_carried_weight_is_calculated_and_unknown_weights_stay_blank(env):
     saved.values['gear.1.weight']='Special'
     assert env.post(client,path+'/play-sheet',saved.values).status_code==303
     assert SheetForm(client.get(path).text).values['load.total']==''
+
+
+def test_backpack_add_remove_and_sell_use_the_sheet_treasure(env):
+    client, character = setup_sheet(env)
+    path = f'/characters/{character}'
+    page = client.get(path)
+    assert 'id="open-backpack"' in page.text and 'id="character-backpack"' in page.text
+    version = SheetForm(page.text).values['version']
+    add = {'version': version, 'item_id': secrets.token_hex(16), 'name': 'Silver brooch', 'quantity': 2, 'value': '3.25'}
+    assert env.post(client, path + '/backpack', {**add, 'value': '3.251'}).status_code == 422
+    added = env.post(client, path + '/backpack', add)
+    assert added.status_code == 200, added.text
+    result = added.json()
+    assert result['backpack'] == [{'id': add['item_id'], 'name': 'Silver brooch', 'quantity': 2, 'unit_cp': 325}]
+    assert result['purchase_fields']['money.gp'] == '100'
+    assert env.post(client, path + '/backpack', add).json()['backpack'] == result['backpack']
+    sheet = SheetForm(client.get(path).text)
+    sheet.values['notes'] = 'Keep backpack on autosave'
+    assert env.post(client, path + '/play-sheet', sheet.values).status_code == 303
+    sale = disposal(client, character, kind='backpack', row=add['item_id'], action='sell', coins={'gp': 6, 'sp': 5})
+    sold = env.post(client, path + '/equipment/dispose', sale)
+    assert sold.status_code == 200, sold.text
+    result = sold.json()
+    assert result['backpack'] == []
+    assert result['purchase_fields']['money.gp'] == '106'
+    assert result['purchase_fields']['money.sp'] == '5'
+    assert env.post(client, path + '/equipment/dispose', sale).json()['purchase_fields'] == result['purchase_fields']
+    second = {**add, 'version': result['version'], 'item_id': secrets.token_hex(16), 'name': 'Empty pouch'}
+    assert env.post(client, path + '/backpack', second).status_code == 200
+    remove = disposal(client, character, kind='backpack', row=second['item_id'])
+    removed = env.post(client, path + '/equipment/dispose', remove)
+    assert removed.status_code == 200
+    assert removed.json()['backpack'] == []
+    assert removed.json()['purchase_fields']['money.gp'] == '106'
+    assert removed.json()['purchase_fields']['money.sp'] == '5'

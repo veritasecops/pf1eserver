@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from . import equipment_disposal, character_weapons, character_dice
+from . import backpack, equipment_disposal, character_weapons, character_dice
 from . import account_email, administration, catalog_admin, auth, character_wizard, email_admin, portraits, workspace
 from .config import ROOT, settings
 from .database import engine
@@ -80,6 +80,7 @@ app.include_router(email_admin.router)
 app.include_router(character_wizard.router)
 app.include_router(character_weapons.router)
 app.include_router(equipment_disposal.router)
+app.include_router(backpack.router)
 app.include_router(character_dice.router)
 app.include_router(workspace.router)
 app.include_router(portraits.router)

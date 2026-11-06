@@ -1,0 +1,24 @@
+<dialog class="treasure-dialog character-backpack" id="character-backpack" aria-labelledby="backpack-title" data-endpoint="/characters/{{ character.id }}/backpack">
+  <header class="treasure-modal-heading">
+    <h2 id="backpack-title">Backpack</h2>
+    <button class="treasure-close" type="button" data-close-backpack aria-label="Close backpack">×</button>
+  </header>
+  <p class="hint">Record carried items and their value in gold pieces.</p>
+  <form id="backpack-add">
+    <div class="backpack-fields">
+      <label class="field"><span>Item name</span><input name="name" maxlength="150" required autofocus></label>
+      <label class="field"><span>Quantity</span><input name="quantity" type="number" min="1" max="1000000" step="1" value="1" required></label>
+      <label class="field"><span>Value per item (gp)</span><input name="value" type="number" min="0" max="1000000" step="0.01" required></label>
+    </div>
+    <div><button class="button primary" type="submit">Add item</button></div>
+    <p id="backpack-error" role="alert" hidden></p>
+  </form>
+  <p id="backpack-empty">Your backpack is empty.</p>
+  <div id="backpack-list" class="table-scroll" hidden>
+    <table class="catalog-table">
+      <thead><tr><th scope="col">Item</th><th scope="col">Qty</th><th scope="col">Value each</th><th scope="col">Total value</th><th scope="col">Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script type="application/json" id="backpack-items">{{ backpack_items|tojson }}</script>
+</dialog>

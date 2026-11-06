@@ -257,6 +257,7 @@ def purchase_response(ctx,character,changed_fields=()):
     from .workspace import autosave_response
     response=autosave_response(ctx,character)
     body=json.loads(response.body)
+    body['backpack'] = (character.play_data or {}).get('backpack', [])
     values=character_values(ctx,character)
     body['purchase_fields']={key:value for key,value in values.items() if key.startswith(('weapon.','armor.','gear.')) or key in {'money.pp','money.gp','money.sp','money.cp'} or key in changed_fields}
     from fastapi.responses import JSONResponse

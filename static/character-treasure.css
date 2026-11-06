@@ -60,3 +60,23 @@
   .treasure-print-coins span,.treasure-print-coins strong { display:block; }
   .treasure-print-coins span { font-size:.875rem; }
 }
+
+.sheet-storage-icons { display:flex; flex:none; gap:4px; }
+.backpack-flap { transform-origin:48px 22px; transition:transform 260ms ease; }
+.backpack-contents { opacity:0; transition:opacity 180ms ease; }
+@media (hover:hover) {
+  .backpack-icon:hover .backpack-flap { transform:translateY(-9px) rotate(-15deg); }
+  .backpack-icon:hover .backpack-contents { opacity:1; }
+}
+.backpack-icon:focus-visible .backpack-flap { transform:translateY(-9px) rotate(-15deg); }
+.backpack-icon:focus-visible .backpack-contents { opacity:1; }
+.character-backpack { width:min(760px,calc(100vw - 32px)); }
+.backpack-fields { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; }
+#backpack-list { margin-top:18px; }
+@media (max-width:500px) {
+  .backpack-fields { grid-template-columns:1fr 1fr; }
+  .backpack-fields label:first-child { grid-column:1 / -1; }
+  .sheet-storage-icons .treasure-chest { flex-basis:48px; width:48px; height:48px; }
+}
+@media (prefers-reduced-motion:reduce) { .backpack-flap,.backpack-contents { transition:none; } }
+@media print { .sheet-storage-icons { display:none; } }

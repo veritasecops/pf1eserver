@@ -15,6 +15,7 @@
   if(typeof document==='undefined')return;
   const sheet=document.getElementById('deluxe-form'),dialog=document.getElementById('equipment-disposal-dialog');
   if(!sheet||!dialog)return;
+  const bag=document.getElementById('character-backpack');
   const form=document.getElementById('equipment-disposal-form'),fieldset=document.getElementById('equipment-sale-coins');
   const submit=document.getElementById('confirm-equipment-disposal'),error=document.getElementById('equipment-disposal-error');
   const coinInputs=Object.fromEntries([...form.querySelectorAll('[data-sale-coin]')].map(input=>[input.dataset.saleCoin,input]));
@@ -31,29 +32,41 @@
     try{document.getElementById('equipment-sale-total').textContent=`Total: ${(proceeds(coins()).copper/100).toLocaleString(undefined,{maximumFractionDigits:2})} gp`;}
     catch(e){document.getElementById('equipment-sale-total').textContent=e.message;}
   });
-  sheet.addEventListener('click',async event=>{
+  async function openDisposal(event) {
     const button=event.target.closest('[data-dispose-equipment]');
-    if(!button||busy)return;
+    if(!button||busy||(button.dataset.kind==='backpack'&&bag.querySelector('[type="submit"]').disabled))return;
     busy=true;button.disabled=true;
     try {
       await window.PathkeeperSheet.flush();
       const {kind,row,disposeEquipment:action}=button.dataset;
-      const name=sheet.elements.namedItem(`${kind}.${row}.name`).value.trim();
+      const fromBag=kind==='backpack';
+      const name=fromBag?button.dataset.name:sheet.elements.namedItem(`${kind}.${row}.name`).value.trim();
       if(!name)throw new Error('This entry is empty.');
       selection={kind,row,action,version:sheet.elements.namedItem('version').value};
-      const quantity=sheet.elements.namedItem(`${kind}.${row}.quantity`).value||'1';
+      const quantity=fromBag?button.dataset.quantity:sheet.elements.namedItem(`${kind}.${row}.quantity`).value||'1';
       opener=button;job=null;uncertain=false;error.hidden=true;
       for(const input of Object.values(coinInputs)){input.value='0';input.disabled=false;}
       fieldset.hidden=action!=='sell';fieldset.disabled=action!=='sell';
-      document.getElementById('equipment-sale-total').textContent='Total: 0 gp';
+      if(fromBag&&action==='sell') {
+        const copper=Number(button.dataset.unitCp)*Number(quantity);
+        const gp=Math.floor(copper/100);
+        if(gp<=1000000000) {
+          coinInputs.gp.value=String(gp);
+          coinInputs.sp.value=String(Math.floor(copper%100/10));
+          coinInputs.cp.value=String(copper%10);
+        }
+      }
+      document.getElementById('equipment-sale-total').textContent=`Total: ${(proceeds(coins()).copper/100).toLocaleString(undefined,{maximumFractionDigits:2})} gp`;
       document.getElementById('equipment-disposal-title').textContent=action==='sell'?'Sell item':'Remove item';
-      document.getElementById('equipment-disposal-summary').textContent=`${name} × ${quantity}. This removes the entire entry and its linked gear row.${action==='remove'?' Treasure stays unchanged.':' Enter the total agreed sale price below.'}`;
+      document.getElementById('equipment-disposal-summary').textContent=`${name} × ${quantity}. This removes the entire entry${fromBag?'':' and its linked gear row'}.${action==='remove'?' Treasure stays unchanged.':' Enter the total agreed sale price below.'}`;
       submit.textContent=action==='sell'?'Sell item':'Remove item';submit.disabled=false;
       sheet.inert=true;dialog.showModal();
     } catch(e) {
       const panel=document.getElementById('sheet-autosave-errors');panel.textContent=e.message;panel.hidden=false;sheet.inert=false;
     } finally {busy=false;button.disabled=false;}
-  });
+  }
+  sheet.addEventListener('click',openDisposal);
+  bag?.addEventListener('click',openDisposal);
   async function dispose(event) {
     event.preventDefault();if(busy)return;
     error.hidden=true;
@@ -78,7 +91,9 @@
         if(!uncertain)job=null;
         throw new Error(result.detail||'The item action could not be saved.');
       }
-      window.PathkeeperSheet.applyPurchase(result);uncertain=false;dialog.close();
+      window.PathkeeperSheet.applyPurchase(result);
+      if(selection.kind==='backpack')bag.dispatchEvent(new CustomEvent('backpackchange',{detail:result.backpack}));
+      uncertain=false;dialog.close();
     } catch(e) {
       if(e.name==='AbortError'||e instanceof TypeError){uncertain=true;error.textContent='The response was lost. Retry to check the same action safely, or close to reload inventory.';}
       else error.textContent=e.message;
@@ -91,7 +106,8 @@
   dialog.addEventListener('close',()=>{
     sheet.inert=false;
     if(uncertain){location.reload();return;}
-    (opener&&!opener.hidden?opener:document.getElementById('add-sheet-weapons')).focus();
+    const fallback=selection?.kind==='backpack'?bag.querySelector('[name="name"]'):document.getElementById('add-sheet-weapons');
+    (opener?.isConnected&&!opener.hidden?opener:fallback).focus();
   });
   for(const event of ['input','change','sheetpurchase'])sheet.addEventListener(event,refresh);
   refresh();
