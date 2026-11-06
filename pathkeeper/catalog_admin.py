@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from .database import get_db
 from .feats import FEAT_CATEGORIES
+from .equipment_index import GROUPS as EQUIPMENT_GROUPS, equipment_entries
 from .class_catalog import class_profile
 from .class_editor import editor as class_editor, parse_class
 from .models import Guard, RuleCatalog, utcnow
@@ -19,7 +20,7 @@ from .security import administrator, audit, context, field, integer, read_form
 from .ui import redirect, render
 
 router = APIRouter(prefix='/administration/catalog')
-KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','deities':'Deities','classes':'Character Classes'}
+KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
 
 
 def record_for(ctx, lock=False):
@@ -43,7 +44,7 @@ def editor(ctx, record, kind, key, item, errors=(), new=False):
     response = render(ctx,'catalog_edit.html',title='Add catalog entry' if new else 'Edit '+item.get('name',key),
                       kinds=KINDS,kind=kind,key=key,item=item,new=new,version=record.version,
                       abilities=ABILITIES,classes=CLASSES,skills=record.data['skills'],feats=record.data['feats'],
-                      effects=EFFECTS,feat_categories=FEAT_CATEGORIES,errors=errors,weapon_url=safe_weapon_url,weapon_categories=WEAPON_CATEGORIES,weapon_groups=WEAPON_GROUPS,armor_categories=ARMOR_CATEGORIES)
+                      effects=EFFECTS,feat_categories=FEAT_CATEGORIES,errors=errors,weapon_url=safe_weapon_url,weapon_categories=WEAPON_CATEGORIES,weapon_groups=WEAPON_GROUPS,armor_categories=ARMOR_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS)
     if errors: response.status_code=422
     return response
 
@@ -56,7 +57,9 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     kind=request.query_params.get('kind','feats')
     kind_check(kind)
     search=request.query_params.get('q','').strip()[:100]
-    entries = {key: class_profile(record.data, key) for key in CLASSES} if kind == 'classes' else record.data[kind]
+    entries = {key: class_profile(record.data, key) for key in CLASSES} if kind == 'classes' else record.data.get(kind, {})
+    if kind == 'equipment':
+        entries = equipment_entries(record.data)
     items=[(key,item) for key,item in entries.items() if search.casefold() in item.get('name',key).casefold()]
     group=request.query_params.get('group','') if kind=='weapons' else ''
     category=request.query_params.get('category','') if kind=='weapons' else ''
@@ -65,14 +68,27 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     if feat_category in FEAT_CATEGORIES:
         items = [(key, item) for key, item in items if feat_category in item.get('categories', ())]
     if category in WEAPON_CATEGORIES: items=[(key,item) for key,item in items if item.get('category')==category]
+    equipment_group = request.query_params.get('equipment_group', '') if kind == 'equipment' else ''
+    equipment_category = request.query_params.get('equipment_category', '') if kind == 'equipment' else ''
+    equipment_categories = []
+    if kind == 'equipment':
+        if equipment_group not in EQUIPMENT_GROUPS:
+            equipment_group = ''
+        if equipment_group:
+            items = [(key, item) for key, item in items if item["group"] == equipment_group]
+        equipment_categories = sorted({label for item in entries.values()
+                                       if not equipment_group or item["group"] == equipment_group
+                                       for label in item["categories"]})
+        if equipment_category in equipment_categories:
+            items = [(key, item) for key, item in items if equipment_category in item["categories"]]
     items.sort(key=lambda pair:pair[1].get('name',pair[0]).casefold())
     total = len(items)
-    pages = max(1, (total + 99) // 100) if kind == 'feats' else 1
+    pages = max(1, (total + 99) // 100) if kind in {'feats', 'equipment'} else 1
     raw_page = request.query_params.get('page', '1')
     page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
-    if kind == 'feats':
+    if kind in {'feats', 'equipment'}:
         items = items[(page - 1) * 100:page * 100]
-    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES)
+    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories)
 
 
 @router.get('/{kind}/new')
@@ -95,6 +111,13 @@ async def edit_entry(kind: str, key: str, request: Request, db: Session = Depend
         if key not in CLASSES:
             raise HTTPException(404, 'Character class not found.')
         return class_editor(ctx, record, key)
+    if kind == 'equipment':
+        item = equipment_entries(record.data).get(key)
+        if item is None:
+            raise HTTPException(404, 'Equipment entry not found.')
+        if item.get('editor_kind'):
+            return redirect(ctx, f"/administration/catalog/{item['editor_kind']}/{item['editor_key']}")
+        return editor(ctx, record, kind, key, {'enabled': True, **item})
     if key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
     return editor(ctx,record,kind,key,record.data[kind][key])
 
@@ -102,6 +125,19 @@ async def edit_entry(kind: str, key: str, request: Request, db: Session = Depend
 def parse_entry(form,kind,key,catalog):
     item={'enabled':form.get('enabled')=='on'}
     item['name']=key if kind=='feats' else field(form,'name',100)
+    if kind == 'equipment':
+        item.update(group=field(form, 'group', 30), url=field(form, 'url', 1000, required=False),
+                    cost_text=field(form, 'cost_text', 120, required=False),
+                    weight_text=field(form, 'weight_text', 120, required=False),
+                    details=field(form, 'details', 3000, required=False))
+        categories = field(form, 'equipment_categories', 1000, required=False)
+        item['categories'] = list(dict.fromkeys(line.strip() for line in categories.splitlines() if line.strip()))
+        if item['group'] not in EQUIPMENT_GROUPS:
+            raise HTTPException(422, 'Choose an equipment group.')
+        if item['url'] and not safe_weapon_url(item['url']):
+            raise HTTPException(422, 'Use a safe HTTP or HTTPS reference link.')
+        return item
+
     def number(name,low=-100,high=100,decimal=False):
         raw=str(form.get(name,'0')).strip() or '0'
         if decimal:
@@ -222,7 +258,7 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
     record=record_for(ctx,True)
     if integer(form,'version',1,2**31-1)!=record.version: raise HTTPException(409,'The catalog changed in another window. Reload before saving.')
     new=form.get('new')=='1'
-    key=field(form,'key',100 if kind=='feats' else 60)
+    key=field(form,'key',100 if kind in {'feats','equipment'} else 60)
     if kind == 'classes':
         if new or key not in CLASSES:
             raise HTTPException(404, 'Character class not found.')
@@ -249,9 +285,12 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         raise HTTPException(422,'Feat names cannot contain slashes, question marks or hash signs.')
     if kind!='feats' and (not re.fullmatch(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*',key) or key.endswith('-2')):
         raise HTTPException(422,'Use a stable lowercase identifier with letters, numbers and single hyphens, without a -2 ending.')
-    if new and any(existing.casefold()==key.casefold() for existing in record.data[kind]): raise HTTPException(409,'That catalog identifier already exists.')
-    if not new and key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
-    if new and len(record.data[kind]) >= {'skills':75, 'feats':10000}.get(kind,1000): raise HTTPException(422, 'This catalog has reached its entry limit.')
+    entries = equipment_entries(record.data) if kind == 'equipment' else record.data[kind]
+    if new and any(existing.casefold()==key.casefold() for existing in entries): raise HTTPException(409,'That catalog identifier already exists.')
+    if not new and key not in entries: raise HTTPException(404,'Catalog entry not found.')
+    if kind == 'equipment' and not new and entries[key].get('editor_kind'):
+        raise HTTPException(422, 'Edit this item in its Weapons or Armor catalog.')
+    if new and len(entries) >= {'skills':75, 'feats':10000, 'equipment':10000}.get(kind,1000): raise HTTPException(422, 'This catalog has reached its entry limit.')
     if new and kind in {'weapons','armor'}:
         from .pf1_data import EQUIPMENT
         if key in EQUIPMENT or key in record.data.get('armor' if kind=='weapons' else 'weapons',{}): raise HTTPException(409,'That identifier is already used by equipment.')
@@ -259,14 +298,16 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         item=parse_entry(form,kind,key,record.data)
     except HTTPException as error:
         if error.status_code!=422: raise
-        item={**record.data[kind].get(key,{}),**{k:str(v) for k,v in form.items() if k not in {'csrf','version'}}}
+        item={**entries.get(key,{}),**{k:str(v) for k,v in form.items() if k not in {'csrf','version'}}}
         item.update(enabled=form.get('enabled')=='on',effects={target:form.get('effect.'+target,0) for target in [*EFFECTS,*('skill:'+s for s in record.data['skills'])]},classes=form.getlist('classes'))
         for flag in ('combat','monk','repeatable','finesse','pfs_marked','armor','trained','ranged','bow','two_handed','thrown','add_strength'): item[flag]=form.get(flag)=='on'
         if kind == 'feats' and 'categories_present' in form:
             item['categories'] = form.getlist('categories')
+        if kind == 'equipment':
+            item['categories'] = str(form.get('equipment_categories', '')).splitlines()
         return editor(ctx,record,kind,key,item,[error.detail],new)
     updated=deepcopy(record.data)
-    updated[kind][key]=item
+    updated.setdefault('equipment_index' if kind == 'equipment' else kind, {})[key]=item
     record.data=updated
     record.updated_at,record.updated_by=utcnow(),ctx.user.id
     audit(db,ctx.user,'catalog.created' if new else 'catalog.updated',f'{"Added" if new else "Updated"} {kind}: {key}.')

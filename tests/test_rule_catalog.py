@@ -252,3 +252,33 @@ def test_feat_categories_match_aon_and_support_filtering_and_edits(env):
     )).status_code == 303
     page = admin.get("/administration/catalog", params={"kind": "feats", "feat_category": "Teamwork", "q": "Improved Initiative"})
     assert "1 entries" in page.text and ">Improved Initiative</a>" in page.text
+
+
+def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
+    from pathkeeper.equipment_index import published_equipment
+
+    entries = published_equipment()
+    assert len(entries) == 2431
+    assert {item['group'] for item in entries.values()} == {'Weapons', 'Armor', 'Special Materials', 'Miscellaneous'}
+    assert entries['miscellaneous-bedroll']['cost_text'] == '1 sp'
+    assert entries['special-materials-adamantine']['url'].endswith('#:~:text=Adamantine')
+    player = env.login(env.player)
+    assert player.get('/administration/catalog?kind=equipment').status_code == 403
+    admin = env.login(env.admin)
+    listing = admin.get('/administration/catalog?kind=equipment')
+    assert listing.status_code == 200 and '2431 entries' in listing.text
+    weapons = admin.get('/administration/catalog?kind=equipment&equipment_group=Weapons&q=Longsword')
+    assert 'href="/administration/catalog/weapons/longsword"' in weapons.text
+    materials = admin.get('/administration/catalog?kind=equipment&equipment_group=Special+Materials&q=Adamantine')
+    assert '>Adamantine</a>' in materials.text
+    editor = admin.get('/administration/catalog/equipment/miscellaneous-bedroll')
+    assert editor.status_code == 200 and 'value="1 sp"' in editor.text
+    response = env.post(admin, '/administration/catalog/equipment', {
+        'key': 'miscellaneous-bedroll', 'version': 1, 'name': 'Bedroll',
+        'group': 'Miscellaneous', 'equipment_categories': 'Adventuring Gear\nCamping',
+        'cost_text': '2 sp', 'weight_text': '5 lb.', 'enabled': 'on',
+        'url': entries['miscellaneous-bedroll']['url'],
+    })
+    assert response.status_code == 303
+    listing = admin.get('/administration/catalog?kind=equipment&equipment_category=Camping')
+    assert listing.status_code == 200 and '>Bedroll</a>' in listing.text and '2 sp' in listing.text

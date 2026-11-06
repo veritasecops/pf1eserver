@@ -274,7 +274,7 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
         character.play_data={key:value for key,value in character.play_data.items() if key!="deity"}
     catalog = load_catalog(db)
     overrides = catalog.get("classes", {})
-    snapshot = {group: entries for group, entries in catalog.items() if group != "classes"}
+    snapshot = {group: entries for group, entries in catalog.items() if group not in {"classes", "equipment_index"}}
     from .feats import REVIEW_HINT
     selected_feats = {feat["name"] for feat in computed["feats"]} | set(computed["automatic_feats"])
     snapshot["feats"] = {name: item for name, item in catalog["feats"].items()
