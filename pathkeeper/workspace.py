@@ -409,7 +409,7 @@ def render_character(ctx, character, values=None, errors=()):
 async def read_play_sheet(ctx, character, form=None):
     db = ctx.db
     if form is None:
-        form = await read_form(ctx, max_fields=1024)
+        form = await read_form(ctx, max_fields=2048)
     verify_version(form, character)
     owner = db.get(User, character.owner_id)
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
@@ -459,7 +459,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     ctx = context(request, db)
     character = get_character(ctx, character_id)
     autosave = 'application/json' in request.headers.get('accept','')
-    form = await read_form(ctx, max_fields=1024)
+    form = await read_form(ctx, max_fields=2048)
     save_id = request.headers.get('x-sheet-save-id','')
     fingerprint = None
     if autosave:
@@ -484,7 +484,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","coin_operation") if key in (character.play_data or {})}
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation") if key in (character.play_data or {})}
     character.play_data = {"calculation_version":1, **metadata, **{key:value for key,value in values.items()
                            if key not in core | {"player", "next_level"} and value != base[key]}, **persist_effects(character, values), "experience": values["experience"]}
     for key in core - {"level"}:

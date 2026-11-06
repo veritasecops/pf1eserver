@@ -92,7 +92,7 @@
         throw new Error(result.detail||'The item action could not be saved.');
       }
       window.PathkeeperSheet.applyPurchase(result);
-      if(selection.kind==='backpack')bag.dispatchEvent(new CustomEvent('backpackchange',{detail:result.backpack}));
+      if(bag)bag.dispatchEvent(new CustomEvent('backpackchange',{detail:result.backpack}));
       uncertain=false;dialog.close();
     } catch(e) {
       if(e.name==='AbortError'||e instanceof TypeError){uncertain=true;error.textContent='The response was lost. Retry to check the same action safely, or close to reload inventory.';}

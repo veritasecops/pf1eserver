@@ -1,3 +1,4 @@
+import secrets
 from sqlalchemy.orm import Session
 
 from pathkeeper.database import engine
@@ -54,12 +55,19 @@ def test_weapon_armor_and_gear_markers_sync_and_persist_after_purchase(env):
 def test_manual_equipment_can_be_equipped_and_empty_rows_are_cleared(env):
     character=seed_character(env.player);client=env.login(env.player);path=f'/characters/{character.id}'
     form=SheetForm(client.get(path).text)
-    form.values.update({'gear.0.name':'Backpack','gear.0.equipped':'1','gear.1.equipped':'1'})
+    item_id = secrets.token_hex(16)
+    assert env.post(client, path + '/backpack', {
+        'version': form.values['version'], 'item_id': item_id, 'name': 'Backpack', 'quantity': 1, 'value': '0',
+    }).status_code == 200
+    form = SheetForm(client.get(path).text)
+    form.values.update({'gear.0.name':'Forged name','gear.0.equipped':'1','gear.1.equipped':'1'})
     assert env.post(client,path+'/play-sheet',form.values).status_code==303
     saved=SheetForm(client.get(path).text)
     assert saved.values['gear.0.equipped']=='1' and not saved.values.get('gear.1.equipped')
-    saved.values['gear.0.name']=''
-    assert env.post(client,path+'/play-sheet',saved.values).status_code==303
+    assert saved.values['gear.0.name'] == 'Backpack × 1'
+    from .test_equipment_disposal import disposal
+    assert env.post(client, path + '/equipment/dispose',
+                    disposal(client, character.id, kind='backpack', row=item_id)).status_code == 200
     assert not SheetForm(client.get(path).text).values.get('gear.0.equipped')
 
 

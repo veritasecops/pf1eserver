@@ -7,6 +7,7 @@ from .pf1_data import ABILITIES, RACES
 from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
 from .trait_rules import class_skill_bonus, racial_skill_bonus
 from .treasure import COINS
+from .gear_backpack import GEAR_SLOTS, project_backpack
 
 
 def class_record(character, catalog):
@@ -38,6 +39,7 @@ def calculated_fields(character, values):
             locked.update({f'skill.{key}.total',f'skill.{key}.ability'})
     locked.update(f'weapon.{row}.{part}' for row in range(6) for part in ('name','quantity','attack','critical','type','range','ammunition','damage'))
     locked.update(f'armor.{row}.{part}' for row in range(6) for part in ('name','quantity','type','bonus','max_dex','penalty','failure','weight'))
+    locked.update(f"gear.{row}.{part}" for row in range(GEAR_SLOTS) for part in ("name", "weight", "notes"))
     locked.update(f'feature.{row}' for row in range(56))
     locked.update(f'spell.{level}.known' for level in range(10))
     # These are calculated by the first-level wizard. At later levels they need
@@ -53,6 +55,7 @@ SIZE_MODIFIERS = {'fine':8,'diminutive':4,'tiny':2,'small':1,'medium':0,'large':
 
 def recalculate(character, values, equipment_previous=None, equipment_keep=()):
     """Recompute from editable components; a missing essential input stays blank."""
+    project_backpack(character, values)
     for coin in COINS:
         key = f"money.{coin}"
         values[key] = values.get(key) or "0"

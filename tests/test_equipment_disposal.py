@@ -115,14 +115,17 @@ def test_access_csrf_stale_versions_overflow_and_detached_gear(env):
         'version': form.values['version'], 'request_id': secrets.token_hex(16), 'action': 'add', 'coin': 'gp',
         'amount': 1000000000 - int(form.values['money.gp']),
     }).status_code == 200
-    form=SheetForm(client.get(path).text);form.values['gear.0.name']='My unrelated bag'
-    assert env.post(client,path+'/play-sheet',form.values).status_code==303
+    form = SheetForm(client.get(path).text)
+    assert env.post(client, path + '/backpack', {
+        'version': form.values['version'], 'item_id': secrets.token_hex(16),
+        'name': 'My unrelated bag', 'quantity': 1, 'value': '0',
+    }).status_code == 200
     payload=disposal(client,character,action='sell',coins={'gp':1})
     assert env.post(client,path+'/equipment/dispose',payload).status_code==422
     payload=disposal(client,character)
     assert env.post(env.login(env.admin),path+'/equipment/dispose',payload).status_code==200
     saved=SheetForm(client.get(path).text)
-    assert saved.values['gear.0.name']=='My unrelated bag' and saved.values['money.gp']=='1000000000'
+    assert saved.values['gear.1.name']=='My unrelated bag × 1' and saved.values['money.gp']=='1000000000'
     assert env.post(client,path+'/equipment/dispose',disposal(client,character)).status_code==409
 
 
@@ -130,12 +133,18 @@ def test_carried_weight_is_calculated_and_unknown_weights_stay_blank(env):
     client,character=setup_sheet(env);path=f'/characters/{character}'
     form=SheetForm(client.get(path).text)
     assert 'load.total' in form.readonly
-    form.values.update({'gear.0.name':'A pack','gear.0.weight':'2.5','gear.1.name':'A rope','gear.1.weight':'3','load.total':'999'})
-    assert env.post(client,path+'/play-sheet',form.values).status_code==303
-    saved=SheetForm(client.get(path).text);assert saved.values['load.total']=='5.5'
-    saved.values['gear.1.weight']='Special'
-    assert env.post(client,path+'/play-sheet',saved.values).status_code==303
-    assert SheetForm(client.get(path).text).values['load.total']==''
+    with Session(engine()) as db:
+        record = db.get(Character, character)
+        record.play_data = {**(record.play_data or {}), 'backpack': [
+            {'id': secrets.token_hex(16), 'name': 'A pack', 'quantity': 1, 'unit_cp': 0, 'gear_row': 0, 'gear_weight': '2.5'},
+            {'id': secrets.token_hex(16), 'name': 'A rope', 'quantity': 1, 'unit_cp': 0, 'gear_row': 1, 'gear_weight': '3'},
+        ]}
+        db.commit()
+    saved = SheetForm(client.get(path).text)
+    assert saved.values['load.total'] == '5.5'
+    saved.values['gear.1.weight'] = 'Special'
+    assert env.post(client, path + '/play-sheet', saved.values).status_code == 303
+    assert SheetForm(client.get(path).text).values['load.total'] == '5.5'
 
 
 def test_backpack_add_remove_and_sell_use_the_sheet_treasure(env):
@@ -149,9 +158,14 @@ def test_backpack_add_remove_and_sell_use_the_sheet_treasure(env):
     added = env.post(client, path + '/backpack', add)
     assert added.status_code == 200, added.text
     result = added.json()
-    assert result['backpack'] == [{'id': add['item_id'], 'name': 'Silver brooch', 'quantity': 2, 'unit_cp': 325}]
-    assert result['purchase_fields']['money.gp'] == '100'
+    assert result['backpack'] == [{'id': add['item_id'], 'name': 'Silver brooch', 'quantity': 2, 'unit_cp': 325,
+                                  'gear_row': 0, 'gear_weight': '0'}]
+    assert result['purchase_fields']['gear.0.name'] == 'Silver brooch × 2'
     assert env.post(client, path + '/backpack', add).json()['backpack'] == result['backpack']
+    assert env.post(client, path + '/backpack', {
+        'version': result['version'], 'item_id': add['item_id'], 'action': 'note', 'notes': 'Family heirloom',
+    }).json()['purchase_fields']['gear.0.notes'] == 'Family heirloom'
+    assert result['purchase_fields']['money.gp'] == '100'
     sheet = SheetForm(client.get(path).text)
     sheet.values['notes'] = 'Keep backpack on autosave'
     assert env.post(client, path + '/play-sheet', sheet.values).status_code == 303

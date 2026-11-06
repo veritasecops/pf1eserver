@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration
+from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration, User
 
 
 def remove_manual_class_fields(db):
@@ -206,4 +206,25 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 21):
             db.add(SchemaMigration(version=21, name="character_coin_transactions"))
             db.commit()
-    print("Database migrations applied through 021 (character coin transactions).")
+        if not db.get(SchemaMigration, 22):
+            from .deluxe_sheet import baseline
+            from .gear_backpack import seed_backpack
+            from .rule_catalog import character_catalog
+
+            migrated = {}
+            for character in db.scalars(select(Character).order_by(Character.id).with_for_update()):
+                saved = character.play_data or {}
+                if saved.get("backpack_gear_version"):
+                    continue
+                owner = db.get(User, character.owner_id)
+                migrated[character.id] = (character.version, character)
+                seed_backpack(character, {**baseline(character, owner), **saved}, character_catalog(character))
+            db.flush()
+            for draft in db.scalars(select(CharacterDraft).where(CharacterDraft.mode == "edit").with_for_update()):
+                if draft.editing_id in migrated:
+                    old_version, character = migrated[draft.editing_id]
+                    if draft.existing_version == old_version:
+                        draft.existing_version = character.version
+            db.add(SchemaMigration(version=22, name="gear_inventory_in_backpack"))
+            db.commit()
+    print("Database migrations applied through 022 (gear inventory in backpack).")

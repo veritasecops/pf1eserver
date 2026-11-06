@@ -24,7 +24,7 @@ function harness(equipmentEffects = null) {
     elements: { namedItem: name => fields[name] },
     checkValidity: () => true,
     addEventListener: (name, fn) => { listeners[name] = fn; },
-    querySelectorAll: () => Object.values(fields).filter(field => field.name !== 'version')
+    querySelectorAll: selector => selector === '[data-gear-row]' ? [] : Object.values(fields).filter(field => field.name !== 'version')
   };
   const nodes = {
     'deluxe-form': form, 'sheet-save-status': status,

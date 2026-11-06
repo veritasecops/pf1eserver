@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
 
+from .gear_backpack import GEAR_SLOTS, LEGACY_GEAR_SLOTS
 from .pf1_data import ABILITIES, ALIGNMENTS, EQUIPMENT, RACES, SKILLS
 from .advancement import XP_SOURCE, apply_advancement, saved_xp, track
 from .sheet_calculations import class_record, calculated_fields, recalculate, base_speed_race
@@ -11,7 +12,7 @@ from .rule_catalog import character_catalog, equipment as catalog_equipment, cla
 
 WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('equipped','Equipped'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
 ARMOR_COLUMNS = [('name','Item'),('quantity','Quantity'),('equipped','Equipped'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
-GEAR_COLUMNS = [('name','Item'),('equipped','Equipped'),('weight','Weight')]
+GEAR_COLUMNS = [('name','Item'),('equipped','Equipped'),('weight','Weight'),('notes','Note')]
 FACTION_COLUMNS = [('type','Type'),('value','Value')]
 SAVES = [('fortitude','Fortitude','con'),('reflex','Reflex','dex'),('will','Will','wis')]
 SKILL_ROWS = sorted([(key,meta) for key,meta in SKILLS.items()],key=lambda item:item[1]['name'])
@@ -54,10 +55,10 @@ register('resistance.spell','Spell resistance','number')
 for i in range(3):
     for part,title in [('damage','Damage reduction'),('bypass','Damage bypass'),('energy','Energy resistance'),('type','Energy type')]:
         register(f'resistance.{i}.{part}',f'{title} {i+1}')
-for prefix,columns,count in [('weapon',WEAPON_COLUMNS,6),('armor',ARMOR_COLUMNS,6),('gear',GEAR_COLUMNS,56),('faction',FACTION_COLUMNS,4)]:
+for prefix,columns,count in [('weapon',WEAPON_COLUMNS,6),('armor',ARMOR_COLUMNS,6),('gear',GEAR_COLUMNS,GEAR_SLOTS),('faction',FACTION_COLUMNS,4)]:
     for i in range(count):
         for part,title in columns: register(f'{prefix}.{i}.{part}',f'{prefix.capitalize()} {i+1}: {title}')
-for prefix,count in [('weapon',6),('armor',6),('gear',56)]:
+for prefix,count in [('weapon',6),('armor',6),('gear',GEAR_SLOTS)]:
     for row in range(count): FIELDS[f'{prefix}.{row}.equipped']['kind']='checkbox'
 for i in range(6): FIELDS[f'weapon.{i}.notes']['maximum'] = 5000
 for i in range(56): register(f'feature.{i}',f'Feat, class or racial ability {i+1}',maximum=500)
@@ -143,7 +144,7 @@ def baseline(character, owner, campaign=None, gm=None):
     for i,feat in enumerate(feats[:56]): data[f'feature.{i}'] = feat
     equipment = values.get('equipment',[])
     equipped={inputs.get(slot) for slot in ('weapon','armor','shield') if inputs.get(slot)}
-    for i,item in enumerate(equipment[:56]):
+    for i,item in enumerate(equipment[:LEGACY_GEAR_SLOTS]):
         data[f'gear.{i}.equipped']='1' if item['id'] in equipped else ''
         data[f'gear.{i}.name'] = f"{item['name']} × {item['quantity']}"
         data[f'gear.{i}.weight'] = str(item['weight']*item['quantity']*(.5 if small and item['kind'] in {'weapon','armor','shield'} else 1)) if item.get('weight') is not None else item.get('weight_text','Special')
@@ -268,5 +269,5 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     from .equipment_effects import contributions
     return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog, (character.sheet_data or {}).get('input',{}).get('class_id',''), (character.sheet_data or {}).get('input',{}).get('expert_skills',())) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
-                weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,faction_columns=FACTION_COLUMNS,
+                weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,gear_slots=GEAR_SLOTS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

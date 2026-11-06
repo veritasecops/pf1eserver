@@ -15,6 +15,7 @@ from .models import Campaign, Character, RuleCatalog, User
 from .rule_catalog import character_catalog, effect_total, load_catalog, equipment
 from .armor import armor_fields, purchasable
 from .equipment_index import sheet_equipment
+from .gear_backpack import GEAR_SLOTS, available_slot
 from .security import audit, context, digest, get_character, integer, read_form
 
 router = APIRouter()
@@ -53,7 +54,7 @@ def inventory(character, values, catalog):
         entries.append({'id':key,'row':row,'quantity':quantity,'item':item,'agreed_unit_price':agreed,
                         'fields':{part:values.get(f'weapon.{row}.{part}','') for part in PARTS if part!='quantity'}})
     # Ammunition recorded by the wizard is carried in the gear table.
-    for key,item in sources.items():
+    for key,item in ({} if (character.play_data or {}).get('backpack_gear_version') else sources).items():
         if (item.get('category') in {'ammunition','extra'}) and not any(entry.get('id')==key for entry in entries):
             entries.append({'id':key,'row':None,'quantity':item['quantity'],'item':deepcopy(item),'agreed_unit_price':snapshot.get('input',{}).get('equipment_prices',{}).get(key)})
     armors=catalog.get('armor',{})
@@ -73,7 +74,7 @@ def inventory(character, values, catalog):
     for entry in entries:
         item=entry['item']
         expected=f"{item.get('name','')} × {entry['quantity']}"
-        for row in range(56):
+        for row in range(GEAR_SLOTS):
             if values.get(f'gear.{row}.name')==expected:
                 entry.update(gear_row=row,gear_label=expected,gear_quantity=entry['quantity'])
                 break
@@ -152,7 +153,7 @@ def shop_state(ctx,character):
             owned[key]=owned.get(key,0)+entry['quantity']
             if entry.get('agreed_unit_price') is not None: prices[key]=entry['agreed_unit_price']
     for entry in (character.play_data or {}).get('backpack', []):
-        if key := entry.get('catalog_id'):
+        if not entry.get('combat') and (key := entry.get('catalog_id')):
             owned[key] = owned.get(key, 0) + entry['quantity']
             if entry.get('agreed_unit_price') is not None:
                 prices[key] = entry['agreed_unit_price']
@@ -212,7 +213,7 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
         if not item or not item.get('enabled',True) or (not purchasable(item) and item.get('kind') not in {'misc', 'material'}):
             raise HTTPException(422, 'Choose available equipment from the catalog.')
         quantity=bounded_int(quantity,1,100,'Equipment quantity')
-        carried = [entry for entry in backpack if entry.get('catalog_id') == key]
+        carried = [entry for entry in backpack if not entry.get('combat') and entry.get('catalog_id') == key]
         old_quantity = sum(entry['quantity'] for entry in entries if entry.get('id') == key)
         bounded_int(old_quantity + sum(entry['quantity'] for entry in carried) + quantity, 1, 100, 'Total inventory quantity')
         entry=next((entry for entry in entries if entry.get('id')==key),None)
@@ -230,14 +231,14 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
         else: price=item['cost']
         cost+=quantity*price
         if item['kind'] not in {'weapon', 'armor', 'shield'}:
-            stack = next((stack for stack in carried if stack['unit_cp'] == price and stack['catalog'] == item), None)
+            stack = next((stack for stack in carried if stack['unit_cp'] == price and stack['catalog'] == item and 'gear_weight' not in stack), None)
             if stack is not None:
                 stack['quantity'] += quantity
             else:
                 if len(backpack) >= 200:
                     raise HTTPException(422, 'The backpack has reached its 200-entry limit.')
                 backpack.append({'id':secrets.token_hex(16), 'catalog_id':key, 'catalog':deepcopy(item),
-                                 'name':item['name'], 'quantity':quantity, 'unit_cp':price,
+                                 'name':item['name'], 'quantity':quantity, 'unit_cp':price, 'gear_row':available_slot(backpack, values),
                                  'agreed_unit_price':price if item['cost'] is None else None})
             continue
         if entry:
@@ -262,14 +263,22 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
         if gear_row is not None and values.get(f'gear.{gear_row}.name')==entry.get('gear_label'):
             gear_quantity=entry.get('gear_quantity',0)+quantity
         else:
-            gear_row=next((index for index in range(56) if not values.get(f'gear.{index}.name','').strip()),None)
-            if gear_row is None: raise HTTPException(422,'The gear table is full. Clear a gear row before purchasing.')
+            gear_row = available_slot(backpack, values)
             gear_quantity=quantity
         label=f"{entry['item']['name']} × {gear_quantity}"
         entry.update(gear_row=gear_row,gear_quantity=gear_quantity,gear_label=label)
         changes[f'gear.{gear_row}.name']=label
         weight=entry['item'].get('weight')
         changes[f'gear.{gear_row}.weight']=str(weight*gear_quantity*(.5 if str(values.get('size','')).casefold()=='small' and item['kind'] in {'weapon','armor','shield'} else 1)) if weight is not None else values.get(f'gear.{gear_row}.weight','') or item.get('weight_text','Special')
+        combat = {"kind": "weapon", "row": entry["row"]} if entry.get("row") is not None else {
+            "kind": "armor", "row": entry["armor_row"]}
+        bag_entry = next((stack for stack in backpack if stack.get("combat") == combat), None)
+        if bag_entry is None:
+            bag_entry = {"id": secrets.token_hex(16), "combat": combat}
+            backpack.append(bag_entry)
+        bag_entry.update(catalog=deepcopy(item), catalog_id=key, name=entry["item"]["name"],
+                         quantity=gear_quantity, unit_cp=entry["item"]["cost"], gear_row=gear_row,
+                         gear_label=label, gear_weight=changes[f"gear.{gear_row}.weight"])
         values.update(changes)
     changes.update(deduct_coins(values,cost))
     character.play_data = {**(character.play_data or {}), 'backpack': backpack, 'weapon_inventory': entries}

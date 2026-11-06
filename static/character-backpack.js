@@ -53,6 +53,18 @@
         name.rel = 'noopener noreferrer';
       }
       nameCell.append(name);
+      const note = document.createElement('button');
+      note.type = 'button';
+      note.className = 'button small';
+      note.textContent = item.notes ? 'Edit note' : 'Add note';
+      note.addEventListener('click', () => editNote(item));
+      nameCell.append(note);
+      if (item.notes) {
+        const text = document.createElement('span');
+        text.className = 'secondary-text';
+        text.textContent = item.notes;
+        nameCell.append(text);
+      }
       if (catalog) {
         const details = document.createElement('details');
         const summary = document.createElement('summary');
@@ -132,9 +144,43 @@
     refreshCategories();
     render();
   });
-  opener.addEventListener('click', () => bag.showModal());
+  let trigger = opener;
+  for (const button of [opener, ...document.querySelectorAll('[data-open-backpack]')]) {
+    button.addEventListener('click', () => { trigger = button; bag.showModal(); });
+  }
+  bag.addEventListener('close', () => trigger.focus());
   bag.querySelector('[data-close-backpack]').addEventListener('click', () => { if (!busy) bag.close(); });
   bag.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
+
+  async function editNote(item) {
+    if (busy) return;
+    const notes = window.prompt(`Note for ${item.name}`, item.notes || '');
+    if (notes === null) return;
+    busy = true;
+    submit.disabled = true;
+    error.hidden = true;
+    try {
+      await window.PathkeeperSheet.flush();
+      const body = new FormData();
+      for (const [key, value] of Object.entries({action: 'note', item_id: item.id, notes,
+        version: sheet.elements.namedItem('version').value, csrf: sheet.elements.namedItem('csrf').value})) {
+        body.set(key, value);
+      }
+      const response = await fetch(bag.dataset.endpoint, {method: 'POST', body, headers: {Accept: 'application/json'}});
+      if (response.redirected) throw new Error('Sign in again before editing a note.');
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || 'The note could not be saved.');
+      window.PathkeeperSheet.applyPurchase(result);
+      items = result.backpack;
+      render();
+    } catch (failure) {
+      error.textContent = failure.message;
+      error.hidden = false;
+    } finally {
+      busy = false;
+      submit.disabled = false;
+    }
+  }
 
   form.addEventListener('submit', async event => {
     event.preventDefault();

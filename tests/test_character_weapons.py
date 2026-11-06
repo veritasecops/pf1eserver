@@ -114,7 +114,7 @@ def test_special_prices_ammunition_and_free_weapons(env):
     assert treasure(fields)==8875
     arrows = response.json()['backpack'][0]
     assert arrows['name'] == 'Arrows, common (20)' and arrows['quantity'] == 2
-    assert 'Arrows, common (20) × 2' not in fields.values()
+    assert 'Arrows, common (20) × 2' in fields.values()
     again=env.post(client,path+'/weapons',purchase_data(client,character_id,{'shield-light':1}))
     assert again.status_code==200 and treasure(again.json()['purchase_fields'])==7950
 
@@ -138,7 +138,7 @@ def test_gear_capacity_is_checked_before_spending(env):
     client,character_id=setup_sheet(env)
     with Session(engine()) as db:
         character=db.get(Character,character_id)
-        character.play_data={**character.play_data,**{f'gear.{row}.name':f'Existing gear {row}' for row in range(56)}}
+        character.play_data={**character.play_data,**{f'gear.{row}.name':f'Existing gear {row}' for row in range(256)}}
         db.commit()
     response=env.post(client,f'/characters/{character_id}/weapons',purchase_data(client,character_id,{'dagger':1}))
     assert response.status_code==422
@@ -198,7 +198,7 @@ def test_special_materials_and_miscellaneous_share_the_equipment_cart(env):
     assert items[abacus]['catalog']['weight'] == 2
     assert items[abacus]['catalog']['url'] == catalog[abacus]['url']
     assert items[material]['catalog']['cost_text'] == catalog[material]['cost_text']
-    assert 'Adamantine × 1' not in fields.values() and 'Abacus × 2' not in fields.values()
+    assert 'Adamantine × 1' in fields.values() and 'Abacus × 2' in fields.values()
     assert response.json()['values']['weapon.0.name'] == 'Dagger'
     assert env.post(client, path, payload).json()['purchase_fields'] == fields
     state = client.get(path).json()

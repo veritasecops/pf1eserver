@@ -165,6 +165,32 @@ def test_deluxe_migration_adds_column_idempotently_without_replacing_creation_da
         assert db.get(SchemaMigration,5)
 
 
+
+def test_migrate_legacy_gear_to_backpack_without_duplicate_stacks(env, isolated_database):
+    from pathkeeper.migrations import migrate
+
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.play_data = {
+            'gear.0.name': 'Rope × 2', 'gear.0.weight': '10', 'gear.0.equipped': '1',
+            'gear.1.name': 'Field journal', 'gear.1.weight': '1', 'gear.1.notes': 'Travel notes',
+            'backpack': [{'id': 'existing', 'name': 'Rope', 'quantity': 2, 'unit_cp': 25}],
+        }
+        db.commit()
+    migrate(isolated_database)
+    migrate(isolated_database)
+    client = env.login(env.player)
+    sheet = SheetForm(client.get(f'/characters/{character.id}').text)
+    assert {'gear.0.name', 'gear.0.weight', 'gear.1.notes'} <= sheet.readonly
+    assert 'gear.0.equipped' not in sheet.readonly and sheet.values['gear.0.equipped'] == '1'
+    assert sheet.values['gear.1.notes'] == 'Travel notes'
+    with Session(engine()) as db:
+        items = db.get(Character, character.id).play_data['backpack']
+        assert [(item['name'], item['quantity']) for item in items] == [('Rope', 2), ('Field journal', 1)]
+        assert items[0]['id'] == 'existing' and items[0]['gear_weight'] == '10'
+
+
 def test_locked_identity_ignores_forged_values_and_alignment_choices_persist(env):
     character = seed_character(env.player)
     with Session(engine()) as db:

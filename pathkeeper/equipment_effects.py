@@ -2,6 +2,7 @@
 from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
+from .gear_backpack import GEAR_SLOTS
 from .class_catalog import class_key
 from .rule_catalog import character_catalog, equipment
 from .trait_rules import FAST_MOVEMENT, MONKS, armor_training, load_category, nimble
@@ -39,12 +40,8 @@ def validate_armor(character, values):
 
 
 def carried_weight(character, values):
-    weights = [number(values.get(f'gear.{row}.weight', ''), None) for row in range(56)
+    weights = [number(values.get(f'gear.{row}.weight', ''), None) for row in range(GEAR_SLOTS)
                if values.get(f'gear.{row}.name', '').strip()]
-    for entry in (character.play_data or {}).get('backpack', []):
-        if 'catalog' in entry:
-            weight = number(entry['catalog'].get('weight'), None)
-            weights.append(None if weight is None else weight * entry['quantity'])
     return None if None in weights else sum(weights, Decimal(0))
 
 

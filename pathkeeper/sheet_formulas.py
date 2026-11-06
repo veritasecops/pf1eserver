@@ -1,4 +1,5 @@
 """Plain-language descriptions of the formulas the play sheet actually uses."""
+from .gear_backpack import GEAR_SLOTS
 from .pf1_data import ABILITIES
 from .rule_catalog import character_catalog
 from .sheet_calculations import calculated_fields, base_speed_race
@@ -11,7 +12,7 @@ def sheet_formulas(character, values):
     formulas={
         'level':'Character level is the last completed level. XP on the campaign track unlocks the next level-up wizard.',
         'next_level':'Total XP required for the next level on the campaign advancement track. Blank at level 20.',
-        'load.total':'Add the weights of named gear entries and catalog items in the backpack. The total stays blank while any of those entries has an unknown weight.',
+        'load.total':'Add the weights of the gear shown here. The total stays blank while an entry has an unknown weight.',
         'speed.base':speed_source,
         'player':'The name of the account that owns this character.',
         'class_name':'The class recorded for this character.',
@@ -73,4 +74,7 @@ def sheet_formulas(character, values):
             formulas[f'armor.{row}.weight']='Weight per item = the saved Medium-size catalog weight, multiplied by ½ for a Small character. This armor row shows one item’s weight; the gear row records the quantity’s combined weight.'
     for coin in ("cp", "sp", "gp", "pp"):
         formulas[f"money.{coin}"] = "On-hand balance changes through the treasure chest, purchases, and sales."
+    for row in range(GEAR_SLOTS):
+        for part in ("name", "weight", "notes"):
+            formulas[f"gear.{row}.{part}"] = "This information comes from the backpack."
     return {key:formulas[key] for key in locked}

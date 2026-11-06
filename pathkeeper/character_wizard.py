@@ -258,11 +258,18 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
         db.refresh(existing, with_for_update=True)
         if existing.version != draft.existing_version:
             raise HTTPException(409, "The character changed after this draft began. Start a fresh editing draft.")
-    from .deluxe_sheet import baseline
+    from .deluxe_sheet import baseline, sheet_values
+    from .gear_backpack import seed_backpack
+    from .rule_catalog import character_catalog
     from .treasure import record_coin_change
 
     owner = db.get(User, values["owner_id"])
     prior_treasure = {**baseline(existing, owner), **(existing.play_data or {})} if existing else {}
+    if existing:
+        current = sheet_values(existing, owner)
+        existing.play_data = {**(existing.play_data or {}), **{
+            key: value for key, value in current.items() if key.startswith(("gear.", "weapon.", "armor."))
+        }}
     old_speed = track(db.get(Campaign, existing.campaign_id)) if existing and existing.campaign_id else "slow"
     character = existing or Character(**values)
     if existing:
@@ -287,6 +294,8 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     if data["class_id"] in overrides:
         snapshot["classes"] = {data["class_id"]: overrides[data["class_id"]]}
     character.sheet_data = {"schema":1,"catalog":snapshot,"input":data,"computed":computed,"rolls":selected,"source":OUTLINE}
+    if not existing:
+        seed_backpack(character, baseline(character, owner), character_catalog(character))
     db.add(character)
     db.flush()
     record_coin_change(db, character, ctx.user, "creation_edit" if existing else "starting_wealth",

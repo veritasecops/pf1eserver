@@ -63,27 +63,34 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
     coin_changes, proceeds = sale_changes(form, action, values)
     operation = {'id':request_id, 'actor':ctx.user.id, 'fingerprint':fingerprint,
                  'version':character.version + 1}
+    data = character.play_data or {}
+    items = data.get('backpack', [])
+    bag_entry = None
     if kind == 'backpack':
         item_id = str(form.get('row', ''))
         if not ITEM_ID.fullmatch(item_id):
             raise HTTPException(422, 'Choose a valid backpack entry.')
-        data = character.play_data or {}
-        items = data.get('backpack', [])
-        entry = next((item for item in items if item['id'] == item_id), None)
-        if entry is None:
+        bag_entry = next((item for item in items if item['id'] == item_id), None)
+        if bag_entry is None:
             raise HTTPException(409, 'This backpack entry was already removed. Reload the sheet.')
+    if bag_entry is not None and not bag_entry.get('combat'):
         before = contributions(character, values)
-        character.play_data = {**data, **coin_changes, 'backpack': [item for item in items if item['id'] != item_id],
+        gear = bag_entry.get('gear_row')
+        changes = {**coin_changes, **{key: '' for key in values if key.startswith(f'gear.{gear}.')}}
+        character.play_data = {**data, **changes, 'backpack': [item for item in items if item is not bag_entry],
                                'equipment_disposal': operation}
-        updated = recalculate(character, {**values, **coin_changes}, equipment_previous=before)
+        updated = recalculate(character, {**values, **changes}, equipment_previous=before)
         character.play_data = {**character.play_data, **persist_effects(character, updated)}
         if action == 'sell':
             record_coin_change(db, character, ctx.user, 'backpack_sale', values, updated)
         audit(db, ctx.user, 'character.backpack_' + ('sold' if action == 'sell' else 'removed'),
-              f"{action.capitalize()} {entry['quantity']} × {entry['name']} on {character.name}; proceeds {proceeds} copper pieces.")
+              f"{action.capitalize()} {bag_entry['quantity']} × {bag_entry['name']} on {character.name}; proceeds {proceeds} copper pieces.")
         commit(db)
         return purchase_response(ctx, character)
-    row = integer(form, 'row', 0, 5)
+    if bag_entry:
+        kind, row = bag_entry['combat']['kind'], bag_entry['combat']['row']
+    else:
+        row = integer(form, 'row', 0, 5)
     entries = inventory(character, values, load_catalog(db))
     row_key = 'row' if kind == 'weapon' else 'armor_row'
     matches = [entry for entry in entries if entry.get(row_key) == row]
@@ -97,7 +104,8 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
     changes.update(coin_changes)
     entries.remove(entry)
     before = contributions(character, values)
-    character.play_data = {**(character.play_data or {}), 'weapon_inventory':entries}
+    remaining = [item for item in items if item.get('combat') != {'kind': kind, 'row': row}]
+    character.play_data = {**data, 'weapon_inventory':entries, 'backpack':remaining}
     updated = recalculate(character, {**values, **changes}, equipment_previous=before)
     changes.update({key:updated[key] for key in contributions(character, updated)})
     character.play_data = {**(character.play_data or {}), **changes, **persist_effects(character, updated), 'weapon_inventory':entries,

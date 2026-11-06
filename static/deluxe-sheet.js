@@ -98,6 +98,9 @@
         name.textContent = row.querySelector('input').value;
       }
     }
+    for (const row of form.querySelectorAll('[data-gear-row]')) {
+      row.hidden = !form.elements.namedItem(`gear.${row.dataset.gearRow}.name`).value;
+    }
     window.PathkeeperEquipment?.update(result.equipment_state,result.equipment_groups);
     document.getElementById('sheet-character-name').textContent = result.name;
     document.title = `${result.name} · Pathkeeper`;
