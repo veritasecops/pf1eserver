@@ -1,6 +1,8 @@
 const toast = message => {const el=document.querySelector('#toast');el.textContent=message;el.hidden=false;setTimeout(()=>el.hidden=true,4500);};
 document.querySelectorAll('[data-origin-path]').forEach(el=>{el.value=location.origin+el.dataset.originPath;});
 document.addEventListener('click',async event=>{
+ const opener=event.target.closest('[data-open-dialog]');
+ if(opener){document.getElementById(opener.dataset.openDialog)?.showModal();return;}
  const toggle=event.target.closest('[data-toggle-menu]');if(toggle){document.querySelector('#sidebar')?.classList.toggle('open');return;}
  const sidebar=document.querySelector('#sidebar.open');if(sidebar&&!event.target.closest('#sidebar'))sidebar.classList.remove('open');
  const copy=event.target.closest('[data-copy]');if(copy){const field=document.getElementById(copy.dataset.copy);try{if(navigator.clipboard){await navigator.clipboard.writeText(field.value);toast('Invitation copied.');}else{field.focus();field.select();toast('Link selected. Press Ctrl+C or Command+C to copy.');}}catch{field.focus();field.select();toast('Link selected. Copy it with your keyboard.');}}

@@ -1,0 +1,26 @@
+{% from 'components.html' import csrf_input %}
+<dialog class="campaign-character-dialog card padded" id="campaign-character-dialog" aria-labelledby="campaign-character-title">
+  <h2 id="campaign-character-title">Add character</h2>
+  {% if character_options %}
+  <form class="stack" method="post" action="/campaigns/{{ campaign.id }}/characters">
+    {{ csrf_input(csrf) }}
+    <fieldset class="campaign-character-options">
+      <legend>Choose an existing character</legend>
+      {% for character, owner_name in character_options %}
+      <label class="list-row">
+        <input type="radio" name="character_id" value="{{ character.id }}" required>
+        <span><strong>{{ character.name }}</strong><span class="secondary-text">{{ character.class_name or 'Adventurer' }} {{ character.level }} · {{ owner_name }}</span></span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    <div class="form-actions">
+      <button class="button" type="submit" form="cancel-campaign-character">Cancel</button>
+      <button class="button primary" type="submit">Add character</button>
+    </div>
+  </form>
+  <form method="dialog" id="cancel-campaign-character"></form>
+  {% else %}
+  <p class="hint">No unassigned characters are available to add.</p>
+  <form method="dialog" class="form-actions"><button class="button">Close</button></form>
+  {% endif %}
+</dialog>

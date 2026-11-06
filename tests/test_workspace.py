@@ -297,6 +297,10 @@ def test_campaign_members_can_add_only_their_own_unassigned_characters(env):
     path = f"/campaigns/{campaign.id}"
     page = c.get(path)
     assert own.name in page.text
+    assert 'data-open-dialog="campaign-character-dialog"' in page.text
+    assert '<dialog class="campaign-character-dialog' in page.text
+    assert f'type="radio" name="character_id" value="{own.id}"' in page.text
+    assert '<select name="character_id"' not in page.text
     assert assigned.name not in page.text and private.name not in page.text
     assert "/characters/new?campaign_id=" not in page.text
     for character in (assigned, private):
