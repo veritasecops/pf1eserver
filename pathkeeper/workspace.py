@@ -382,9 +382,9 @@ def render_character(ctx, character, values=None, errors=()):
     owner = ctx.db.get(User, character.owner_id)
     campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
     gm = ctx.db.get(User, campaign.owner_id) if campaign else None
-    if values is None:
-        values = sheet_values(character, owner, campaign, gm)
     catalog = load_catalog(ctx.db)
+    if values is None:
+        values = sheet_values(character, owner, campaign, gm, progression_catalog=catalog)
     ability_blocks = sheet_ability_blocks(values, character, catalog)
     response = render(ctx, "character.html", title=character.name, character=character, owner=owner, campaign=campaign,
                       can_delete=can_delete_character(ctx.user, character),
@@ -400,7 +400,7 @@ def render_character(ctx, character, values=None, errors=()):
                       ability_blocks=ability_blocks,
                       removable_feats=removable_rows(character, values, catalog, ability_blocks),
                       trait_defenses=trait_defenses(character, values),
-                      **view_context(character, owner, campaign, gm, values, errors,deity_catalog=catalog.get('deities',{})))
+                      **view_context(character, owner, campaign, gm, values, errors,deity_catalog=catalog.get('deities',{}),progression_catalog=catalog))
     if errors:
         response.status_code = 422
     return response
@@ -414,9 +414,10 @@ async def read_play_sheet(ctx, character, form=None):
     owner = db.get(User, character.owner_id)
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
     gm = db.get(User, campaign.owner_id) if campaign else None
-    current = sheet_values(character, owner, campaign, gm)
-    locked = calculated_fields(character, current)
-    values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),load_catalog(db).get('deities',{}),current.get('deity',''))
+    catalog = load_catalog(db)
+    current = sheet_values(character, owner, campaign, gm, progression_catalog=catalog)
+    locked = calculated_fields(character, current, catalog)
+    values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),catalog.get('deities',{}),current.get('deity',''))
     if not errors:
         apply_advancement(values, track(campaign))
         sync_equipped(character,values,current)
@@ -437,7 +438,7 @@ async def read_play_sheet(ctx, character, form=None):
                     values[key] = format(number(values[key]) - value + number(actual[key]), 'f')
             except (ValueError, TypeError, ArithmeticError):
                 raise HTTPException(422, 'Reload the sheet to refresh equipment modifiers.') from None
-        recalculate(character, values, equipment_previous=contributions(character, current), equipment_keep=keep)
+        recalculate(character, values, equipment_previous=contributions(character, current), equipment_keep=keep, progression_catalog=catalog)
     return values, errors, baseline(character, owner, campaign, gm)
 
 
@@ -448,8 +449,9 @@ async def character_play_sheet_calculate(character_id: int, request: Request, db
     values, errors, _ = await read_play_sheet(ctx, character)
     if errors:
         return JSONResponse({"errors":errors},status_code=422)
-    locked = calculated_fields(character, values)
-    return JSONResponse({"values":{key:values[key] for key in locked},"readonly":sorted(locked),"formulas":sheet_formulas(character,values),
+    catalog = load_catalog(db)
+    locked = calculated_fields(character, values, catalog)
+    return JSONResponse({"values":{key:values[key] for key in locked},"readonly":sorted(locked),"formulas":sheet_formulas(character,values,catalog),
                          "trait_defenses":trait_defenses(character,values)},
                         headers={"Cache-Control":"no-store"})
 
@@ -512,15 +514,16 @@ def autosave_response(ctx, character):
     owner = ctx.db.get(User,character.owner_id)
     campaign = ctx.db.get(Campaign,character.campaign_id) if character.campaign_id else None
     gm = ctx.db.get(User,campaign.owner_id) if campaign else None
-    values = sheet_values(character,owner,campaign,gm)
-    locked = calculated_fields(character,values)
+    catalog = load_catalog(ctx.db)
+    values = sheet_values(character,owner,campaign,gm,progression_catalog=catalog)
+    locked = calculated_fields(character,values,catalog)
     return JSONResponse({'version':character.version,'name':character.name,
-                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign, load_catalog(ctx.db)),'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
-                         'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values),
+                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign, catalog),'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
+                         'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values,catalog),
                          'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
-                         'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
-                         'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db)),
-                         'feature_links':sheet_feature_links(values,character,load_catalog(ctx.db)),
+                         'armor_links':sheet_armor_links(values,character,catalog),
+                         'weapon_links':sheet_weapon_links(values,character,catalog),
+                         'feature_links':sheet_feature_links(values,character,catalog),
                          'trait_defenses':trait_defenses(character,values)},
                         headers={'Cache-Control':'no-store'})
 
@@ -570,8 +573,9 @@ async def change_treasure(character_id: int, request: Request, db: Session = Dep
 def sheet_feat_rules(ctx, character):
     owner = ctx.db.get(User, character.owner_id)
     campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
-    values = sheet_values(character, owner, campaign)
-    return values, level_up.sheet_feat_context(character, load_catalog(ctx.db), values)
+    catalog = load_catalog(ctx.db)
+    values = sheet_values(character, owner, campaign, progression_catalog=catalog)
+    return values, level_up.sheet_feat_context(character, catalog, values)
 
 
 @router.get("/characters/{character_id}/features")
@@ -627,8 +631,8 @@ async def character_feature_remove(character_id: int, request: Request, db: Sess
     row = integer(form, "row", 0, 55)
     owner = db.get(User, character.owner_id)
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
-    values = sheet_values(character, owner, campaign)
     catalog = load_catalog(db)
+    values = sheet_values(character, owner, campaign, progression_catalog=catalog)
     name = removable_rows(character, values, catalog, sheet_ability_blocks(values, character, catalog)).get(row)
     if not name:
         raise HTTPException(422, "Choose a removable feat.")

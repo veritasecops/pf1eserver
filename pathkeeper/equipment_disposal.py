@@ -59,6 +59,7 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
     kind, action = str(form.get('kind', '')), str(form.get('action', ''))
     if kind not in {'weapon', 'armor', 'backpack'} or action not in {'remove', 'sell'}:
         raise HTTPException(422, 'Choose an inventory entry to remove or sell.')
+    catalog = load_catalog(db)
     values = character_values(ctx, character)
     coin_changes, proceeds = sale_changes(form, action, values)
     operation = {'id':request_id, 'actor':ctx.user.id, 'fingerprint':fingerprint,
@@ -79,7 +80,7 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
         changes = {**coin_changes, **{key: '' for key in values if key.startswith(f'gear.{gear}.')}}
         character.play_data = {**data, **changes, 'backpack': [item for item in items if item is not bag_entry],
                                'equipment_disposal': operation}
-        updated = recalculate(character, {**values, **changes}, equipment_previous=before)
+        updated = recalculate(character, {**values, **changes}, equipment_previous=before, progression_catalog=catalog)
         character.play_data = {**character.play_data, **persist_effects(character, updated)}
         if action == 'sell':
             record_coin_change(db, character, ctx.user, 'backpack_sale', values, updated)
@@ -91,7 +92,7 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
         kind, row = bag_entry['combat']['kind'], bag_entry['combat']['row']
     else:
         row = integer(form, 'row', 0, 5)
-    entries = inventory(character, values, load_catalog(db))
+    entries = inventory(character, values, catalog)
     row_key = 'row' if kind == 'weapon' else 'armor_row'
     matches = [entry for entry in entries if entry.get(row_key) == row]
     if len(matches) != 1 or not values.get(f'{kind}.{row}.name', '').strip():
@@ -106,7 +107,7 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
     before = contributions(character, values)
     remaining = [item for item in items if item.get('combat') != {'kind': kind, 'row': row}]
     character.play_data = {**data, 'weapon_inventory':entries, 'backpack':remaining}
-    updated = recalculate(character, {**values, **changes}, equipment_previous=before)
+    updated = recalculate(character, {**values, **changes}, equipment_previous=before, progression_catalog=catalog)
     changes.update({key:updated[key] for key in contributions(character, updated)})
     character.play_data = {**(character.play_data or {}), **changes, **persist_effects(character, updated), 'weapon_inventory':entries,
         'equipment_disposal':{**operation, 'changed_fields':list(changes)}}

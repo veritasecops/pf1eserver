@@ -29,7 +29,7 @@ def character_values(ctx, character):
     owner=ctx.db.get(User,character.owner_id)
     campaign=ctx.db.get(Campaign,character.campaign_id) if character.campaign_id else None
     gm=ctx.db.get(User,campaign.owner_id) if campaign else None
-    return sheet_values(character,owner,campaign,gm)
+    return sheet_values(character,owner,campaign,gm,progression_catalog=load_catalog(ctx.db))
 
 
 def inventory(character, values, catalog):
@@ -295,7 +295,7 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
         values.update(changes)
     changes.update(deduct_coins(values,cost))
     character.play_data = {**(character.play_data or {}), 'backpack': backpack, 'weapon_inventory': entries}
-    updated = recalculate(character, {**values, **changes}, equipment_previous=before)
+    updated = recalculate(character, {**values, **changes}, equipment_previous=before, progression_catalog=catalog)
     character.play_data={**character.play_data,**changes,**persist_effects(character,updated),
                          'weapon_purchase':{'id':request_id,'actor':ctx.user.id,'fingerprint':fingerprint,'version':character.version+1}}
     record_coin_change(db, character, ctx.user, 'equipment_purchase', values, updated)

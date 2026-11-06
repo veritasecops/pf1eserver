@@ -46,7 +46,7 @@ for key,label in [('base','Base speed'),('armor','Speed with armor'),('fly','Fly
     register('speed.'+key,label+' (ft.)','number')
 register('speed.maneuverability','Fly maneuverability')
 for key,label,_ in SAVES:
-    for part,title in [('total','Total'),('base','Base save'),('ability','Ability modifier'),('magic','Magic modifier'),('misc','Miscellaneous modifier')]:
+    for part,title in [('total','Total'),('base','Class save bonus'),('ability','Ability modifier'),('magic','Magic modifier'),('misc','Miscellaneous modifier')]:
         register(f'save.{key}.{part}',f'{label}: {title}','number')
 for key in ('cmb','cmd'):
     for part in ('total','bab','str','dex','size','misc'):
@@ -183,7 +183,7 @@ def baseline(character, owner, campaign=None, gm=None):
     return {key:str(value) for key,value in data.items()}
 
 
-def sheet_values(character, owner, campaign=None, gm=None):
+def sheet_values(character, owner, campaign=None, gm=None, *, progression_catalog=None):
     FIELDS = fields_for(character_catalog(character))
     values = baseline(character,owner,campaign,gm)
     saved = character.play_data or {}
@@ -212,7 +212,7 @@ def sheet_values(character, owner, campaign=None, gm=None):
     values['alignment'] = next((key for key,label in ALIGNMENTS.items() if alignment.casefold() in {key.casefold(),label.casefold()}),'')
     values["experience"] = str(saved_xp(character, track(campaign)))
     apply_advancement(values, track(campaign))
-    return recalculate(character, values)
+    return recalculate(character, values, progression_catalog=progression_catalog)
 
 
 def parse_sheet(form, locked=None, catalog=None, deity_catalog=None, current_deity=''):
@@ -263,10 +263,10 @@ def parse_sheet(form, locked=None, catalog=None, deity_catalog=None, current_dei
     return values,errors
 
 
-def view_context(character, owner, campaign=None, gm=None, values=None, errors=(), deity_catalog=None):
+def view_context(character, owner, campaign=None, gm=None, values=None, errors=(), deity_catalog=None, progression_catalog=None):
     catalog = character_catalog(character)
     cls = class_record(character, catalog)
-    values = values if values is not None else sheet_values(character,owner,campaign,gm)
+    values = values if values is not None else sheet_values(character,owner,campaign,gm,progression_catalog=progression_catalog)
     from .deities import deity_choices
     choices,selected=deity_choices(deity_catalog if deity_catalog is not None else catalog.get('deities',{}),values.get('deity',''))
     values={**values,'deity':selected}
@@ -275,7 +275,7 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     except HTTPException: treasure_gp=None
     from .equipment_state import equipment_groups
     from .equipment_effects import contributions
-    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values),
+    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values,progression_catalog),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog, (character.sheet_data or {}).get('input',{}).get('class_id',''), (character.sheet_data or {}).get('input',{}).get('expert_skills',())) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,gear_slots=GEAR_SLOTS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

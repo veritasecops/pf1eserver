@@ -3,7 +3,7 @@ import re
 from decimal import Decimal
 
 from .advancement import XP_TRACKS, eligible, level_for, saved_xp, track
-from .deluxe_sheet import SAVES, sheet_values, skill_rows
+from .deluxe_sheet import sheet_values, skill_rows
 from .equipment_effects import persist_effects
 from .feat_class_requirements import class_feat_gate
 from .models import Campaign, User
@@ -54,7 +54,7 @@ def plan(ctx, character):
         return None
     owner = db.get(User, character.owner_id)
     gm = db.get(User, campaign.owner_id) if campaign else None
-    values = sheet_values(character, owner, campaign, gm)
+    values = sheet_values(character, owner, campaign, gm, progression_catalog=current_catalog)
     profile = class_profile(current_catalog, class_id)
     target = character.level + 1
     previous, current = profile["levels"][target - 2:target]
@@ -286,8 +286,6 @@ def submit(character, advancement, form):
     add("hp.current", hp, number("hp.total"))
     previous, current = advancement["previous"], advancement["current"]
     add("bab", advancement["bab"], previous["bab"])
-    for index, (key, _, _) in enumerate(SAVES):
-        add(f"save.{key}.base", advancement["saves"][index], previous["saves"][index])
     changes["skill_points.base"] = str(profile["ranks"])
 
     before = max(1, profile["ranks"] + old_int)

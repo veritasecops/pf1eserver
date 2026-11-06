@@ -5,10 +5,12 @@ from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
 from pathkeeper.character_rules import calculate, defaults
+from pathkeeper.class_catalog import class_profile
 from pathkeeper.database import engine
 from pathkeeper.deluxe_sheet import FIELDS, baseline, sheet_values
-from pathkeeper.models import AuditEvent, Character, SchemaMigration, User
+from pathkeeper.models import AuditEvent, Character, RuleCatalog, SchemaMigration, User
 from pathkeeper.pf1_data import ALIGNMENTS
+from pathkeeper.rule_catalog import default_catalog
 from .test_character_wizard import fighter
 from .test_workspace import seed_campaign, seed_character
 
@@ -260,7 +262,9 @@ def test_calculations_preserve_manual_progression_and_negative_modifiers(env):
     client = env.login(env.player)
     path = f'/characters/{character.id}'
     form = SheetForm(client.get(path).text)
-    assert not {'hp.total','bab','save.will.base','skill_points.base'} & form.readonly
+    assert not {'hp.total','bab','skill_points.base'} & form.readonly
+    assert 'save.will.base' in form.readonly
+    assert form.values['save.will.base'] == '1'
     form.values.update({'ability.dex.score':'7','ability.str.score':'9','size':'Small',
                         'bab':'3','save.will.base':'3','ability.wis.score':'12',
                         'skill_points.base':'2','ability.int.score':'6','skill_points.misc':'1',
@@ -270,9 +274,38 @@ def test_calculations_preserve_manual_progression_and_negative_modifiers(env):
     assert saved.values['ability.dex.mod'] == '-2'
     assert saved.values['ability.str.mod'] == '-1'
     assert saved.values['skill_points.total'] == '3'  # minimum 1 + misc 1 + Skilled 1
-    assert saved.values['save.will.total'] == '4'
+    assert saved.values['save.will.base'] == '1'
+    assert saved.values['save.will.total'] == '2'
     assert saved.values['cmb.size'] == '-1' and saved.values['ac.size'] == '1'
     assert saved.values['ac.flat'] == '11'  # negative DEX remains, dodge is excluded
+
+
+def test_class_saves_follow_the_current_level_progression_catalog(env):
+    character = seed_character(env.player)
+    catalog = default_catalog()
+    levels = list(class_profile(catalog, 'fighter')['levels'])
+    levels[2] = {**levels[2], 'saves': [5, 2, 4]}
+    catalog['classes'] = {'fighter': {'levels': levels}}
+    with Session(engine()) as db:
+        db.merge(RuleCatalog(id=1, data=catalog))
+        db.get(Character, character.id).play_data = {'save.fortitude.base': '99'}
+        db.commit()
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    page = client.get(path)
+    assert '<th scope="col">Class</th>' in page.text
+    form = SheetForm(page.text)
+    saves = {'save.fortitude.base': '5', 'save.reflex.base': '2', 'save.will.base': '4'}
+    assert {key: form.values[key] for key in saves} == saves
+    assert saves.keys() <= form.readonly
+    form.values.update({'save.will.base': '99', 'ability.wis.score': '14', 'save.will.magic': '1'})
+    preview = client.post(path + '/play-sheet/calculate', data=form.values)
+    assert preview.status_code == 200, preview.text
+    assert preview.json()['values']['save.will.total'] == '7'
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 303
+    saved = SheetForm(client.get(path).text)
+    assert saved.values['save.will.base'] == '4'
+    assert saved.values['save.will.total'] == '7'
 
 
 def test_existing_dodge_bonus_is_separated_once_and_survives_repeated_saves(env):

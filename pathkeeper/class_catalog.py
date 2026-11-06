@@ -48,3 +48,12 @@ def class_key(character, catalog):
             return key
     return None
 
+
+def class_save_bonuses(character, catalog):
+    key = class_key(character, catalog)
+    if key is not None:
+        levels = class_profile(catalog, key)["levels"]
+        if 1 <= character.level <= len(levels):
+            return levels[character.level - 1]["saves"]
+    return None
+

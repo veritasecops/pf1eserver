@@ -2,7 +2,7 @@
 from decimal import Decimal, InvalidOperation
 from math import floor
 
-from .class_catalog import class_key, creation_class
+from .class_catalog import class_key, class_save_bonuses, creation_class
 from .pf1_data import ABILITIES, RACES
 from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
 from .trait_rules import class_skill_bonus, racial_skill_bonus
@@ -19,8 +19,9 @@ def base_speed_race(character):
     return RACES.get(selected) or next((race for race in RACES.values() if race['name'].casefold()==str(character.ancestry or '').casefold()),{})
 
 
-def calculated_fields(character, values):
-    SKILLS = character_catalog(character)["skills"]
+def calculated_fields(character, values, progression_catalog=None):
+    catalog = character_catalog(character)
+    SKILLS = catalog["skills"]
     locked = {'level','next_level','player','class_name','speed.base','initiative.total','initiative.dex','cmb.total','cmd.total',
               'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int','load.total'}
     locked.update(f"money.{coin}" for coin in COINS)
@@ -28,6 +29,8 @@ def calculated_fields(character, values):
         locked.update({f'ability.{ability}.mod',f'ability.{ability}.temp_mod'})
     for save in ('fortitude','reflex','will'):
         locked.update({f'save.{save}.total',f'save.{save}.ability'})
+    if class_save_bonuses(character, progression_catalog if progression_catalog is not None else catalog) is not None:
+        locked.update(f'save.{save}.base' for save in ('fortitude','reflex','will'))
     for kind in ('cmb','cmd'):
         locked.update(f'{kind}.{part}' for part in ('bab','str'))
     locked.add('cmd.dex')
@@ -46,15 +49,14 @@ def calculated_fields(character, values):
     # These are calculated by the first-level wizard. At later levels they need
     # manual advancement because hit-die rolls and class progression aren't recorded.
     if int(values.get("level") or character.level) == 1 and (character.sheet_data or {}).get('computed'):
-        locked.update(key for key in ('hp.total','bab','skill_points.base',
-                      'save.fortitude.base','save.reflex.base','save.will.base') if values.get(key,'') != '')
+        locked.update(key for key in ('hp.total','bab','skill_points.base') if values.get(key,'') != '')
     return locked
 
 
 SIZE_MODIFIERS = {'fine':8,'diminutive':4,'tiny':2,'small':1,'medium':0,'large':-1,'huge':-2,'gargantuan':-4,'colossal':-8}
 
 
-def recalculate(character, values, equipment_previous=None, equipment_keep=()):
+def recalculate(character, values, equipment_previous=None, equipment_keep=(), *, progression_catalog=None):
     """Recompute from editable components; a missing essential input stays blank."""
     project_backpack(character, values)
     for coin in COINS:
@@ -106,8 +108,10 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
         write('hp.total',None if con is None else max(Decimal(1),Decimal(cls['hd'])+con)+extra_hp)
         write('bab',snapshot['computed'].get('bab',cls['bab']))
         write('skill_points.base',cls['ranks'])
-        for index,save in enumerate(('fortitude','reflex','will')):
-            write(f'save.{save}.base',cls['saves'][index])
+    save_bonuses = class_save_bonuses(character, progression_catalog if progression_catalog is not None else catalog)
+    if save_bonuses is not None:
+        for save, bonus in zip(('fortitude','reflex','will'), save_bonuses):
+            write(f'save.{save}.base', bonus)
     dex,strength,intelligence = modifier('dex'),modifier('str'),modifier('int')
     write('initiative.dex',dex)
     initiative_bonus = (modifier('wis') or 0) if class_id == 'inquisitor' and level >= 2 else 0

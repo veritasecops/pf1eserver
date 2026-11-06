@@ -5,8 +5,8 @@ from .rule_catalog import character_catalog
 from .sheet_calculations import calculated_fields, base_speed_race
 
 
-def sheet_formulas(character, values):
-    locked=calculated_fields(character,values)
+def sheet_formulas(character, values, progression_catalog=None):
+    locked=calculated_fields(character,values,progression_catalog)
     race=base_speed_race(character)
     speed_source=(f"Base speed is {race['speed']} ft. because {race['name']} has a racial land speed of {race['speed']} ft. This is the speed before class bonuses, armor, or other movement adjustments." if race else 'The character’s previously recorded base speed is preserved because a supported race could not be identified.')
     formulas={
@@ -40,9 +40,9 @@ def sheet_formulas(character, values):
     formulas['cmb.bab'] = "Use base attack bonus, or class level for a standard Monk with Maneuver Training."
     formulas['cmd.dex']=formulas['initiative.dex']
     for save,ability in [('fortitude','Constitution'),('reflex','Dexterity'),('will','Wisdom')]:
-        formulas[f'save.{save}.total']=f'{save.capitalize()} save = base save bonus + {ability} modifier + magic modifier + miscellaneous modifier + applicable standing ancestry and class bonuses.'
+        formulas[f'save.{save}.total']=f'{save.capitalize()} save = class save bonus + {ability} modifier + magic modifier + miscellaneous modifier + applicable standing ancestry and class bonuses.'
         formulas[f'save.{save}.ability']=f'Use the {ability} modifier, or its temporary modifier when a temporary {ability} score is entered.'
-        formulas[f'save.{save}.base']=f'The first-level base {save.capitalize()} save bonus supplied by the character’s class.'
+        formulas[f'save.{save}.base']=f'The fixed {save.capitalize()} save bonus from the class’s Level Progression row for the character’s current level.'
     for skill,meta in character_catalog(character)['skills'].items():
         ability=ABILITIES[meta['ability']]
         for row in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):
