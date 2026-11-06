@@ -33,6 +33,7 @@
       button.type = 'button';
       button.className = 'button small';
       button.textContent = item === selected ? 'Selected' : 'Choose';
+      button.disabled = item === selected;
       button.setAttribute('aria-label', `Choose ${item.name}`);
       button.addEventListener('click', () => {
         choose(item);
@@ -49,19 +50,23 @@
     selection.textContent = item ? `Selected: ${item.name}` : 'No entry selected.';
     const kind = item?.choice;
     target.replaceChildren(new Option(kind ? `Choose a ${kind}` : '', ''),
-      ...Object.entries(catalog?.targets[kind] || {}).map(([key, name]) => new Option(name, key)));
+      ...(item?.targets || []).map(key => new Option(catalog.targets[kind][key], key)));
     target.disabled = !kind;
     target.required = Boolean(kind);
     target.closest('[data-feature-target]').hidden = !kind;
-    window.PathkeeperDropdown.refresh(target);
+    window.PathkeeperDropdown?.refresh(target);
     submit.disabled = !item || busy;
     render();
   }
 
   launcher.addEventListener('click', async () => {
     dialog.showModal();
+    catalog = null;
+    search.value = '';
+    limit = 50;
     choose(null);
     try {
+      await window.PathkeeperSheet.flush();
       const response = await fetch(dialog.dataset.endpoint, {headers: {Accept: 'application/json'}});
       if (!response.ok || response.redirected) throw new Error('Unable to load feats and abilities.');
       catalog = await response.json();

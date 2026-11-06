@@ -9,7 +9,8 @@ from .feat_class_requirements import class_feat_gate
 from .models import Campaign, User
 from .class_catalog import class_key, class_profile
 from .pf1_data import ABILITIES
-from .rule_catalog import character_catalog, class_skills, equipment, load_catalog
+from .rule_catalog import character_catalog, class_skills, load_catalog
+from .feature_links import feature_targets
 from .weapons import safe_weapon_url
 from .trait_rules import fighter_weapon_groups, trained_weapon_groups, weapon_group_name
 
@@ -75,22 +76,6 @@ def plan(ctx, character):
          item.get("enabled", True))
         for key, item in skill_rows(catalog)
     ]
-    feats = current_catalog["feats"]
-    owned = {
-        (entry["name"], entry.get("choice", ""))
-        for entry in (character.sheet_data or {}).get("computed", {}).get("feats", [])
-    }
-    owned.update((name, "") for name in (character.sheet_data or {}).get("computed", {}).get("automatic_feats", []))
-    owned.update((entry["choice"], entry.get("target", ""))
-                 for record in (character.play_data or {}).get("advancement_history", [])
-                 for entry in record["choices"] if "feat" in entry["feature"].casefold())
-    owned.update((name, "") for i in range(56) if (name := values[f"feature.{i}"]) in feats
-                 and not any(existing == name for existing, _ in owned))
-    targets = {
-        "skill": {key: item["name"] for key, item in current_catalog["skills"].items() if item.get("enabled", True)},
-        "weapon": {key: item["name"] for key, item in equipment(current_catalog).items()
-                   if item.get("kind") == "weapon" and item.get("enabled", True)},
-    }
     swaps = {}
     if profile["spell_swap"] and profile["casting_ability"]:
         first, frequency, lower = profile["spell_swap"]
@@ -117,15 +102,67 @@ def plan(ctx, character):
                                  if class_id == "fighter" and label.casefold().startswith("weapon training")},
         "fighter_weapon_choices": sorted(fighter_weapon_groups().keys() - trained_weapon_groups(character).keys())
                                   if class_id == "fighter" else [],
-        "feat_catalog": feats, "owned_feats": sorted(owned), "feat_targets": targets,
-        "feat_bab": feat_bab,
-        "blocked_class_feats": class_feat_gate(character, class_id, profile, target, feat_bab, owned),
-        "feat_scores": {key: float(Decimal(values[f"ability.{key}.score"] or 0)) for key in ABILITIES},
+        **feat_context(character, current_catalog, values, class_id, profile, target, feat_bab),
         "feat_slots": {index: feat_slot(class_id, label) for index, label in enumerate(choices)
                        if "feat" in label.casefold()},
 
     }
 
+
+
+def feat_context(character, catalog, values, class_id, profile, target, bab):
+    feats = catalog["feats"]
+    targets = feature_targets(catalog)
+    target_keys = {kind: {label.casefold(): key for key, label in entries.items()}
+                   for kind, entries in targets.items()}
+    feat_names = {name.casefold(): name for name in feats}
+    computed = (character.sheet_data or {}).get("computed", {})
+    owned = {(entry["name"], entry.get("choice", "")) for entry in computed.get("feats", [])}
+    owned.update((name, "") for name in computed.get("automatic_feats", []))
+    owned.update((entry["choice"], entry.get("target", ""))
+                 for record in (character.play_data or {}).get("advancement_history", [])
+                 for entry in record["choices"] if "feat" in entry["feature"].casefold())
+    for row in range(56):
+        label = values[f"feature.{row}"]
+        name = feat_names.get(label.casefold())
+        if name and not any(existing == name for existing, _ in owned):
+            owned.add((name, ""))
+        elif not name and label.endswith(")") and " (" in label:
+            base, detail = label[:-1].rsplit(" (", 1)
+            name = feat_names.get(base.casefold())
+            if name and (key := target_keys.get(feats[name].get("choice"), {}).get(detail.casefold())):
+                owned.add((name, key))
+    return {
+        "feat_catalog": feats, "owned_feats": sorted(owned), "feat_targets": targets, "feat_bab": bab,
+        "blocked_class_feats": class_feat_gate(character, class_id, profile, target, bab, owned),
+        "feat_scores": {key: float(Decimal(values[f"ability.{key}.score"] or 0)) for key in ABILITIES},
+    }
+
+
+def sheet_feat_context(character, catalog, values):
+    class_id = class_key(character, catalog)
+    profile = class_profile(catalog, class_id) if class_id else {"levels": []}
+    bab = profile["levels"][character.level - 1]["bab"] if class_id else 0
+    if class_id == "vigilante" and (character.sheet_data or {}).get("input", {}).get("vigilante_specialization") == "avenger":
+        bab = character.level
+    return {**feat_context(character, catalog, values, class_id, profile, character.level,
+                           float(Decimal(values["bab"] or bab))), "feat_slots": {0: ""}}
+
+
+def sheet_feat_options(rules):
+    options = feat_options(rules)
+    owned = set(map(tuple, rules["owned_feats"]))
+    available = []
+    for name, feat in options.items():
+        kind = feat["choice"]
+        targets = [key for key in rules["feat_targets"].get(kind, {}) if (name, key) not in owned] if kind else [""]
+        if not targets:
+            continue
+        errors = []
+        validate_feats(rules, [{"feature": "feat", "choice": name, "target": targets[0]}], "", errors, options)
+        if not errors:
+            available.append({"name": name, "url": feat["url"], "choice": kind, "targets": targets if kind else []})
+    return available
 
 def feat_slot(class_id, label):
     label = label.casefold()
@@ -150,8 +187,9 @@ def feat_options(advancement):
     }
 
 
-def validate_feats(advancement, selections, ability, errors):
-    options = feat_options(advancement)
+def validate_feats(advancement, selections, ability, errors, options=None):
+    if options is None:
+        options = feat_options(advancement)
     owned = advancement["owned_feats"]
     slots = advancement["feat_slots"]
     selected = {entry["choice"] for index, entry in enumerate(selections) if index in slots}

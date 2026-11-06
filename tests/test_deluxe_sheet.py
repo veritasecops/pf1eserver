@@ -456,6 +456,9 @@ def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     path = f'/characters/{character.id}'
     options = client.get(path + '/features').json()
     assert set(options['options']) == {'feat'}
+    names = {item['name'] for item in options['options']['feat']}
+    assert 'Weapon Focus' in names
+    assert not {'Extra Bombs', 'Extra Discovery', 'Advanced Weapon Training', 'Power Attack', 'Improved Grapple'} & names
     assert '>Armor training 1</a>' in client.get(path).text
     assert '>Skilled</a>' in client.get(path).text
     form = SheetForm(client.get(path).text)
@@ -463,10 +466,18 @@ def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     assert env.post(client, path + '/features', {**data, 'kind': 'class', 'feature': 'Armor training 1'}).status_code == 422
     assert env.post(client, path + '/features', {**data, 'kind': 'racial', 'feature': 'Skilled'}).status_code == 422
     assert env.post(client, path + '/features', data).status_code == 422
+    for feat in ('Extra Bombs', 'Extra Discovery', 'Advanced Weapon Training', 'Power Attack', 'Improved Grapple'):
+        assert env.post(client, path + '/features', {**data, 'feature': feat}).status_code == 422
     assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 201
     assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 409
     page = client.get(path)
     assert 'id="sheet-feature-picker"' in page.text and '>Weapon Focus (Longsword)</a>' in page.text
+    options = client.get(path + '/features').json()
+    weapon_focus = next(item for item in options['options']['feat'] if item['name'] == 'Weapon Focus')
+    assert 'longsword' not in weapon_focus['targets'] and 'shortsword' in weapon_focus['targets']
+    current = {**data, 'version': SheetForm(page.text).values['version'], 'target': 'longsword'}
+    assert env.post(client, path + '/features', current).status_code == 422
+    assert env.post(client, path + '/features', {**current, 'target': 'shortsword'}).status_code == 201
 
 def test_standing_class_and_ancestry_effects_recalculate_on_existing_sheet(env):
     character = seed_character(env.player)

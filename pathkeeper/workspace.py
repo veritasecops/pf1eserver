@@ -19,7 +19,7 @@ from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .rule_catalog import character_catalog, load_catalog
 from .weapons import sheet_weapon_links
-from .feature_links import feature_picker, feature_targets, normalized, sheet_ability_blocks, sheet_feature_links
+from .feature_links import normalized, sheet_ability_blocks, sheet_feature_links
 from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
@@ -513,12 +513,19 @@ def autosave_response(ctx, character):
                         headers={'Cache-Control':'no-store'})
 
 
+def sheet_feat_rules(ctx, character):
+    owner = ctx.db.get(User, character.owner_id)
+    campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
+    values = sheet_values(character, owner, campaign)
+    return values, level_up.sheet_feat_context(character, load_catalog(ctx.db), values)
+
+
 @router.get("/characters/{character_id}/features")
 async def character_feature_options(character_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     character = get_character(ctx, character_id)
-    catalog = load_catalog(db)
-    return JSONResponse({"options": feature_picker(catalog), "targets": feature_targets(catalog)},
+    _, rules = sheet_feat_rules(ctx, character)
+    return JSONResponse({"options": {"feat": level_up.sheet_feat_options(rules)}, "targets": rules["feat_targets"]},
                         headers={"Cache-Control": "no-store"})
 
 
@@ -530,21 +537,18 @@ async def character_feature_add(character_id: int, request: Request, db: Session
     db.refresh(character, with_for_update=True)
     get_character(ctx, character_id)
     verify_version(form, character)
-    catalog = load_catalog(db)
     kind = field(form, "kind", 10)
     name = field(form, "feature", 150)
-    options = feature_picker(catalog)
-    selected = next((item for item in options.get(kind, ()) if item["name"] == name), None)
-    if not selected:
-        raise HTTPException(422, "Choose an available feat or ability.")
-    if choice := selected.get("choice"):
-        target = feature_targets(catalog).get(choice, {}).get(field(form, "target", 100, required=False))
-        if not target:
-            raise HTTPException(422, f"Choose a valid {choice}.")
-        name = f"{name} ({target})"
-    owner = db.get(User, character.owner_id)
-    campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
-    values = sheet_values(character, owner, campaign)
+    if kind != "feat":
+        raise HTTPException(422, "Choose an available feat.")
+    target = field(form, "target", 100, required=False)
+    values, rules = sheet_feat_rules(ctx, character)
+    errors = []
+    level_up.validate_feats(rules, [{"feature": "feat", "choice": name, "target": target}], "", errors)
+    if errors:
+        raise HTTPException(422, errors[0])
+    if choice := rules["feat_catalog"][name].get("choice"):
+        name = f"{name} ({rules['feat_targets'][choice][target]})"
     keys = [f"feature.{row}" for row in range(56)]
     if any(normalized(values[key]) == normalized(name) for key in keys):
         raise HTTPException(409, "That entry is already on the character sheet.")
@@ -555,6 +559,7 @@ async def character_feature_add(character_id: int, request: Request, db: Session
     audit(db, ctx.user, "character.feature_added", f"Added {name} to {character.name}.")
     commit(db)
     return JSONResponse({"location": f"/characters/{character.id}#abilities-skills"}, status_code=201)
+
 
 
 def level_up_character(ctx, character_id):

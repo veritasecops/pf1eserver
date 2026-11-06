@@ -72,14 +72,6 @@ def sheet_ability_blocks(values, character, catalog):
             "racial": entries(racial, recorded_racial), "slots": slots}
 
 
-def feature_picker(catalog):
-    feats = [{"name": name, "url": safe_weapon_url(item.get("url", "")), "choice": item.get("choice", "")}
-             for name, item in catalog["feats"].items() if item.get("enabled", True)]
-    return {
-        "feat": sorted(feats, key=lambda item: item["name"].casefold()),
-    }
-
-
 def feature_targets(catalog):
     return {
         "skill": {key: item["name"] for key, item in catalog["skills"].items() if item.get("enabled", True)},

@@ -31,7 +31,7 @@ def class_feat_gate(character, class_id, profile, target, bab, owned_feats):
     history = (character.play_data or {}).get("advancement_history", ())
     discoveries = {normalized(choice["choice"]) for entry in history for choice in entry["choices"]
                    if choice["feature"].casefold() == "discovery"}
-    classes = {CLASSES[key]["name"].casefold() for key in {class_id, class_id.removesuffix("-unchained")}}
+    classes = {CLASSES[key]["name"].casefold() for key in {class_id, class_id.removesuffix("-unchained")}} if class_id else set()
     owned = {normalized(name) for name, _ in owned_feats}
 
     def matches(option):
