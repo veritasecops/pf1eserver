@@ -258,9 +258,13 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
     from pathkeeper.equipment_index import equipment_entries, published_equipment
 
     entries = published_equipment()
-    assert len(entries) == 2495
+    assert len(entries) == 2489
     assert {item['group'] for item in entries.values()} == {'Weapons', 'Armor', 'Special Materials', 'Miscellaneous'}
     assert entries['miscellaneous-bedroll']['cost_text'] == '1 sp'
+    catalog = default_catalog()
+    key = 'miscellaneous-pathfinder-chronicles-volume-1'
+    catalog['equipment_index'] = {key: {**entries['miscellaneous-bedroll'], 'name': 'Renamed volume'}}
+    assert key not in equipment_entries(catalog)
     assert entries['special-materials-adamantine']['url'].endswith('#:~:text=Adamantine')
     player = env.login(env.player)
     assert player.get('/administration/equipment').status_code == 403

@@ -43,7 +43,10 @@ def live_equipment(entry, kind, key, item):
 
 
 def equipment_entries(catalog):
-    result = {**published_equipment(), **catalog.get("equipment_index", {})}
+    overrides = {key: item for key, item in catalog.get("equipment_index", {}).items()
+                 if not key.startswith("miscellaneous-pathfinder-chronicles-")
+                 and not any(label.casefold() == "pathfinder chronicles" for label in item["categories"])}
+    result = {**published_equipment(), **overrides}
     bindings = equipment_bindings()
     live_catalogs = {kind: catalog.get(kind, {}) for kind in ("weapons", "armor")}
     current_bindings = {reference: (kind, key) for kind, items in live_catalogs.items()

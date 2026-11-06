@@ -168,7 +168,7 @@ def test_special_materials_and_miscellaneous_share_the_equipment_cart(env):
     material = 'special-materials-adamantine'
     abacus = 'miscellaneous-abacus'
     assert sum(item['kind'] == 'material' for item in catalog.values()) >= 48
-    assert len({category for item in catalog.values() if item['kind'] == 'misc' for category in item['categories']}) == 28
+    assert len({category for item in catalog.values() if item['kind'] == 'misc' for category in item['categories']}) == 27
     assert catalog[material]['cost'] is None and '+3,000 gp' in catalog[material]['cost_text']
     assert catalog[abacus]['cost'] == 200 and catalog[abacus]['weight'] == 2
     assert catalog['miscellaneous-airship']['cost'] == 5000000

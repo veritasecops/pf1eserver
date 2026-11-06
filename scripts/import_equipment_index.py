@@ -94,6 +94,8 @@ def load(directory):
             if not href.startswith(file + ".aspx?") and (file != "EquipmentMisc" or href not in MISC_BRANCHES):
                 continue
             category = html.unescape(label)
+            if category == "Pathfinder Chronicles":
+                continue
             page = (directory / f"{file}--{category.replace('/', '_')}.html").read_text()
             items = list(heading_entries(page, group, category, href) if href in {"AlchemicalReagents.aspx", "FungalGrafts.aspx"}
                          else table_entries(page, group, category))
