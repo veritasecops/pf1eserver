@@ -56,10 +56,12 @@ for part,title in [('total','Total'),('armor','Armor bonus'),('shield','Shield b
     register('ac.'+part,'AC: '+title,'number')
 for key,label in [('temporary_modifiers','Temporary modifiers'),('save_modifiers','Saving throw modifiers'),('combat_modifiers','Combat maneuver modifiers'),('languages','Languages'),('campaign_traits','Campaign traits'),('domain','Domain / school / special'),('spell_notes','Spell notes'),('appearance','Appearance'),('personality','Personality'),('inventory_notes','Inventory notes'),('skill_specialties','Skill specialties'),('notes','Notes')]:
     register(key,label,'textarea',10000 if key == 'notes' else 5000)
+ENERGY_TYPES = ('Acid', 'Cold', 'Electricity', 'Fire', 'Sonic')
 register('resistance.spell','Spell resistance','number')
 for i in range(3):
     for part,title in [('damage','Damage reduction'),('bypass','Damage bypass'),('energy','Energy resistance'),('type','Energy type')]:
         register(f'resistance.{i}.{part}',f'{title} {i+1}')
+    FIELDS[f'resistance.{i}.type']['options'] = ENERGY_TYPES
 for prefix,columns,count in [('weapon',WEAPON_COLUMNS,6),('armor',ARMOR_COLUMNS,6),('gear',GEAR_COLUMNS,GEAR_SLOTS),('faction',FACTION_COLUMNS,4)]:
     for i in range(count):
         for part,title in columns: register(f'{prefix}.{i}.{part}',f'{prefix.capitalize()} {i+1}: {title}')

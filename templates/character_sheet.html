@@ -6,6 +6,15 @@
 {% else %}
 {% if not bare %}<label class="ds-field" for="ds-{{ key }}"><span>{{ caption or meta.label }}</span>{% endif %}
 {% if meta.kind == 'textarea' %}<textarea id="ds-{{ key }}" name="{{ key }}" rows="{{ rows }}" maxlength="{{ meta.maximum }}"{% if bare %} aria-label="{{ caption or meta.label }}"{% endif %}>{{ deluxe.get(key,'') }}</textarea>
+{% elif meta.options %}
+{% set current = deluxe.get(key, '') %}
+<select id="ds-{{ key }}" name="{{ key }}" aria-label="{{ caption or meta.label }}">
+  <option value=""></option>
+  {% for option in meta.options %}
+  <option value="{{ option }}"{% if current == option %} selected{% endif %}>{{ option }}</option>
+  {% endfor %}
+  {% if current and current not in meta.options %}<option value="{{ current }}" selected>{{ current }}</option>{% endif %}
+</select>
 {% elif meta.kind == 'select' %}<select id="ds-{{ key }}" name="{{ key }}" aria-label="{{ caption or meta.label }}"><option value="">Choose alignment</option>{% for value,label in alignments.items() %}<option value="{{ value }}"{% if deluxe.get(key) == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
 {% elif meta.kind == 'checkbox' %}<input id="ds-{{ key }}" name="{{ key }}" type="checkbox" value="1"{% if deluxe.get(key) == '1' %} checked{% endif %} aria-label="{{ caption or meta.label }}"{% if key.endswith('.equipped') %} data-equipment-equipped{% if not deluxe.get(key.removesuffix('equipped') ~ 'name','') %} disabled{% endif %}{% endif %}>
 {% else %}<input id="ds-{{ key }}" name="{{ key }}" type="{{ 'number' if meta.kind == 'number' else 'text' }}" value="{{ deluxe.get(key,'') }}"{% if hidden %} hidden{% endif %}{% if meta.kind == 'number' %} step="{{ '1' if key == 'level' or key.endswith('.ranks') or key == 'experience' else 'any' }}"{% if key == 'level' %} min="1" max="20"{% elif key == 'experience' %} min="0" max="1000000000"{% endif %}{% else %} maxlength="{{ meta.maximum }}"{% endif %}{% if key in readonly_fields %} readonly{% endif %}{% if sheet_formulas.get(key) %} data-sheet-formula="{{ sheet_formulas[key] }}" title="{{ sheet_formulas[key] }}"{% endif %}{% if key in ['name','level'] %} required{% endif %}{% if bare %} aria-label="{{ caption or meta.label }}"{% endif %}>{% endif %}
