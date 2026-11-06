@@ -41,13 +41,7 @@ async def administration(request: Request, db: Session = Depends(get_db)):
     except ValueError:
         page = 1
     users = list(db.scalars(query.order_by(User.created_at.desc(), User.id.desc()).offset((page - 1) * 25).limit(25)))
-    stats = {
-        "total": db.scalar(select(func.count()).select_from(User)),
-        "active": db.scalar(select(func.count()).select_from(User).where(User.active.is_(True))),
-        "admins": db.scalar(select(func.count()).select_from(User).where(User.role == "admin")),
-        "mfa": db.scalar(select(func.count()).select_from(User).where(User.totp_enabled.is_(True))),
-    }
-    return render(ctx, "administration.html", title="Administration", users=users, stats=stats,
+    return render(ctx, "administration.html", title="Administration", users=users,
                   search=search, role_filter=role, status_filter=status, total=total, page=page, pages=max(1, (total + 24) // 25))
 
 
