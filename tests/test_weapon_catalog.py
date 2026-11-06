@@ -97,7 +97,8 @@ def test_new_sheet_seeds_weapon_stats_and_live_links_follow_admin_edits(env):
     assert form.values['weapon.0.type']=='S'
     assert form.values['weapon.0.range']=='—'
     original=table_weapons()['longsword']['url']
-    assert original in page.text
+    assert f'href="{original}" target="_blank" rel="noopener noreferrer">Longsword</a>' in page.text
+    assert "Weapon reference ↗" not in page.text
     original_attack=form.values['weapon.0.attack']
     form.values['weapon.0.attack']='99'
     assert env.post(client,path+'/play-sheet',form.values).status_code==303

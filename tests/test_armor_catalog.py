@@ -69,7 +69,11 @@ def test_sheet_mixed_purchase_idempotency_readonly_notes_and_autosave(env):
     assert body['values']['armor.1.bonus']=='1'
     assert body['values']['armor.1.failure']=='5%'
     assert body['armor_links']['0']['url']==table_armor()['leather']['url']
-    form=SheetForm(client.get(path).text)
+    page = client.get(path)
+    reference = table_armor()['leather']['url']
+    assert f'href="{reference}" target="_blank" rel="noopener noreferrer">Leather</a>' in page.text
+    assert "Armor reference ↗" not in page.text
+    form=SheetForm(page.text)
     assert 'armor.0.bonus' in form.readonly and 'armor.0.notes' not in form.readonly
     form.values.update({'armor.0.name':'Forged','armor.0.bonus':'99','armor.0.notes':'Personal armor note'})
     assert env.post(client,path+'/play-sheet',form.values).status_code==303

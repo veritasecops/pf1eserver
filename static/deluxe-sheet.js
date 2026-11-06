@@ -28,25 +28,26 @@
     for (const [name,value] of Object.entries(result.equipment_fields||{})) {
       const input=form.elements.namedItem(name);if(input)input.value=value;
     }
-    for (const kind of ['weapon','armor']) {
-    if (result[kind+'_links']) {
-      for (const link of form.querySelectorAll(`[data-${kind}-reference]`)) {
-        const row = link.dataset[kind+'Reference'];
-        const reference = result[kind+'_links'][row];
-        const name = form.elements.namedItem(`${kind}.${row}.name`)?.value.trim();
-        link.hidden = !reference || reference.name !== name;
-        if (!link.hidden) {
-          link.href = reference.url;
-          link.setAttribute('aria-label', `Reference for ${reference.name}`);
-        } else link.removeAttribute('href');
-      }
-    }
-    }
     const locked = new Set(result.readonly);
     for (const input of form.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"])')) {
       input.readOnly = locked.has(input.name);
       if (result.formulas) window.PathkeeperFormulas?.update(input,result.formulas[input.name]);
       if (locked.has(input.name)) input.value = result.values[input.name];
+    }
+    for (const kind of ['weapon', 'armor']) {
+      const links = result[kind + '_links'];
+      if (!links) continue;
+      for (const link of form.querySelectorAll(`[data-${kind}-reference]`)) {
+        const row = link.dataset[kind + 'Reference'];
+        const input = form.elements.namedItem(`${kind}.${row}.name`);
+        const reference = links[row];
+        const linked = Boolean(reference && reference.name === input.value.trim());
+        input.hidden = linked;
+        link.hidden = !linked;
+        link.textContent = linked ? reference.name : '';
+        if (linked) link.href = reference.url;
+        else link.removeAttribute('href');
+      }
     }
     window.PathkeeperEquipment?.update(result.equipment_state,result.equipment_groups);
     document.getElementById('sheet-character-name').textContent = result.name;
@@ -193,14 +194,7 @@
     status.textContent = saving ? 'Saving newer changes…' : 'Unsaved changes';
     timer = setTimeout(save, 400);
   };
-  form.addEventListener('input', event => {
-    const row = /^weapon\.(\d+)\.name$/.exec(event.target.name || '');
-    if (row) {
-      const link = form.querySelector(`[data-weapon-reference="${row[1]}"]`);
-      if (link) { link.hidden = true; link.removeAttribute('href'); }
-    }
-    markDirty();
-  });
+  form.addEventListener('input', markDirty);
   form.addEventListener('change', markDirty);
   form.addEventListener('focusout', () => { if (dirty && !saving && !blocked) save(); });
   form.addEventListener('submit', event => { event.preventDefault(); save(); });
