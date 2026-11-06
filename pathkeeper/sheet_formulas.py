@@ -58,6 +58,10 @@ def sheet_formulas(character, values):
         entry=next((item for item in inventory if item.get('row')==row),None)
         for part in ('name','quantity','attack','critical','type','range','ammunition','damage'):
             formulas[f'weapon.{row}.{part}']='Supplied by the weapon inventory or saved character creation sheet; add weapons through Add Equipment.'
+        formulas[f'weapon.{row}.base_damage']='Catalog damage dice for Small and Medium weapons, before character modifiers.'
+        formulas[f'weapon.{row}.proficiency']='The weapon’s catalog proficiency group.'
+        formulas[f'weapon.{row}.weight']='Weight per weapon, halved for a Small character when the catalog lists a numeric weight.'
+        formulas[f'weapon.{row}.special']='Special properties listed for this weapon in the catalog.'
         if entry and ('fields' not in entry or values.get(f'weapon.{row}.equipped')=='1' and entry['item'].get('damage')):
             item=entry['item']
             formulas[f'weapon.{row}.quantity']='The total number of copies of this weapon recorded in inventory.'
@@ -68,6 +72,7 @@ def sheet_formulas(character, values):
                 formulas[f'weapon.{row}.{part}']='Retained from the saved weapon entry or character creation snapshot. This existing entry is not recalculated from current ability scores.'
         for part in ('name','quantity','type','bonus','max_dex','penalty','failure','weight'):
             formulas[f'armor.{row}.{part}']='Supplied by the saved armor inventory or character creation sheet; add armor through Add Equipment.'
+        formulas[f'armor.{row}.speed']='The armor’s listed speeds for base land speeds of 30 ft. and 20 ft., respectively.'
         entry=next((item for item in inventory if item.get('armor_row')==row),None)
         if entry and 'armor_fields' not in entry:
             formulas[f'armor.{row}.quantity']='The total number of copies of this armor or shield recorded in inventory.'
