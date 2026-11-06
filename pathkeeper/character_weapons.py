@@ -81,8 +81,13 @@ def inventory(character, values, catalog):
 def apply_inventory(character, values):
     """Refresh managed weapon statistics while preserving editable row notes."""
     from .sheet_calculations import SIZE_MODIFIERS
+    from .class_catalog import class_key
+    from .trait_rules import fighter_weapon_bonus, trained_weapon_groups
     catalog=character_catalog(character)
     snapshot=character.sheet_data or {}
+    class_id = class_key(character, catalog)
+    level = int(values.get('level') or getattr(character, 'level', 1))
+    trained = trained_weapon_groups(character) if class_id == 'fighter' else {}
     feats=snapshot.get('computed',{}).get('feats',[])+[{'name':name} for name in snapshot.get('computed',{}).get('automatic_feats',[])]
     def number(key):
         try:
@@ -109,15 +114,22 @@ def apply_inventory(character, values):
             values[prefix+'ammunition']=''
             strength,dex,bab=ability('str'),ability('dex'),number('bab')
             finesse=any(catalog['feats'].get(feat.get('name'),{}).get('finesse') for feat in feats)
-            attack_ability=dex if item.get('ranged') or item.get('finesse') and finesse else strength
+            swashbuckler_weapon = (class_id == 'swashbuckler' and not item.get('ranged')
+                                   and item.get('category') in {'light', 'one-handed'}
+                                   and item.get('damage_type', '').upper() == 'P')
+            attack_ability=dex if item.get('ranged') or item.get('finesse') and finesse or swashbuckler_weapon else strength
+            class_bonus = fighter_weapon_bonus(trained, item, level)
+            if swashbuckler_weapon:
+                class_bonus += (level - 1) // 4
             size=SIZE_MODIFIERS.get(str(values.get('size','')).casefold(),0)
             rating=item.get('strength_rating')
             penalty=-2 if item.get('bow') and rating is not None and strength is not None and strength<rating else 0
-            values[prefix+'attack']='' if bab is None or attack_ability is None else str(int(bab+attack_ability+size+effect_total(feats,catalog,'selected_weapon',entry['id'])+penalty))
+            values[prefix+'attack']='' if bab is None or attack_ability is None else str(int(bab+attack_ability+size+effect_total(feats,catalog,'selected_weapon',entry['id'])+class_bonus+penalty))
             damage=str(item.get('small_damage' if str(values.get('size','')).casefold()=='small' else 'damage',''))
             modifier=Decimal(0) if item.get('ranged') and not item.get('add_strength') else strength
             if item.get('bow') and strength is not None: modifier=min(strength,rating if rating is not None else 0)
             if modifier is not None and modifier>0 and item.get('two_handed') and not item.get('ranged'): modifier=Decimal(floor(modifier*Decimal('1.5')))
+            if modifier is not None: modifier += class_bonus
             if damage.casefold() not in {'—','see text',''} and modifier:
                 # Each end is displayed separately; off-hand combat still needs adjudication.
                 damage='/'.join(part+f'{int(modifier):+d}' for part in damage.split('/'))

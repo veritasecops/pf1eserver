@@ -15,7 +15,7 @@ def sheet_formulas(character, values):
         'speed.base':speed_source,
         'player':'The name of the account that owns this character.',
         'class_name':'The class recorded for this character.',
-        'initiative.total':'Initiative = Dexterity modifier + miscellaneous initiative modifier.',
+        'initiative.total':'Initiative = Dexterity modifier + miscellaneous modifier + Wisdom modifier for Inquisitors with Cunning Initiative.',
         'initiative.dex':'Use the Dexterity modifier. If a temporary Dexterity score is entered, use its modifier instead.',
         'cmb.total':'Combat maneuver bonus = base attack bonus + Strength modifier + combat maneuver size modifier + miscellaneous modifier.',
         'cmd.total':'Combat maneuver defense = 10 + base attack bonus + Strength modifier + Dexterity modifier + combat maneuver size modifier + miscellaneous modifier.',
@@ -36,16 +36,17 @@ def sheet_formulas(character, values):
         formulas[f'{kind}.bab']='Use the character’s base attack bonus.'
         formulas[f'{kind}.str']='Use the Strength modifier, or its temporary modifier when a temporary Strength score is entered.'
         formulas[f'{kind}.size']='Use the combat maneuver size modifier, the opposite of the Armor Class size modifier: Small −1, Medium 0, Large +1, and so on.'
+    formulas['cmb.bab'] = "Use base attack bonus, or class level for a standard Monk with Maneuver Training."
     formulas['cmd.dex']=formulas['initiative.dex']
     for save,ability in [('fortitude','Constitution'),('reflex','Dexterity'),('will','Wisdom')]:
-        formulas[f'save.{save}.total']=f'{save.capitalize()} save = base save bonus + {ability} modifier + magic modifier + miscellaneous modifier.'
+        formulas[f'save.{save}.total']=f'{save.capitalize()} save = base save bonus + {ability} modifier + magic modifier + miscellaneous modifier + applicable standing ancestry and class bonuses.'
         formulas[f'save.{save}.ability']=f'Use the {ability} modifier, or its temporary modifier when a temporary {ability} score is entered.'
         formulas[f'save.{save}.base']=f'The first-level base {save.capitalize()} save bonus supplied by the character’s class.'
     for skill,meta in character_catalog(character)['skills'].items():
         ability=ABILITIES[meta['ability']]
         for row in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):
             formulas[f'skill.{row}.ability']=f'Use the {ability} modifier, or its temporary modifier when a temporary {ability} score is entered.'
-            formulas[f'skill.{row}.total']=f'{meta["name"]} total = {ability} modifier + invested ranks + miscellaneous modifier. Add +3 if this is a class skill and at least one rank is invested. The miscellaneous field holds recorded racial, feat, armor-check, and other adjustments.'
+            formulas[f'skill.{row}.total']=f'{meta["name"]} total = {ability} modifier + invested ranks + miscellaneous modifier. Add +3 if this is a class skill and at least one rank is invested. Add standing ancestry, class feature, and size bonuses where applicable. The miscellaneous field holds recorded feat, equipment, and other adjustments.'
     for row in range(56):
         formulas[f'feature.{row}'] = "Recorded during character creation, level-up, or through Add Feat."
     for level in range(10):
@@ -59,8 +60,8 @@ def sheet_formulas(character, values):
         if entry and ('fields' not in entry or values.get(f'weapon.{row}.equipped')=='1' and entry['item'].get('damage')):
             item=entry['item']
             formulas[f'weapon.{row}.quantity']='The total number of copies of this weapon recorded in inventory.'
-            formulas[f'weapon.{row}.attack']='Weapon attack bonus = base attack bonus + attack ability modifier + Armor Class size modifier + supported feat attack bonuses for this weapon. Ranged weapons use Dexterity; melee weapons use Strength, or Dexterity with Weapon Finesse for an eligible weapon. Use temporary ability modifiers when entered. Bows apply −2 if Strength is below the bow’s rating.'
-            formulas[f'weapon.{row}.damage']='Weapon damage starts with the saved damage dice for the character’s size. Melee weapons add Strength; two-handed melee weapons multiply a positive Strength bonus by 1.5 and round down. Thrown weapons and slings add Strength. Bows apply negative Strength, or positive Strength up to the composite bow’s rating (ordinary bows allow no positive bonus). Other ranged weapons add no Strength. Temporary Strength is used when entered.'
+            formulas[f'weapon.{row}.attack']='Weapon attack bonus = base attack bonus + attack ability modifier + Armor Class size modifier + supported feat and class training bonuses for this weapon. Ranged weapons use Dexterity; melee weapons use Strength, or Dexterity with Weapon Finesse for an eligible weapon. Use temporary ability modifiers when entered. Bows apply −2 if Strength is below the bow’s rating.'
+            formulas[f'weapon.{row}.damage']='Weapon damage starts with the saved damage dice for the character’s size and adds applicable class training bonuses. Melee weapons add Strength; two-handed melee weapons multiply a positive Strength bonus by 1.5 and round down. Thrown weapons and slings add Strength. Bows apply negative Strength, or positive Strength up to the composite bow’s rating (ordinary bows allow no positive bonus). Other ranged weapons add no Strength. Temporary Strength is used when entered.'
         else:
             for part in ('attack','damage'):
                 formulas[f'weapon.{row}.{part}']='Retained from the saved weapon entry or character creation snapshot. This existing entry is not recalculated from current ability scores.'

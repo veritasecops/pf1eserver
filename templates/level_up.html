@@ -74,6 +74,11 @@
           <div class="pw-skill-table"><table><thead><tr><th scope="col">Feat and reference</th><th scope="col">Select</th></tr></thead><tbody data-feat-results></tbody></table></div>
           <button type="button" class="button" data-more-feats hidden>Show more feats</button>
         </fieldset>
+        {% elif index in advancement.fighter_weapon_slots %}
+        <label class="field"><span>{{ choice|capitalize }}</span><select name="choice_{{ index }}" required>
+          <option value="">Choose a weapon group</option>
+          {% for group in advancement.fighter_weapon_choices %}<option{% if submitted.get('choice_' ~ index) == group %} selected{% endif %}>{{ group }}</option>{% endfor %}
+        </select></label>
         {% else %}
         <label class="field"><span>{{ choice|capitalize }}</span><input name="choice_{{ index }}" value="{{ submitted.get('choice_' ~ index, '') }}" maxlength="150" required></label>
         {% endif %}

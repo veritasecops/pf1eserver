@@ -5,6 +5,7 @@ from math import floor
 from .class_catalog import class_key, creation_class
 from .pf1_data import ABILITIES, RACES
 from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
+from .trait_rules import class_skill_bonus, racial_skill_bonus
 
 
 def class_record(character, catalog):
@@ -28,7 +29,7 @@ def calculated_fields(character, values):
         locked.update(f'{kind}.{part}' for part in ('bab','str'))
     locked.add('cmd.dex')
     # Size modifiers are automatic when the entered size is recognized.
-    if str(values.get('size','')).casefold() in SIZE_MODIFIERS:
+    if str(values.get('size') or base_speed_race(character).get('size', '')).casefold() in SIZE_MODIFIERS:
         locked.update({'ac.size','cmb.size','cmd.size'})
     for skill in SKILLS:
         for key in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):
@@ -83,7 +84,11 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
             value = number(f'ability.{ability}.{score}')
             write(f'ability.{ability}.{mod}',None if value is None else floor((value-10)/2))
     cls = class_record(character, catalog)
+    class_id = class_key(character, catalog)
     snapshot = character.sheet_data or {}
+    level = int(values.get("level") or character.level)
+    race_id = race.get('name', '').casefold()
+    starting_race = snapshot.get('input', {}).get('race') if snapshot.get('computed') else None
     if int(values.get("level") or character.level) == 1 and snapshot.get('computed') and cls:
         con = modifier('con')
         inputs = snapshot.get('input',{})
@@ -96,15 +101,19 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
             write(f'save.{save}.base',cls['saves'][index])
     dex,strength,intelligence = modifier('dex'),modifier('str'),modifier('int')
     write('initiative.dex',dex)
-    total('initiative.total',['initiative.dex'],['initiative.misc'])
+    initiative_bonus = (modifier('wis') or 0) if class_id == 'inquisitor' and level >= 2 else 0
+    total('initiative.total',['initiative.dex'],['initiative.misc'],initiative_bonus)
     for save,ability in [('fortitude','con'),('reflex','dex'),('will','wis')]:
         write(f'save.{save}.ability',modifier(ability))
-        total(f'save.{save}.total',[f'save.{save}.base',f'save.{save}.ability'],[f'save.{save}.magic',f'save.{save}.misc'])
+        bonus = int(race_id == 'halfling') - int(starting_race == 'halfling')
+        if level >= 2 and (class_id in {'paladin', 'antipaladin'} or class_id == 'mesmerist' and save == 'will'):
+            bonus += max(0, modifier('cha') or 0)
+        total(f'save.{save}.total',[f'save.{save}.base',f'save.{save}.ability'],[f'save.{save}.magic',f'save.{save}.misc'],bonus)
     for kind in ('cmb','cmd'):
-        write(f'{kind}.bab',number('bab'))
+        write(f'{kind}.bab',level if kind == 'cmb' and class_id == 'monk' and level >= 3 else number('bab'))
         write(f'{kind}.str',strength)
     write('cmd.dex',dex)
-    size = SIZE_MODIFIERS.get(str(values.get('size','')).casefold())
+    size = SIZE_MODIFIERS.get(str(values.get('size') or race.get('size', '')).casefold())
     if size is not None:
         write('ac.size',size)
         write('cmb.size',-size)
@@ -126,11 +135,20 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
         for row in (key,key+'-2') if key in {'craft','perform','profession'} else (key,):
             write(f'skill.{row}.ability',modifier(meta['ability']))
             ranks = number(f'skill.{row}.ranks',Decimal(0))
-            total(f'skill.{row}.total',[f'skill.{row}.ability'],[f'skill.{row}.ranks',f'skill.{row}.misc'],3 if ranks is not None and ranks > 0 and key in class_skills else 0)
+            bonus = 3 if ranks is not None and ranks > 0 and key in class_skills else 0
+            bonus += racial_skill_bonus(race_id, key)
+            if not row.endswith('-2'):
+                # First-level wizard snapshots already include these racial bonuses.
+                bonus -= racial_skill_bonus(starting_race, key)
+            bonus += class_skill_bonus(class_id, level, key)
+            if key == 'stealth' and size is not None:
+                bonus += 4 * size
+            total(f'skill.{row}.total',[f'skill.{row}.ability'],[f'skill.{row}.ranks',f'skill.{row}.misc'],bonus)
     write('skill_points.int',intelligence)
     base = number('skill_points.base')
     misc = number('skill_points.misc',Decimal(0))
-    write('skill_points.total',None if base is None or intelligence is None or misc is None else max(Decimal(1),base+intelligence)+misc)
+    human_bonus = int(race_id == 'human') - int(starting_race == 'human')
+    write('skill_points.total',None if base is None or intelligence is None or misc is None else max(Decimal(1),base+intelligence)+misc+human_bonus)
     for level in range(10):
         write(f'spell.{level}.known',len([line for line in values.get(f'spell.{level}.list','').splitlines() if line.strip()]))
     weights = [number(f'gear.{row}.weight') for row in range(56) if values.get(f'gear.{row}.name', '').strip()]

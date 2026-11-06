@@ -4,6 +4,7 @@ from math import floor
 
 from fastapi import HTTPException
 
+from .trait_rules import racial_skill_bonus
 from .class_catalog import class_profile, creation_class
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, POINT_COST, RACES, SKILLS
 
@@ -218,9 +219,7 @@ def calculate(data, rolls, catalog=None):
     for key, metadata in SKILLS.items():
         ranks = data["skills"].get(key,0)
         bonus_value = metadata.get("bonus",0)
-        if key == "perception" and data["race"] in {"elf","half-elf","gnome","halfling"}: bonus_value += 2
-        if key == "intimidate" and data["race"] == "half-orc": bonus_value += 2
-        if key in {"acrobatics","climb"} and data["race"] == "halfling": bonus_value += 2
+        bonus_value += racial_skill_bonus(data["race"], key)
         if key == "stealth" and small: bonus_value += 4
         if key == "fly" and small: bonus_value += 2
         bonus_value += effects("skill:"+key) + effects("selected_skill",key)

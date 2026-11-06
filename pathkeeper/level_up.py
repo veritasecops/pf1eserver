@@ -10,6 +10,7 @@ from .class_catalog import class_key, class_profile
 from .pf1_data import ABILITIES
 from .rule_catalog import character_catalog, class_skills, equipment, load_catalog
 from .weapons import safe_weapon_url
+from .trait_rules import fighter_weapon_groups, trained_weapon_groups, weapon_group_name
 
 CLASS_INDEX = "https://www.aonprd.com/Classes.aspx"
 FEAT_INDEX = "https://www.aonprd.com/Feats.aspx"
@@ -108,6 +109,10 @@ def plan(ctx, character):
         "human": character.ancestry.casefold() == "human",
         "missing": [ABILITIES[key] for key in ("con", "int") if not values[f"ability.{key}.score"]]
                    + (["Maximum HP"] if not values["hp.total"] else []),
+        "fighter_weapon_slots": {index for index, label in enumerate(choices)
+                                 if class_id == "fighter" and label.casefold().startswith("weapon training")},
+        "fighter_weapon_choices": sorted(fighter_weapon_groups().keys() - trained_weapon_groups(character).keys())
+                                  if class_id == "fighter" else [],
         "feat_catalog": feats, "owned_feats": sorted(owned), "feat_targets": targets,
         "feat_bab": float(Decimal(values["bab"] or previous["bab"]) + bab),
         "feat_scores": {key: float(Decimal(values[f"ability.{key}.score"] or 0)) for key in ABILITIES},
@@ -240,7 +245,11 @@ def submit(character, advancement, form):
     selections = []
     for index, label in enumerate(advancement["choices"]):
         entry = text(f"choice_{index}", 150)
-        if not entry:
+        if index in advancement["fighter_weapon_slots"]:
+            entry = weapon_group_name(entry) or ""
+            if entry not in advancement["fighter_weapon_choices"]:
+                errors.append("Choose a Fighter weapon group that the character has not already trained.")
+        elif not entry:
             errors.append(f"Record your choice for {label}.")
         selections.append({"feature": label, "choice": entry})
         if index in advancement["feat_slots"]:

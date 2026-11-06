@@ -241,7 +241,7 @@ def test_calculations_preserve_manual_progression_and_negative_modifiers(env):
     saved = SheetForm(client.get(path).text)
     assert saved.values['ability.dex.mod'] == '-2'
     assert saved.values['ability.str.mod'] == '-1'
-    assert saved.values['skill_points.total'] == '2'  # minimum 1 + misc 1
+    assert saved.values['skill_points.total'] == '3'  # minimum 1 + misc 1 + Skilled 1
     assert saved.values['save.will.total'] == '4'
     assert saved.values['cmb.size'] == '-1' and saved.values['ac.size'] == '1'
     assert saved.values['ac.flat'] == '11'  # negative DEX remains, dodge is excluded
@@ -467,3 +467,25 @@ def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 409
     page = client.get(path)
     assert 'id="sheet-feature-picker"' in page.text and '>Weapon Focus (Longsword)</a>' in page.text
+
+def test_standing_class_and_ancestry_effects_recalculate_on_existing_sheet(env):
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.class_name, record.ancestry = 'Paladin', 'Halfling'
+        record.play_data = {'ability.cha.score': '16', 'ability.dex.score': '14',
+                            'ability.wis.score': '10', 'ability.con.score': '10',
+                            'save.fortitude.base': '3', 'save.reflex.base': '1', 'save.will.base': '3'}
+        db.commit()
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    sheet = SheetForm(client.get(path).text)
+    assert sheet.values['save.fortitude.total'] == '7'
+    assert sheet.values['save.reflex.total'] == '7'
+    assert sheet.values['skill.stealth.total'] == '6'
+    assert sheet.values['skill.perception.total'] == '2'
+    sheet.values['ability.cha.temp_score'] = '12'
+    assert env.post(client, path + '/play-sheet', sheet.values).status_code == 303
+    sheet = SheetForm(client.get(path).text)
+    assert sheet.values['save.fortitude.total'] == '5'
+    assert sheet.values['skill.perception.total'] == '2'

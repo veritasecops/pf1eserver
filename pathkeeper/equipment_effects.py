@@ -2,13 +2,15 @@
 from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
+from .class_catalog import class_key
 from .rule_catalog import character_catalog, equipment
+from .trait_rules import FAST_MOVEMENT, MONKS, armor_training, load_category, nimble
 
 
 def number(value, default=Decimal(0)):
     try:
         result = Decimal(str(value)) if str(value).strip() else default
-        return result if result.is_finite() else default
+        return result if result is not None and result.is_finite() else default
     except InvalidOperation:
         return default
 
@@ -41,7 +43,7 @@ def contributions(character, values, original=False):
     catalog = character_catalog(character)
     snapshot = character.sheet_data or {}
     source = snapshot.get('input', {})
-    cls = source.get('class_id') or str(character.class_name).lower()
+    cls = class_key(character, catalog)
     race = base_speed_race(character)
     def modifier(ability):
         if original and snapshot.get('computed'):
@@ -58,14 +60,59 @@ def contributions(character, values, original=False):
         armor = max((item for _, item in slots['armor']), key=lambda item:item.get('armor', 0), default={})
         shield = max((item for _, item in slots['shield']), key=lambda item:item.get('shield', 0), default={})
     base = race.get('speed', number(values.get('speed.base', '')))
-    speed = base + (10 if cls == 'barbarian' and armor.get('category') != 'heavy' else 0)
-    if armor.get('category') in {'medium', 'heavy'} and race.get('name') != 'Dwarf':
-        speed = armor.get('speed_' + str(int(speed))) or {20:15,30:20,40:30}.get(speed, speed)
+    category = armor.get('category')
+    speed = base + (10 if cls == 'barbarian' and category != 'heavy' else 0)
+    if category in {'medium', 'heavy'} and race.get('name') != 'Dwarf':
+        speed = armor.get('speed_' + str(int(speed))) or {20: 15, 30: 20, 40: 30}.get(speed, speed)
     dex = min(modifier('dex'), number(armor.get('max_dex', 100)), number(shield.get('max_dex', 100)))
     monk = modifier('wis') if cls == 'monk' and not armor and not shield else 0
-    result = {'ac.armor':armor.get('armor', 0), 'ac.shield':shield.get('shield', 0),
-              'ac.dex':dex, 'ac.misc':monk, 'cmd.misc':monk, 'speed.armor':speed}
     penalty = number(armor.get('acp', 0)) + number(shield.get('acp', 0))
+    dodge = 0
+    if not original:
+        level = int(values.get("level") or getattr(character, "level", 1))
+        weights = [number(values.get(f'gear.{row}.weight', ''), None) for row in range(56)
+                   if values.get(f'gear.{row}.name', '').strip()]
+        weight = None if None in weights else sum(weights)
+        strength = number(values.get('ability.str.temp_score') or values.get('ability.str.score', ''), None)
+        size = (values.get('size') or race.get('size', '')).casefold()
+        load = load_category(strength, size, weight)
+        training = armor_training(cls, level) if armor else 0
+        armor_cap = number(armor.get('max_dex', 100))
+        dex = min(modifier('dex'), armor_cap + training, number(shield.get('max_dex', 100)))
+        penalty = min(0, number(armor.get('acp', 0)) + training) + number(shield.get('acp', 0))
+        # Older creation snapshots already include these two Unchained bonuses
+        # in their editable starting values. Remove that baked-in component.
+        baked_monk = baked_speed = 0
+        if snapshot.get('computed'):
+            start_armor = equipment(catalog).get(source.get('armor'), {})
+            if cls == 'monk-unchained' and not start_armor and not source.get('shield'):
+                baked_monk = number(snapshot['computed'].get('modifiers', {}).get('wis', 0))
+            if cls == 'barbarian-unchained' and start_armor.get('category') != 'heavy':
+                baked_speed = 10
+                if start_armor.get('category') == 'medium' and race.get('name') != 'Dwarf':
+                    speeds = {20: 15, 30: 20, 40: 30}
+                    baked_speed = (
+                        (start_armor.get(f'speed_{base + 10}') or speeds.get(base + 10, base + 10))
+                        - (start_armor.get(f'speed_{base}') or speeds.get(base, base))
+                    )
+        speed = base + (10 if cls in FAST_MOVEMENT and category != 'heavy' and load != 'heavy' else 0)
+        if cls in MONKS and not armor and not shield and load not in {'medium', 'heavy'}:
+            speed += 10 * min(6, level // 3)
+            monk = max(0, modifier('wis')) + level // 4
+        elif cls == 'shifter' and level >= 2 and not armor and not shield and load not in {'medium', 'heavy'}:
+            monk = max(0, modifier('wis')) + level // 4
+        else:
+            monk = 0
+        monk -= baked_monk
+        armor_slows = category in {'medium', 'heavy'} and not (
+            cls == 'fighter' and level >= (3 if category == 'medium' else 7)
+        )
+        if armor_slows and race.get('name') != 'Dwarf':
+            speed = armor.get('speed_' + str(int(speed))) or max(10 if speed >= 10 else 5, 5 * ((2 * int(speed) + 14) // 15))
+        speed -= baked_speed
+        dodge = nimble(cls, level, category, load)
+    result = {'ac.armor':armor.get('armor', 0), 'ac.shield':shield.get('shield', 0),
+              'ac.dex':dex, 'ac.misc':monk, 'cmd.misc':monk + dodge, 'ac.dodge':dodge, 'speed.armor':speed}
     for key, meta in catalog['skills'].items():
         if meta.get('armor'):
             for row in (key, key+'-2') if key in {'craft','perform','profession'} else (key,):
