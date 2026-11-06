@@ -94,6 +94,8 @@ def test_wizard_gates_level_and_saves_choices_once(env):
     assert '>Current ranks</th>' in wizard.text and 'ItemName=Climb' in wizard.text
     assert 'Review and advance' not in wizard.text
     assert 'other_changes' not in wizard.text
+    assert "Your XP qualifies you for level 5." in wizard.text
+    assert "Advance to level 4 and continue" in wizard.text
     assert env.login(env.admin).get(path + "/level-up").status_code == 403
     data = {"version": saved.json()["version"], "target": 4, "hit_die": 5, "favored": "hp",
             "ability": "con", "rank_climb": 3, "choice_0": "Improved Initiative", "reviewed": "1"}
@@ -104,7 +106,9 @@ def test_wizard_gates_level_and_saves_choices_once(env):
     assert ineligible.status_code == 422 and "Choose an available feat" in ineligible.text
     missing_score = env.post(client, path + "/level-up", {**data, "choice_0": "Power Attack"})
     assert missing_score.status_code == 422 and "ability score or base attack bonus" in missing_score.text
-    assert env.post(client, path + "/level-up", data).status_code == 303
+    advanced = env.post(client, path + "/level-up", data)
+    assert advanced.status_code == 303
+    assert advanced.headers["location"] == path + "/level-up"
     assert env.post(client, path + "/level-up", data).status_code == 409
     page = client.get(path)
     assert "Improved Initiative" in page.text
@@ -123,6 +127,25 @@ def test_wizard_gates_level_and_saves_choices_once(env):
     with Session(engine()) as db:
         saved_character = db.get(Character, character.id)
         assert len(saved_character.play_data["advancement_history"]) == 1
+
+    next_level = client.get(advanced.headers["location"])
+    assert 'name="target" value="5"' in next_level.text
+    assert "Advance to level 5</button>" in next_level.text
+    second = {"version": SheetForm(client.get(path).text).values["version"], "target": 5, "hit_die": 5, "favored": "none",
+              "rank_climb": 2, "rank_swim": 1, "choice_0": "Toughness", "choice_1": "Axes"}
+    # An earlier level's ranks count toward the cap for the next level.
+    invalid = env.post(client, path + "/level-up", {**second, "rank_climb": 3})
+    assert invalid.status_code == 422
+    completed = env.post(client, path + "/level-up", second)
+    assert completed.status_code == 303
+    assert completed.headers["location"] == path
+    assert env.post(client, path + "/level-up", second).status_code == 409
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        assert record.level == 5
+        assert record.play_data["experience"] == "23000"
+        assert record.play_data["skill.climb.ranks"] == "5"
+        assert [entry["level"] for entry in record.play_data["advancement_history"]] == [4, 5]
 
 
 def test_class_progression_tables_cover_all_selectable_classes():

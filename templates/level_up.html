@@ -6,6 +6,9 @@
 <div class="page-heading pw-heading"><div>
   <h1>Level up {{ character.name }}</h1>
   {% if advancement %}<p>{{ character.class_name }} · Level {{ character.level }} → {{ advancement.target }} · {{ advancement.threshold }} XP on the {{ advancement.speed|capitalize }} track</p>{% endif %}
+  {% if advancement and advancement.target < advancement.eligible_level %}
+  <p>Your XP qualifies you for level {{ advancement.eligible_level }}. Save your choices for each level to continue.</p>
+  {% endif %}
 </div></div>
 {% if not advancement %}
 <section class="card padded narrow"><p>This character needs the next XP threshold and a class from the <a href="{{ class_index }}">Archives of Nethys class index</a> to advance. Level 20 is the maximum.</p></section>
@@ -121,7 +124,7 @@
   <footer class="pw-footer">
     <button class="button" type="button" data-level-back hidden>Previous</button>
     <button class="button primary" type="button" data-level-next hidden>Continue</button>
-    <button class="button primary" type="submit" data-level-submit>Advance to level {{ target }}</button>
+    <button class="button primary" type="submit" data-level-submit>Advance to level {{ target }}{% if target < advancement.eligible_level %} and continue{% endif %}</button>
   </footer>
 </form>
 <script type="application/json" id="level-up-feats">{{ {

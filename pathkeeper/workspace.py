@@ -600,7 +600,10 @@ async def character_level_up_submit(character_id: int, request: Request, db: Ses
     if errors:
         return render_level_up(ctx, character, advancement, form, errors)
     audit(db, ctx.user, "character.level_up", f"{character.name} advanced to level {character.level}.")
-    return redirect(ctx, f"/characters/{character.id}", f"Advanced to level {character.level}.")
+    location = f"/characters/{character.id}"
+    if character.level < advancement["eligible_level"]:
+        location += "/level-up"
+    return redirect(ctx, location, f"Advanced to level {character.level}.")
 
 
 @router.get("/characters/{character_id}/edit")

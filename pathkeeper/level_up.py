@@ -2,7 +2,7 @@
 import re
 from decimal import Decimal
 
-from .advancement import XP_TRACKS, eligible, track
+from .advancement import XP_TRACKS, eligible, level_for, saved_xp, track
 from .deluxe_sheet import SAVES, sheet_values, skill_rows
 from .equipment_effects import persist_effects
 from .models import Campaign, User
@@ -46,7 +46,9 @@ def plan(ctx, character):
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
     current_catalog = load_catalog(db)
     class_id = class_key(character, current_catalog)
-    if not class_id or not eligible(character, campaign):
+    speed = track(campaign)
+    eligible_level = level_for(saved_xp(character, speed), speed)
+    if not class_id or eligible_level <= character.level:
         return None
     owner = db.get(User, character.owner_id)
     gm = db.get(User, campaign.owner_id) if campaign else None
@@ -105,7 +107,7 @@ def plan(ctx, character):
         "saves": [after - before for before, after in zip(previous["saves"], current["saves"])],
         "previous": previous, "current": current,
         "spell_levels": [int(key) for key in current.get("slots", {}) if int(key) > 0],
-        "speed": track(campaign), "threshold": XP_TRACKS[track(campaign)][target - 1],
+        "speed": speed, "threshold": XP_TRACKS[speed][target - 1], "eligible_level": eligible_level,
         "human": character.ancestry.casefold() == "human",
         "missing": [ABILITIES[key] for key in ("con", "int") if not values[f"ability.{key}.score"]]
                    + (["Maximum HP"] if not values["hp.total"] else []),
