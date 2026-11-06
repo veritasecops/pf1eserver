@@ -5,7 +5,6 @@
   const form = document.getElementById('sheet-feature-form');
   const launcher = document.getElementById('add-sheet-feature');
   const search = form.querySelector('[data-feature-search]');
-  const type = form.elements.kind;
   const target = form.elements.target;
   const results = form.querySelector('[data-feature-results]');
   const more = form.querySelector('[data-feature-more]');
@@ -17,7 +16,7 @@
 
   function render() {
     const query = search.value.trim().toLowerCase();
-    const matches = (catalog?.options[type.value] || []).filter(item => item.name.toLowerCase().includes(query));
+    const matches = (catalog?.options.feat || []).filter(item => item.name.toLowerCase().includes(query));
     status.textContent = catalog ? `${matches.length} matching entries` : 'Loading entries…';
     results.replaceChildren();
     for (const item of matches.slice(0, limit)) {
@@ -76,13 +75,13 @@
   }));
   dialog.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
   search.addEventListener('input', () => { limit = 50; render(); });
-  type.addEventListener('change', () => { limit = 50; choose(null); });
   more.addEventListener('click', () => { limit += 50; render(); });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (!selected || busy) return;
     busy = true;
     const body = new FormData(form);
+    body.set('kind', 'feat');
     body.set('feature', selected.name);
     submit.disabled = true;
     error.hidden = true;

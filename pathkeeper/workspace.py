@@ -19,7 +19,7 @@ from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .rule_catalog import character_catalog, load_catalog
 from .weapons import sheet_weapon_links
-from .feature_links import automatic_class_abilities, feature_picker, feature_targets, normalized, sheet_feature_links
+from .feature_links import automatic_abilities, feature_picker, feature_targets, normalized, sheet_feature_links
 from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
@@ -347,7 +347,7 @@ def render_character(ctx, character, values=None, errors=()):
                       armor_links=sheet_armor_links(values,character,catalog),
                       weapon_links=sheet_weapon_links(values,character,catalog),
                       feature_links=sheet_feature_links(values, character, catalog),
-                      automatic_class_abilities=automatic_class_abilities(values, character, catalog),
+                      automatic_abilities=automatic_abilities(values, character, catalog),
                       **view_context(character, owner, campaign, gm, values, errors,deity_catalog=catalog.get('deities',{})))
     if errors:
         response.status_code = 422
@@ -469,7 +469,7 @@ async def character_feature_options(character_id: int, request: Request, db: Ses
     ctx = context(request, db)
     character = get_character(ctx, character_id)
     catalog = load_catalog(db)
-    return JSONResponse({"options": feature_picker(character, catalog), "targets": feature_targets(catalog)},
+    return JSONResponse({"options": feature_picker(catalog), "targets": feature_targets(catalog)},
                         headers={"Cache-Control": "no-store"})
 
 
@@ -484,7 +484,7 @@ async def character_feature_add(character_id: int, request: Request, db: Session
     catalog = load_catalog(db)
     kind = field(form, "kind", 10)
     name = field(form, "feature", 150)
-    options = feature_picker(character, catalog)
+    options = feature_picker(catalog)
     selected = next((item for item in options.get(kind, ()) if item["name"] == name), None)
     if not selected:
         raise HTTPException(422, "Choose an available feat or ability.")

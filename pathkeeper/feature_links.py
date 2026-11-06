@@ -44,20 +44,18 @@ def ability_options(character, catalog, include_prompts=True):
     return features, racial
 
 
-def automatic_class_abilities(values, character, catalog):
-    features, _ = ability_options(character, catalog, include_prompts=False)
+def automatic_abilities(values, character, catalog):
+    features, racial = ability_options(character, catalog, include_prompts=False)
     recorded = {ability_name(values[f"feature.{row}"].split(":", 1)[0]) for row in range(56)}
-    return [(name, url) for key, (name, url) in features.items()
-            if key not in recorded and "feat" not in key.split()]
+    granted = {key: item for key, item in features.items() if "feat" not in key.split()}
+    return [item for key, item in {**granted, **racial}.items() if key not in recorded]
 
 
-def feature_picker(character, catalog):
-    _, racial = ability_options(character, catalog)
+def feature_picker(catalog):
     feats = [{"name": name, "url": safe_weapon_url(item.get("url", "")), "choice": item.get("choice", "")}
              for name, item in catalog["feats"].items() if item.get("enabled", True)]
     return {
         "feat": sorted(feats, key=lambda item: item["name"].casefold()),
-        "racial": [{"name": name, "url": url} for name, url in sorted(racial.values())],
     }
 
 
