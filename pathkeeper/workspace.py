@@ -19,7 +19,7 @@ from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .rule_catalog import character_catalog, load_catalog
 from .weapons import sheet_weapon_links
-from .feature_links import feature_picker, feature_targets, normalized, sheet_feature_links
+from .feature_links import automatic_class_abilities, feature_picker, feature_targets, normalized, sheet_feature_links
 from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
@@ -347,6 +347,7 @@ def render_character(ctx, character, values=None, errors=()):
                       armor_links=sheet_armor_links(values,character,catalog),
                       weapon_links=sheet_weapon_links(values,character,catalog),
                       feature_links=sheet_feature_links(values, character, catalog),
+                      automatic_class_abilities=automatic_class_abilities(values, character, catalog),
                       **view_context(character, owner, campaign, gm, values, errors,deity_catalog=catalog.get('deities',{})))
     if errors:
         response.status_code = 422

@@ -34,20 +34,26 @@ def ability_options(character, catalog):
     for level in profile.get("levels", [])[:character.level]:
         for name in [*re.split(r",\s*(?![^()]*\))", level["features"]), *level.get("choices", [])]:
             if name:
-                features.setdefault(ability_name(name), (name, class_url))
+                features[ability_name(name)] = (name, class_url)
     race = next((key for key, item in RACES.items() if normalized(item["name"]) == normalized(character.ancestry)), None)
     race_url = "https://www.aonprd.com/RacesDisplay.aspx?ItemName=" + quote(RACES[race]["name"]) if race else ""
     racial = {normalized(name): (name, race_url) for name in RACIAL_ABILITIES.get(race, ())}
     return features, racial
 
 
+def automatic_class_abilities(values, character, catalog):
+    features, _ = ability_options(character, catalog)
+    recorded = {ability_name(values[f"feature.{row}"].split(":", 1)[0]) for row in range(56)}
+    return [(name, url) for key, (name, url) in features.items()
+            if key not in recorded and "feat" not in key.split()]
+
+
 def feature_picker(character, catalog):
-    features, racial = ability_options(character, catalog)
+    _, racial = ability_options(character, catalog)
     feats = [{"name": name, "url": safe_weapon_url(item.get("url", "")), "choice": item.get("choice", "")}
              for name, item in catalog["feats"].items() if item.get("enabled", True)]
     return {
         "feat": sorted(feats, key=lambda item: item["name"].casefold()),
-        "class": [{"name": name, "url": url} for name, url in sorted(features.values())],
         "racial": [{"name": name, "url": url} for name, url in sorted(racial.values())],
     }
 

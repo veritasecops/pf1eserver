@@ -451,10 +451,12 @@ def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     client = env.login(env.player)
     path = f'/characters/{character.id}'
     options = client.get(path + '/features').json()
-    assert any(item['name'].lower().startswith('armor training') for item in options['options']['class'])
+    assert 'class' not in options['options']
+    assert '>Armor training 1</a>' in client.get(path).text
     assert any(item['name'] == 'Skilled' for item in options['options']['racial'])
     form = SheetForm(client.get(path).text)
     data = {'version': form.values['version'], 'kind': 'feat', 'feature': 'Weapon Focus'}
+    assert env.post(client, path + '/features', {**data, 'kind': 'class', 'feature': 'Armor training 1'}).status_code == 422
     assert env.post(client, path + '/features', data).status_code == 422
     assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 201
     assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 409

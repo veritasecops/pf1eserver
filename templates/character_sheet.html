@@ -43,7 +43,14 @@
 <div class="ds-columns ds-campaign"><div><h3>Languages</h3>{{ control('languages',bare=true,rows=5) }}</div><div><h3>Campaign information</h3><div class="ds-fields ds-three">{{ control('campaign') }}{{ control('campaign_traits',rows=3) }}{{ control('gm') }}<p class="ds-record-note">Use Manage character to change campaign membership.</p></div></div></div><footer class="ds-footer">PATHKEEPER <span>Combat & identity · 1 / 4</span></footer>
 </section>
 <section class="ds-page" id="abilities-skills" aria-labelledby="skills-title">
-<div class="ds-weapon-heading"><h2 id="skills-title" class="ds-bar">Feats, class, and racial abilities</h2><button class="button primary" type="button" id="add-sheet-feature" aria-haspopup="dialog" aria-controls="sheet-feature-picker">Add Feat or Ability</button></div><div class="ds-feature-grid">{% for i in range(56) %}{% set reference = feature_links.get(i|string) %}
+<div class="ds-weapon-heading"><h2 id="skills-title" class="ds-bar">Feats, class, and racial abilities</h2><button class="button primary" type="button" id="add-sheet-feature" aria-haspopup="dialog" aria-controls="sheet-feature-picker">Add Feat or Ability</button></div>{% if automatic_class_abilities %}
+<ul class="ds-automatic-abilities" aria-label="Automatic class abilities">
+{% for name, url in automatic_class_abilities %}
+  <li>{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }}</a>{% else %}{{ name }}{% endif %}</li>
+{% endfor %}
+</ul>
+{% endif %}
+<div class="ds-feature-grid">{% for i in range(56) %}{% set reference = feature_links.get(i|string) %}
 <div class="ds-feature-row" data-feature-row="{{ i }}">
   {{ control('feature.' ~ i,bare=true,hidden=true) }}
   <span class="ds-feature-name"{% if reference %} hidden{% endif %}>{{ deluxe.get('feature.' ~ i, '') }}</span>
