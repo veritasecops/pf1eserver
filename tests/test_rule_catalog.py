@@ -255,10 +255,10 @@ def test_feat_categories_match_aon_and_support_filtering_and_edits(env):
 
 
 def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
-    from pathkeeper.equipment_index import published_equipment
+    from pathkeeper.equipment_index import equipment_entries, published_equipment
 
     entries = published_equipment()
-    assert len(entries) == 2431
+    assert len(entries) == 2495
     assert {item['group'] for item in entries.values()} == {'Weapons', 'Armor', 'Special Materials', 'Miscellaneous'}
     assert entries['miscellaneous-bedroll']['cost_text'] == '1 sp'
     assert entries['special-materials-adamantine']['url'].endswith('#:~:text=Adamantine')
@@ -266,7 +266,14 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
     assert player.get('/administration/catalog?kind=equipment').status_code == 403
     admin = env.login(env.admin)
     listing = admin.get('/administration/catalog?kind=equipment')
-    assert listing.status_code == 200 and '2431 entries' in listing.text
+    assert listing.status_code == 200 and f'{len(equipment_entries(default_catalog()))} entries' in listing.text
+    assert 'aria-label="Equipment groups"' in listing.text
+    assert 'href="/administration/catalog?kind=equipment" class="active"' in listing.text
+    for category, name in [('Fungal Grafts', 'Fungal Eyes'), ('Spellbooks', 'Arctic Call'), ('Vehicles', 'Airship')]:
+        listing = admin.get('/administration/catalog', params={
+            'kind': 'equipment', 'equipment_group': 'Miscellaneous', 'equipment_category': category, 'q': name,
+        })
+        assert f'>{name}</a>' in listing.text
     weapons = admin.get('/administration/catalog?kind=equipment&equipment_group=Weapons&q=Longsword')
     assert 'href="/administration/catalog/weapons/longsword"' in weapons.text
     materials = admin.get('/administration/catalog?kind=equipment&equipment_group=Special+Materials&q=Adamantine')
@@ -282,3 +289,36 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
     assert response.status_code == 303
     listing = admin.get('/administration/catalog?kind=equipment&equipment_category=Camping')
     assert listing.status_code == 200 and '>Bedroll</a>' in listing.text and '2 sp' in listing.text
+
+
+def test_equipment_tab_includes_custom_combat_items_and_archived_gear(env):
+    from .test_workspace import seed_character
+
+    admin = env.login(env.admin)
+    with Session(engine()) as db:
+        record = db.get(RuleCatalog, 1)
+        if record is None:
+            record = RuleCatalog(id=1, data=default_catalog())
+            db.add(record)
+        data = deepcopy(record.data)
+        data['weapons']['custom-sword'] = {**data['weapons']['longsword'], 'name': 'Custom sword', 'url': '', 'enabled': False}
+        data['armor']['custom-coat'] = {**data['armor']['leather'], 'name': 'Custom coat', 'url': ''}
+        record.data = data
+        db.commit()
+        version = record.version
+    page = admin.get('/administration/catalog?kind=equipment&q=Custom&equipment_status=archived')
+    assert 'href="/administration/catalog/weapons/custom-sword"' in page.text
+    assert '/administration/catalog/armor/custom-coat' not in page.text
+    page = admin.get('/administration/catalog?kind=equipment&q=Custom&equipment_status=available')
+    assert 'href="/administration/catalog/armor/custom-coat"' in page.text
+    assert '/administration/catalog/weapons/custom-sword' not in page.text
+    response = env.post(admin, '/administration/catalog/equipment', {
+        'key': 'miscellaneous-bedroll', 'version': version, 'name': 'Bedroll',
+        'group': 'Miscellaneous', 'equipment_categories': 'Adventuring Gear',
+        'cost_text': '2 sp', 'weight_text': '5 lb.', 'enabled': 'on',
+    })
+    assert response.status_code == 303
+    character = seed_character(env.player)
+    catalog = env.login(env.player).get(f'/characters/{character.id}/equipment').json()['equipment']
+    assert catalog['miscellaneous-bedroll']['cost'] == 20
+    assert catalog['miscellaneous-bedroll']['weight'] == 5

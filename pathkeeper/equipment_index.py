@@ -7,8 +7,8 @@ import json
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-from .armor import table_armor
-from .weapons import table_weapons
+from .armor import ARMOR_CATEGORIES, table_armor
+from .weapons import WEAPON_CATEGORIES, WEAPON_GROUPS, table_weapons
 
 GROUPS = ("Weapons", "Armor", "Special Materials", "Miscellaneous")
 
@@ -32,25 +32,47 @@ def equipment_bindings():
             for key, item in entries.items() if (reference := identity(item.get("url", "")))}
 
 
+def live_equipment(entry, kind, key, item):
+    cost, weight = item.get("cost"), item.get("weight")
+    return {
+        **entry, "name": item["name"], "url": item.get("url", ""), "enabled": item.get("enabled", True),
+        "cost_text": f"{cost / 100:g} gp" if cost is not None else item.get("cost_text") or entry["cost_text"],
+        "weight_text": f"{weight:g} lb." if weight is not None else item.get("weight_text") or entry["weight_text"],
+        "editor_kind": kind, "editor_key": key,
+    }
+
+
 def equipment_entries(catalog):
     result = {**published_equipment(), **catalog.get("equipment_index", {})}
     bindings = equipment_bindings()
+    live_catalogs = {kind: catalog.get(kind, {}) for kind in ("weapons", "armor")}
+    current_bindings = {reference: (kind, key) for kind, items in live_catalogs.items()
+                        for key, item in items.items() if (reference := identity(item.get("url", "")))}
+    represented = set()
     for key, entry in result.items():
-        binding = bindings.get(identity(entry["url"]))
+        if entry["group"] not in {"Weapons", "Armor"}:
+            continue
+        reference = identity(entry["url"])
+        binding = bindings.get(reference) or current_bindings.get(reference)
         if not binding:
             continue
         kind, item_key = binding
-        live = catalog[kind].get(item_key)
-        if not live:
-            continue
-        cost = live.get("cost")
-        weight = live.get("weight")
-        result[key] = {
-            **entry, "name": live["name"], "url": live.get("url", ""), "enabled": live.get("enabled", True),
-            "cost_text": f"{cost / 100:g} gp" if cost is not None else live.get("cost_text") or entry["cost_text"],
-            "weight_text": f"{weight:g} lb." if weight is not None else live.get("weight_text") or entry["weight_text"],
-            "editor_kind": kind, "editor_key": item_key,
-        }
+        if item := live_catalogs[kind].get(item_key):
+            represented.add(binding)
+            result[key] = live_equipment(entry, kind, item_key, item)
+    for kind, items in live_catalogs.items():
+        for key, item in items.items():
+            if (kind, key) in represented:
+                continue
+            labels = WEAPON_CATEGORIES if kind == "weapons" else ARMOR_CATEGORIES
+            categories = [WEAPON_GROUPS.get(item.get("group")), labels.get(item.get("category"))]
+            entry = {"group": "Weapons" if kind == "weapons" else "Armor",
+                     "categories": [label for label in categories if label], "cost_text": "",
+                     "weight_text": "", "details": ""}
+            entry_key = f"live-{kind}-{key}"
+            while entry_key in result:
+                entry_key = "live-" + entry_key
+            result[entry_key] = live_equipment(entry, kind, key, item)
     return result
 
 

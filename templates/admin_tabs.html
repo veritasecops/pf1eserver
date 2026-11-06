@@ -1,5 +1,5 @@
 <nav class="tabs" aria-label="Administration sections">
-  {% for label,href in [('Users','/administration'),('Roles & permissions','/administration/permissions'),('Email Configuration','/administration/email'),('Rules catalog','/administration/catalog'),('Activity log','/administration/audit')] %}
-  <a href="{{ href }}" {% if path == href or (href == "/administration/catalog" and path.startswith(href ~ "/")) %}class="active" aria-current="page"{% endif %}>{{ label }}</a>
+  {% for label,href in [('Users','/administration'),('Roles & permissions','/administration/permissions'),('Email Configuration','/administration/email'),('Rules catalog','/administration/catalog'),('Equipment','/administration/catalog?kind=equipment'),('Activity log','/administration/audit')] %}
+  <a href="{{ href }}" {% if (label == "Equipment" and kind|default("") == "equipment") or ((path == href or (href == "/administration/catalog" and path.startswith(href ~ "/"))) and kind|default("") != "equipment") %}class="active" aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}
 </nav>

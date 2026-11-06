@@ -71,7 +71,15 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     equipment_group = request.query_params.get('equipment_group', '') if kind == 'equipment' else ''
     equipment_category = request.query_params.get('equipment_category', '') if kind == 'equipment' else ''
     equipment_categories = []
+    equipment_counts = {}
+    equipment_status = ''
     if kind == 'equipment':
+        equipment_counts = {label: sum(item["group"] == label for item in entries.values()) for label in EQUIPMENT_GROUPS}
+        equipment_status = request.query_params.get('equipment_status', '')
+        if equipment_status in {'available', 'archived'}:
+            items = [(key, item) for key, item in items if item.get('enabled', True) == (equipment_status == 'available')]
+        else:
+            equipment_status = ''
         if equipment_group not in EQUIPMENT_GROUPS:
             equipment_group = ''
         if equipment_group:
@@ -88,7 +96,8 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
     if kind in {'feats', 'equipment'}:
         items = items[(page - 1) * 100:page * 100]
-    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories)
+    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories,
+                  equipment_counts=equipment_counts,equipment_status=equipment_status)
 
 
 @router.get('/{kind}/new')
@@ -98,7 +107,11 @@ async def new_entry(kind: str, request: Request, db: Session = Depends(get_db)):
     kind_check(kind)
     if kind == 'classes':
         raise HTTPException(404, 'Select a character class to edit.')
-    return editor(ctx,record_for(ctx),kind,'',{'enabled':True,'ability':'str','kind':'weapon'},new=True)
+    item = {'enabled': True, 'ability': 'str', 'kind': 'weapon'}
+    if kind == 'equipment':
+        group = request.query_params.get('equipment_group', 'Miscellaneous')
+        item['group'] = group if group in {'Special Materials', 'Miscellaneous'} else 'Miscellaneous'
+    return editor(ctx, record_for(ctx), kind, '', item, new=True)
 
 
 @router.get('/{kind}/{key}')
@@ -127,7 +140,7 @@ def parse_entry(form,kind,key,catalog):
     item['name']=key if kind=='feats' else field(form,'name',100)
     if kind == 'equipment':
         item.update(group=field(form, 'group', 30), url=field(form, 'url', 1000, required=False),
-                    cost_text=field(form, 'cost_text', 120, required=False),
+                    cost_text=field(form, 'cost_text', 1000, required=False),
                     weight_text=field(form, 'weight_text', 120, required=False),
                     details=field(form, 'details', 3000, required=False))
         categories = field(form, 'equipment_categories', 1000, required=False)
