@@ -1,7 +1,7 @@
       <section class="pw-dice-tray"><div class="pw-dice-title"><span>{{ icon('spark') }}DICE TRAY</span><span class="pw-live-dot"></span></div>
-        <canvas id="pw-dice-canvas" aria-hidden="true"></canvas>
-        <div class="pw-dice-result" id="pw-dice-result" role="status" aria-live="polite"><strong>Ready to roll</strong><span class="secondary-text">Choose your dice below.</span></div>
-        <div class="pw-dice-types" id="pw-dice-types" aria-label="Dice types">{% for sides in [4,6,8,10,12,20,100] %}<button type="button" data-die="{{ sides }}" aria-pressed="{{ 'true' if sides == 20 else 'false' }}">d{{ sides }}</button>{% endfor %}</div>
-        <div class="pw-dice-controls"><label>Dice<input type="number" id="pw-dice-count" value="1" min="1" max="20" aria-label="Number of dice" required></label><label>Modifier<input type="number" id="pw-dice-modifier" value="0" min="-1000" max="1000" aria-label="Dice modifier" required></label></div>
-        <button class="button primary full-button" type="button" id="pw-roll">Roll 1d20</button><p class="pw-percentile-note">d100 uses tens and units dice. 00 + 0 means 100.</p>
+        <canvas id="{{ dice_prefix|default('pw') }}-dice-canvas" aria-hidden="true"></canvas>
+        <div class="pw-dice-result" id="{{ dice_prefix|default('pw') }}-dice-result" role="status" aria-live="polite"><strong>Ready to roll</strong><span class="secondary-text">Choose your dice below.</span></div>
+        <div class="pw-dice-types" id="{{ dice_prefix|default('pw') }}-dice-types" aria-label="Dice types">{% for sides in [4,6,8,10,12,20,100] %}<button type="button" data-die="{{ sides }}" aria-pressed="{{ 'true' if sides == 20 else 'false' }}">d{{ sides }}</button>{% endfor %}</div>
+        <div class="pw-dice-controls"><label>Dice<input type="number" id="{{ dice_prefix|default('pw') }}-dice-count" value="1" min="1" max="20" aria-label="Number of dice" required></label><label>Modifier<input type="number" id="{{ dice_prefix|default('pw') }}-dice-modifier" value="0" min="-1000" max="1000" aria-label="Dice modifier" required></label></div>
+        <button class="button primary full-button" type="button" id="{{ dice_prefix|default('pw') }}-roll">Roll 1d20</button><p class="pw-percentile-note">d100 uses tens and units dice. 00 + 0 means 100.</p>
       </section>

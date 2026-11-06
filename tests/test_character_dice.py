@@ -10,7 +10,7 @@ def test_sheet_dice_rolls_use_supported_dice_and_do_not_change_character(env):
     character=seed_character(env.player);client=env.login(env.player);path=f'/characters/{character.id}'
     page=client.get(path)
     assert 'id="open-character-dice"' in page.text and 'id="character-dice-dialog"' in page.text
-    assert 'id="pw-dice-canvas"' in page.text
+    assert 'id="floating-dice-canvas"' in page.text
     with Session(engine()) as db: version=db.get(Character,character.id).version
     for sides in (4,6,8,10,12,20,100):
         response=env.post(client,path+'/roll',{'sides':sides,'count':3,'modifier':-2})
@@ -45,3 +45,22 @@ def test_sheet_dice_require_character_access_and_csrf(env):
     path=f'/characters/{character.id}/roll';data={'sides':20,'count':1,'modifier':0}
     assert env.post(other,path,data).status_code==404
     assert client.post(path,data=data).status_code==403
+
+def test_floating_dice_are_available_throughout_the_workspace(env):
+    client = env.login(env.player)
+    for path in ("/", "/campaigns", "/characters", "/account"):
+        page = client.get(path)
+        assert page.status_code == 200
+        assert page.text.count('id="open-character-dice"') == 1
+        assert 'data-endpoint="/dice/roll"' in page.text
+    draft = client.get("/characters/new")
+    wizard = client.get(draft.headers["location"])
+    assert wizard.text.count('id="pw-dice-canvas"') == 1
+    assert wizard.text.count('id="floating-dice-canvas"') == 1
+    form = {"sides": 12, "count": 2, "modifier": 3}
+    response = env.post(client, "/dice/roll", form)
+    assert response.status_code == 200
+    result = response.json()["result"]
+    assert result["total"] == sum(result["dice"]) + 3
+    assert client.post("/dice/roll", data=form).status_code == 403
+    assert env.client().post("/dice/roll", data=form).status_code == 303

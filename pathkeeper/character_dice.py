@@ -1,11 +1,11 @@
-"""Free dice rolls for character sheets, using the wizard's dice rules."""
+"""Free dice rolls for the workspace, using the wizard's dice rules."""
 import secrets
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from .database import get_db
-from .security import context, get_character, integer, read_form, throttle
+from .security import authenticated, context, get_character, integer, read_form, throttle
 
 router=APIRouter()
 DICE=(4,6,8,10,12,20,100)
@@ -24,6 +24,17 @@ def free_roll(form):
 async def roll_character_dice(character_id:int,request:Request,db:Session=Depends(get_db)):
     ctx=context(request,db)
     get_character(ctx,character_id)
+    return await roll_for_user(ctx)
+
+
+@router.post('/dice/roll')
+async def roll_workspace_dice(request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    authenticated(ctx, allow_setup=True)
+    return await roll_for_user(ctx)
+
+
+async def roll_for_user(ctx):
     form=await read_form(ctx)
     throttle('character-dice',str(ctx.user.id),120,15)
     return JSONResponse({'id':secrets.token_hex(16),'purpose':'free','result':free_roll(form)},headers={'Cache-Control':'no-store'})
