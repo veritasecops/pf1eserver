@@ -263,20 +263,25 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
     assert entries['miscellaneous-bedroll']['cost_text'] == '1 sp'
     assert entries['special-materials-adamantine']['url'].endswith('#:~:text=Adamantine')
     player = env.login(env.player)
-    assert player.get('/administration/catalog?kind=equipment').status_code == 403
+    assert player.get('/administration/equipment').status_code == 403
     admin = env.login(env.admin)
-    listing = admin.get('/administration/catalog?kind=equipment')
+    listing = admin.get('/administration/equipment')
     assert listing.status_code == 200 and f'{len(equipment_entries(default_catalog()))} entries' in listing.text
     assert 'aria-label="Equipment groups"' in listing.text
-    assert 'href="/administration/catalog?kind=equipment" class="active"' in listing.text
+    assert 'href="/administration/equipment" class="active"' in listing.text
+    assert '<h1>Equipment</h1>' in listing.text
+    assert 'aria-label="Catalog lists"' not in listing.text
+    rules = admin.get('/administration/catalog').text.split('aria-label="Catalog lists"', 1)[1].split('</nav>', 1)[0]
+    assert 'kind=equipment' not in rules
+    legacy = admin.get('/administration/catalog?kind=equipment&q=Bedroll')
+    assert legacy.status_code == 303 and legacy.headers['location'] == '/administration/equipment?q=Bedroll'
     for category, name in [('Fungal Grafts', 'Fungal Eyes'), ('Spellbooks', 'Arctic Call'), ('Vehicles', 'Airship')]:
-        listing = admin.get('/administration/catalog', params={
-            'kind': 'equipment', 'equipment_group': 'Miscellaneous', 'equipment_category': category, 'q': name,
+        listing = admin.get('/administration/equipment', params={ 'equipment_group': 'Miscellaneous', 'equipment_category': category, 'q': name,
         })
         assert f'>{name}</a>' in listing.text
-    weapons = admin.get('/administration/catalog?kind=equipment&equipment_group=Weapons&q=Longsword')
+    weapons = admin.get('/administration/equipment?equipment_group=Weapons&q=Longsword')
     assert 'href="/administration/catalog/weapons/longsword"' in weapons.text
-    materials = admin.get('/administration/catalog?kind=equipment&equipment_group=Special+Materials&q=Adamantine')
+    materials = admin.get('/administration/equipment?equipment_group=Special+Materials&q=Adamantine')
     assert '>Adamantine</a>' in materials.text
     editor = admin.get('/administration/catalog/equipment/miscellaneous-bedroll')
     assert editor.status_code == 200 and 'value="1 sp"' in editor.text
@@ -287,7 +292,7 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
         'url': entries['miscellaneous-bedroll']['url'],
     })
     assert response.status_code == 303
-    listing = admin.get('/administration/catalog?kind=equipment&equipment_category=Camping')
+    listing = admin.get('/administration/equipment?equipment_category=Camping')
     assert listing.status_code == 200 and '>Bedroll</a>' in listing.text and '2 sp' in listing.text
 
 
@@ -306,10 +311,10 @@ def test_equipment_tab_includes_custom_combat_items_and_archived_gear(env):
         record.data = data
         db.commit()
         version = record.version
-    page = admin.get('/administration/catalog?kind=equipment&q=Custom&equipment_status=archived')
+    page = admin.get('/administration/equipment?q=Custom&equipment_status=archived')
     assert 'href="/administration/catalog/weapons/custom-sword"' in page.text
     assert '/administration/catalog/armor/custom-coat' not in page.text
-    page = admin.get('/administration/catalog?kind=equipment&q=Custom&equipment_status=available')
+    page = admin.get('/administration/equipment?q=Custom&equipment_status=available')
     assert 'href="/administration/catalog/armor/custom-coat"' in page.text
     assert '/administration/catalog/weapons/custom-sword' not in page.text
     response = env.post(admin, '/administration/catalog/equipment', {

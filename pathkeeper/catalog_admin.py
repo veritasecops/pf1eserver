@@ -1,8 +1,10 @@
 """Administrator forms for the supported first-level rule catalog."""
 import re
 from copy import deepcopy
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,6 +22,7 @@ from .security import administrator, audit, context, field, integer, read_form
 from .ui import redirect, render
 
 router = APIRouter(prefix='/administration/catalog')
+equipment_router = APIRouter(prefix='/administration/equipment')
 KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
 
 
@@ -53,9 +56,23 @@ def editor(ctx, record, kind, key, item, errors=(), new=False):
 async def catalog_page(request: Request, db: Session = Depends(get_db)):
     ctx=context(request,db)
     administrator(ctx)
-    record=record_for(ctx)
-    kind=request.query_params.get('kind','feats')
+    kind = request.query_params.get('kind', 'feats')
+    if kind == 'equipment':
+        query = urlencode([(key, value) for key, value in request.query_params.multi_items() if key != 'kind'])
+        return RedirectResponse('/administration/equipment' + ('?' + query if query else ''), status_code=303)
+    return render_catalog(ctx, request, kind)
+
+
+@equipment_router.get('')
+async def equipment_page(request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    administrator(ctx)
+    return render_catalog(ctx, request, 'equipment')
+
+
+def render_catalog(ctx, request, kind):
     kind_check(kind)
+    record = record_for(ctx)
     search=request.query_params.get('q','').strip()[:100]
     entries = {key: class_profile(record.data, key) for key in CLASSES} if kind == 'classes' else record.data.get(kind, {})
     if kind == 'equipment':
@@ -96,7 +113,7 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
     if kind in {'feats', 'equipment'}:
         items = items[(page - 1) * 100:page * 100]
-    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories,
+    return render(ctx,'catalog.html',title='Equipment' if kind == 'equipment' else 'Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories,
                   equipment_counts=equipment_counts,equipment_status=equipment_status)
 
 
@@ -324,4 +341,5 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
     record.data=updated
     record.updated_at,record.updated_by=utcnow(),ctx.user.id
     audit(db,ctx.user,'catalog.created' if new else 'catalog.updated',f'{"Added" if new else "Updated"} {kind}: {key}.')
-    return redirect(ctx,f'/administration/catalog?kind={kind}','Catalog saved. Reload open wizards to use the updated rules. Existing character snapshots retain their rules.')
+    location = '/administration/equipment' if kind == 'equipment' else f'/administration/catalog?kind={kind}'
+    return redirect(ctx,location,'Catalog saved. Reload open wizards to use the updated rules. Existing character snapshots retain their rules.')
