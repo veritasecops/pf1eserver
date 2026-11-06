@@ -71,4 +71,6 @@ def sheet_formulas(character, values):
         if entry and 'armor_fields' not in entry:
             formulas[f'armor.{row}.quantity']='The total number of copies of this armor or shield recorded in inventory.'
             formulas[f'armor.{row}.weight']='Weight per item = the saved Medium-size catalog weight, multiplied by ½ for a Small character. This armor row shows one item’s weight; the gear row records the quantity’s combined weight.'
+    for coin in ("cp", "sp", "gp", "pp"):
+        formulas[f"money.{coin}"] = "On-hand balance changes through the treasure chest, purchases, and sales."
     return {key:formulas[key] for key in locked}
