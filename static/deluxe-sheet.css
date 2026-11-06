@@ -39,9 +39,10 @@
 .ds-vitals { display:grid; grid-template-columns:minmax(0,2.1fr) minmax(0,1fr); gap:14px; align-items:start; }
 .ds-hp h3 { margin-top:0; }
 .ds-hp .ds-field { margin:12px 0; }
-.ds-xp { width:100%; max-width:14rem; min-height:min-content; aspect-ratio:1; border:1px solid var(--ds-line); }
+.ds-xp { margin-top:12px; border:1px solid var(--ds-line); }
 .ds-page .ds-xp h3 { margin:0; }
 .ds-xp-body { display:grid; gap:8px; padding:8px; }
+.ds-xp .ds-xp-fields { margin:0; }
 .ds-xp .ds-record-note { margin:0; }
 .ds-xp .button { justify-self:start; }
 .ds-xp details { overflow-wrap:anywhere; }
