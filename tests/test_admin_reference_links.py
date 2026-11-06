@@ -15,7 +15,7 @@ from .test_rule_catalog import feat_form
 def test_individual_reference_links_on_list_and_editor(env, kind, key):
     client=env.login(env.admin)
     url=reference_links()[kind][key]
-    listing=client.get('/administration/catalog',params={'kind':kind})
+    listing=client.get('/administration/catalog',params={'kind':kind, 'q':key} if kind == 'feats' else {'kind':kind})
     assert listing.status_code==200
     assert f'href="{url}" target="_blank" rel="noopener noreferrer"' in listing.text
     editor=client.get(f'/administration/catalog/{kind}/{quote(key)}')

@@ -29,6 +29,9 @@ def default_catalog(legacy=False):
     for group, entries in [('feats', feats), ('skills', skills)]:
         for key, url in reference_links()[group].items():
             entries[key]['url'] = url
+    if not legacy:
+        from .feats import merge_feat_index
+        feats = merge_feat_index(feats)
     from .weapons import table_weapons
     weapons = {key:{**deepcopy(value),'enabled':True} for key,value in EQUIPMENT.items() if value['kind']=='weapon'} if legacy else deepcopy(table_weapons())
     from .armor import table_armor

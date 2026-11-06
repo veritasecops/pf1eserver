@@ -212,3 +212,25 @@ def test_character_class_editor_updates_creation_and_future_advancement(env):
     assert response.status_code == 303, response.text
     sheet = SheetForm(player.get(path).text)
     assert sheet.values['level'] == '2' and sheet.values['bab'] == '3'
+
+
+def test_full_feat_index_is_searchable_and_preserves_custom_rules(env):
+    from pathkeeper.feats import merge_feat_index, table_feats
+
+    published = table_feats()
+    assert len(published) == 3442
+    assert published['Ace Trip']['mastery'] == 'weapon'
+    assert published['Advance Warning']['cha'] == 15
+    custom = {'Toughness': {'enabled': False, 'effects': {'hp': 7}, 'url': 'https://example.com/feat'}}
+    merged = merge_feat_index(custom)
+    assert set(published) <= merged.keys()
+    for field, value in custom['Toughness'].items():
+        assert merged['Toughness'][field] == value
+    admin = env.login(env.admin)
+    first = admin.get('/administration/catalog?kind=feats')
+    assert first.status_code == 200 and '3442 entries' in first.text and 'Page 1 of 35' in first.text
+    last = admin.get('/administration/catalog?kind=feats&page=35')
+    assert last.status_code == 200 and 'Page 35 of 35' in last.text
+    found = admin.get('/administration/catalog', params={'kind': 'feats', 'q': 'Ace Trip'})
+    assert found.status_code == 200
+    assert '>Ace Trip</a>' in found.text and published['Ace Trip']['url'] in found.text

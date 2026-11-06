@@ -62,7 +62,13 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     if group in WEAPON_GROUPS: items=[(key,item) for key,item in items if item.get('group')==group]
     if category in WEAPON_CATEGORIES: items=[(key,item) for key,item in items if item.get('category')==category]
     items.sort(key=lambda pair:pair[1].get('name',pair[0]).casefold())
-    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category)
+    total = len(items)
+    pages = max(1, (total + 99) // 100) if kind == 'feats' else 1
+    raw_page = request.query_params.get('page', '1')
+    page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
+    if kind == 'feats':
+        items = items[(page - 1) * 100:page * 100]
+    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category)
 
 
 @router.get('/{kind}/new')
@@ -109,7 +115,11 @@ def parse_entry(form,kind,key,catalog):
             raise HTTPException(422, 'Reference link must be a safe HTTP or HTTPS URL.')
     if kind=='feats':
         item.update(hint=field(form,'hint',1000,required=False),combat=form.get('combat')=='on',
-                    monk=form.get('monk')=='on',repeatable=form.get('repeatable')=='on',finesse=form.get('finesse')=='on')
+                    monk=form.get('monk')=='on',repeatable=form.get('repeatable')=='on',finesse=form.get('finesse')=='on',
+                    pfs_marked=form.get('pfs_marked')=='on', prerequisite_notes=field(form,'prerequisite_notes',2000,required=False),
+                    mastery=field(form,'mastery',20,required=False))
+        if item['mastery'] not in {'', 'armor', 'shield', 'weapon'}:
+            raise HTTPException(422, 'Choose a valid mastery category.')
         choice=str(form.get('choice',''))
         if choice not in {'','skill','weapon'}: raise HTTPException(422,'Choose a valid selection type.')
         item['choice']=choice
@@ -230,7 +240,7 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         raise HTTPException(422,'Use a stable lowercase identifier with letters, numbers and single hyphens, without a -2 ending.')
     if new and any(existing.casefold()==key.casefold() for existing in record.data[kind]): raise HTTPException(409,'That catalog identifier already exists.')
     if not new and key not in record.data[kind]: raise HTTPException(404,'Catalog entry not found.')
-    if new and len(record.data[kind]) >= (75 if kind=='skills' else 1000 if kind in {'weapons','armor','deities'} else 200): raise HTTPException(422,'The skill catalog supports 75 entries; feats support 200 and weapons support 1000.')
+    if new and len(record.data[kind]) >= {'skills':75, 'feats':10000}.get(kind,1000): raise HTTPException(422, 'This catalog has reached its entry limit.')
     if new and kind in {'weapons','armor'}:
         from .pf1_data import EQUIPMENT
         if key in EQUIPMENT or key in record.data.get('armor' if kind=='weapons' else 'weapons',{}): raise HTTPException(409,'That identifier is already used by equipment.')
@@ -240,7 +250,7 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         if error.status_code!=422: raise
         item={**record.data[kind].get(key,{}),**{k:str(v) for k,v in form.items() if k not in {'csrf','version'}}}
         item.update(enabled=form.get('enabled')=='on',effects={target:form.get('effect.'+target,0) for target in [*EFFECTS,*('skill:'+s for s in record.data['skills'])]},classes=form.getlist('classes'))
-        for flag in ('combat','monk','repeatable','finesse','armor','trained','ranged','bow','two_handed','thrown','add_strength'): item[flag]=form.get(flag)=='on'
+        for flag in ('combat','monk','repeatable','finesse','pfs_marked','armor','trained','ranged','bow','two_handed','thrown','add_strength'): item[flag]=form.get(flag)=='on'
         return editor(ctx,record,kind,key,item,[error.detail],new)
     updated=deepcopy(record.data)
     updated[kind][key]=item

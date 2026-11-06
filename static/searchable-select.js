@@ -1,5 +1,6 @@
 (() => {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  const itemCache = new WeakMap();
   const render = ({ label, context='', path, value='', options=[], allowCustom=false, placeholder='Choose an option' }) => {
     const name = context ? `${context}: ${label}` : label;
     const id = `pw-select-${path.replace(/[^a-z0-9-]/gi,'-')}`;
@@ -7,7 +8,7 @@
     if (value && !items.some(item => item.value === value)) items.push({ value, label:value, hint:'Saved selection; confirm with your GM.' });
     const selected = items.find(item => item.value === value);
     const url = window.PathkeeperDropdown.referenceURL(selected?.url);
-    return `<div class="pw-search-select" data-search-select data-allow-custom="${allowCustom}" data-custom-label="GM approval required">
+    return `<div class="pw-search-select" data-search-select data-items="${escape(JSON.stringify(items))}">
       <span class="pw-search-label">${escape(label)}</span>
       <input type="hidden" data-search-select-value data-path="${escape(path)}" value="${escape(value)}">
       <span class="dropdown-picker"><a class="dropdown-value" id="${id}-selected" data-search-selected ${url?`href="${escape(url)}"`:''} target="_blank" rel="noopener noreferrer">${escape(selected?.label || value || placeholder)}</a><button type="button" class="pw-search-trigger dropdown-arrow" role="combobox" aria-label="${escape(name)}" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" aria-describedby="${id}-selected" data-search-trigger><span aria-hidden="true">▾</span></button></span>
@@ -15,7 +16,8 @@
         <div class="pw-search-box"><input type="search" data-search-query aria-label="Search ${escape(name)}" placeholder="Search options…" autocomplete="off"></div>
         <div class="pw-search-options" id="${id}-list" role="listbox" aria-label="${escape(name)} options" data-search-options>
           <button type="button" role="option" tabindex="-1" aria-label="No selection" aria-selected="${!value}" data-search-option data-value="" data-filter="">No selection</button>
-          ${items.map((item,index)=>`<button type="button" role="option" tabindex="-1" aria-label="${escape(item.label)}" ${item.hint?`aria-describedby="${id}-hint-${index}"`:""} aria-selected="${item.value === value}" data-search-option data-value="${escape(item.value)}" data-reference-url="${escape(item.url || '')}" data-filter="${escape(`${item.label} ${item.hint || ''}`.toLowerCase())}" ${item.disabled?'disabled aria-disabled="true"':''}><span>${escape(item.label)}</span>${item.hint?`<span class="secondary-text" id="${id}-hint-${index}">${escape(item.hint)}</span>`:''}</button>`).join('')}
+          <div data-search-results></div>
+          <p class="pw-search-empty" data-search-limit hidden>Showing the first 100 matches. Refine your search to see more.</p>
           ${allowCustom?'<button type="button" role="option" tabindex="-1" aria-selected="false" data-search-custom hidden></button>':''}
           <p class="pw-search-empty" data-search-empty hidden>No matching options.</p>
         </div>
@@ -33,15 +35,21 @@
   const filter = widget => {
     const query = widget.querySelector('[data-search-query]').value.trim();
     const normalized = query.toLowerCase();
-    let count = 0;
-    const existing = [...widget.querySelectorAll('[data-search-option]')];
-    for (const option of existing) {
-      option.hidden = normalized ? !option.dataset.value || !option.dataset.filter.includes(normalized) : false;
-      if (!option.hidden) count++;
-    }
+    if (!itemCache.has(widget)) itemCache.set(widget, JSON.parse(widget.dataset.items));
+    const existing = itemCache.get(widget);
+    const matching = existing.filter(item => `${item.label} ${item.hint || ''}`.toLowerCase().includes(normalized));
+    const selected = widget.querySelector('[data-search-select-value]').value;
+    const results = widget.querySelector('[data-search-results]');
+    const id = results.parentElement.id;
+    const clear = widget.querySelector('[data-search-option]');
+    clear.hidden = Boolean(normalized);
+    clear.setAttribute('aria-selected', String(!selected));
+    results.innerHTML = matching.slice(0, 100).map((item,index)=>`<button type="button" role="option" tabindex="-1" aria-label="${escape(item.label)}" ${item.hint?`aria-describedby="${id}-hint-${index}"`:""} aria-selected="${item.value === selected}" data-search-option data-value="${escape(item.value)}" data-reference-url="${escape(item.url || '')}" ${item.disabled?'disabled aria-disabled="true"':''}><span>${escape(item.label)}</span>${item.hint?`<span class="secondary-text" id="${id}-hint-${index}">${escape(item.hint)}</span>`:''}</button>`).join('');
+    widget.querySelector('[data-search-limit]').hidden = matching.length <= 100;
+    let count = matching.length + Number(!clear.hidden);
     const custom = widget.querySelector('[data-search-custom]');
     if (custom) {
-      custom.hidden = !query || query.length > 100 || existing.some(option => option.dataset.value.toLowerCase() === normalized);
+      custom.hidden = !query || query.length > 100 || existing.some(option => option.value.toLowerCase() === normalized);
       custom.dataset.value = query;
       custom.textContent = `Use “${query}” (GM approval required)`;
       custom.setAttribute('aria-label',`Use ${query} (GM approval required)`);

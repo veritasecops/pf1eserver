@@ -275,6 +275,10 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     catalog = load_catalog(db)
     overrides = catalog.get("classes", {})
     snapshot = {group: entries for group, entries in catalog.items() if group != "classes"}
+    from .feats import REVIEW_HINT
+    selected_feats = {feat["name"] for feat in computed["feats"]} | set(computed["automatic_feats"])
+    snapshot["feats"] = {name: item for name, item in catalog["feats"].items()
+                         if name in selected_feats or item.get("hint") != REVIEW_HINT}
     if data["class_id"] in overrides:
         snapshot["classes"] = {data["class_id"]: overrides[data["class_id"]]}
     character.sheet_data = {"schema":1,"catalog":snapshot,"input":data,"computed":computed,"rolls":selected,"source":OUTLINE}

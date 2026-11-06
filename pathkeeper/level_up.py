@@ -87,7 +87,8 @@ def plan(ctx, character):
         "human": character.ancestry.casefold() == "human",
         "missing": [ABILITIES[key] for key in ("con", "int") if not values[f"ability.{key}.score"]]
                    + (["Maximum HP"] if not values["hp.total"] else []),
-        "feats": sorted(name for name, item in catalog["feats"].items() if item.get("enabled", True)),
+        "feat_catalog": current_catalog["feats"],
+        "feats": sorted(name for name, item in current_catalog["feats"].items() if item.get("enabled", True)),
     }
 
 
@@ -174,8 +175,8 @@ def submit(character, advancement, form):
 
     # Preserve sheet bonuses while applying the supported unconditional effects
     # of new catalog feats. Choices and situational effects remain in history.
-    catalog = character_catalog(character)
-    feat_names = {name.casefold(): name for name in catalog["feats"]}
+    feats = {**advancement["feat_catalog"], **character_catalog(character)["feats"]}
+    feat_names = {name.casefold(): name for name in feats}
     history = (character.play_data or {}).get("advancement_history", [])
     previous_feats = {str(item["choice"]).casefold() for record in history for item in record["choices"]
                       if "feat" in item["feature"].casefold()}
@@ -189,7 +190,7 @@ def submit(character, advancement, form):
         if "feat" not in entry["feature"].casefold() or name not in feat_names or name in previous_feats:
             continue
         previous_feats.add(name)
-        feat = catalog["feats"][feat_names[name]]
+        feat = feats[feat_names[name]]
         for effect, amount in feat.get("effects", {}).items():
             if effect == "hp":
                 amount = max(target, amount) if name == "toughness" else amount

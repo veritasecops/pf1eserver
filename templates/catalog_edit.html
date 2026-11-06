@@ -17,7 +17,12 @@
 {{ text('hint','Effect and conditional rules',item.get('hint',''),'Describe conditional effects here. This text is shown in the wizard; only the numerical modifiers below are calculated.') }}
 <div class="form-grid">{{ check('combat','Combat feat (eligible for fighter bonus slot)') }}{{ check('monk','Eligible for first-level monk bonus slot') }}{{ check('repeatable','Repeatable with different skill or weapon choices') }}{{ check('finesse','Use Dexterity to attack with eligible finesse weapons') }}</div>
 <label class="field"><span>Additional selection</span><select name="choice">{% for value,label in [('','None'),('skill','Skill'),('weapon','Weapon')] %}<option value="{{ value if value is not none else '' }}" {% if item.get('choice','') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-<h2>Prerequisites</h2><p class="hint">First-level monk bonus slots waive ability, base attack, and prerequisite-feat requirements.</p>
+<div class="form-grid">
+<label class="field"><span>Mastery category</span><select name="mastery"><option value="">None</option>{% for category in ['armor','shield','weapon'] %}<option value="{{ category }}"{% if item.mastery == category %} selected{% endif %}>{{ category|capitalize }}</option>{% endfor %}</select></label>
+{{ check('pfs_marked','Marked PFS Legal by the reference') }}
+</div>
+<h2>Prerequisites</h2>
+<label class="field"><span>Additional prerequisites for manual review</span><textarea name="prerequisite_notes" maxlength="2000">{{ item.get('prerequisite_notes','') }}</textarea></label><p class="hint">First-level monk bonus slots waive ability, base attack, and prerequisite-feat requirements.</p>
 <div class="form-grid">{% for ability,label in abilities.items() %}{{ text(ability,label ~ ' minimum',item.get(ability,0),'0 means no requirement.','number') }}{% endfor %}{{ text('bab','Minimum base attack bonus',item.get('bab',0),'','number') }}<label class="field"><span>Required feat</span><select name="requires"><option value="">None</option>{% for name in feats|sort %}{% if name != key %}<option {% if item.get('requires') == name %}selected{% endif %}>{{ name }}</option>{% endif %}{% endfor %}</select></label></div>
 <h2>Calculated modifiers</h2><p class="hint">These values affect first-level creation totals. Bonuses from different feats add together. The same feat and choice never stack with themselves. A zero adds no modifier.</p>
 <div class="form-grid">{% for target,label in effects.items() %}{{ text('effect.' ~ target,label,item.get('effects',{}).get(target,0),'','number') }}{% endfor %}</div>

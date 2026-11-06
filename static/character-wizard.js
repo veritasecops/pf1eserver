@@ -39,7 +39,7 @@
         if(metadata.bab&&computed.bab<metadata.bab)reasons.push(`Requires base attack bonus +${metadata.bab}.`);
         if(metadata.requires&&!allNames.includes(metadata.requires))reasons.push(`Requires ${metadata.requires}.`);
       }
-      return {value:name,label:name,url:metadata.url,hint:[metadata.hint,...reasons].filter(Boolean).join(' '),disabled:reasons.length>0};
+      return {value:name,label:name,url:metadata.url,hint:[metadata.hint,metadata.prerequisite_notes,...reasons].filter(Boolean).join(' '),disabled:reasons.length>0};
     });
   }
   function featField(entry,path,label){
