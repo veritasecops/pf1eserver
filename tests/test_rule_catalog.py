@@ -281,8 +281,20 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
         assert f'>{name}</a>' in listing.text
     weapons = admin.get('/administration/equipment?equipment_group=Weapons&q=Longsword')
     assert 'href="/administration/catalog/weapons/longsword"' in weapons.text
+    assert 'href="/administration/catalog/weapons/new">Add weapon</a>' in weapons.text
+    assert '/administration/catalog/equipment/new' not in weapons.text
+    armor = admin.get('/administration/equipment?equipment_group=Armor')
+    assert 'href="/administration/catalog/armor/new">Add armor or shield</a>' in armor.text
+    assert '/administration/catalog/weapons/new' not in armor.text
+    for kind, group in [('weapons', 'Weapons'), ('armor', 'Armor')]:
+        editor = admin.get(f'/administration/catalog/{kind}/new')
+        assert editor.status_code == 200
+        assert f'href="/administration/equipment?equipment_group={group}"' in editor.text
+
     materials = admin.get('/administration/equipment?equipment_group=Special+Materials&q=Adamantine')
     assert '>Adamantine</a>' in materials.text
+    assert 'href="/administration/catalog/equipment/new?equipment_group=Special%20Materials">Add special material</a>' in materials.text
+
     editor = admin.get('/administration/catalog/equipment/miscellaneous-bedroll')
     assert editor.status_code == 200 and 'value="1 sp"' in editor.text
     response = env.post(admin, '/administration/catalog/equipment', {

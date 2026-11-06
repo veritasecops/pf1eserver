@@ -43,9 +43,18 @@ def kind_check(kind):
     if kind not in KINDS: raise HTTPException(404,'Catalog not found.')
 
 
+def catalog_location(kind, group=""):
+    group = {"weapons": "Weapons", "armor": "Armor"}.get(kind, group)
+    if kind in {"equipment", "weapons", "armor"}:
+        return "/administration/equipment" + ("?" + urlencode({"equipment_group": group}) if group else "")
+    return f"/administration/catalog?kind={kind}"
+
+
 def editor(ctx, record, kind, key, item, errors=(), new=False):
     response = render(ctx,'catalog_edit.html',title='Add catalog entry' if new else 'Edit '+item.get('name',key),
                       kinds=KINDS,kind=kind,key=key,item=item,new=new,version=record.version,
+                      catalog_back=catalog_location(kind, item.get("group", "") if kind == "equipment" else ""),
+                      equipment_editor=kind in {"weapons", "armor"},
                       abilities=ABILITIES,classes=CLASSES,skills=record.data['skills'],feats=record.data['feats'],
                       effects=EFFECTS,feat_categories=FEAT_CATEGORIES,errors=errors,weapon_url=safe_weapon_url,weapon_categories=WEAPON_CATEGORIES,weapon_groups=WEAPON_GROUPS,armor_categories=ARMOR_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS)
     if errors: response.status_code=422
@@ -341,5 +350,5 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
     record.data=updated
     record.updated_at,record.updated_by=utcnow(),ctx.user.id
     audit(db,ctx.user,'catalog.created' if new else 'catalog.updated',f'{"Added" if new else "Updated"} {kind}: {key}.')
-    location = '/administration/equipment' if kind == 'equipment' else f'/administration/catalog?kind={kind}'
+    location = catalog_location(kind, item.get('group', '') if kind == 'equipment' else '')
     return redirect(ctx,location,'Catalog saved. Reload open wizards to use the updated rules. Existing character snapshots retain their rules.')

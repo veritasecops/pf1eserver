@@ -1,7 +1,19 @@
 {% extends 'base.html' %}
-{% block extra_head %}<link rel="stylesheet" href="/static/catalog.css?v=rules-add-toolbar">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/catalog.css?v=contextual-equipment-actions">{% endblock %}
 {% block content %}
-{% set add_entry %}{% if kind != "classes" %}<a class="button primary catalog-add-entry" href="/administration/catalog/{{ kind }}/new{% if kind == 'equipment' and equipment_group %}?equipment_group={{ equipment_group|urlencode }}{% endif %}">Add {{ 'feat' if kind == 'feats' else 'skill' if kind == 'skills' else 'armor' if kind=='armor' else 'equipment item' if kind=='equipment' else 'deity' if kind=='deities' else 'weapon' }}</a>{% endif %}{% endset %}
+{% set add_kind = {'Weapons': 'weapons', 'Armor': 'armor'}.get(equipment_group, kind) if kind == 'equipment' else kind %}
+{% set add_labels = {'feats': 'feat', 'skills': 'skill', 'armor': 'armor or shield', 'equipment': 'special material' if equipment_group == 'Special Materials' else 'equipment item', 'deities': 'deity', 'weapons': 'weapon'} %}
+{% set add_entry %}
+{% if add_kind in add_labels %}
+<div class="catalog-add-entry row">
+  {% if kind == 'equipment' and not equipment_group %}
+  <a class="button" href="/administration/catalog/weapons/new">Add weapon</a>
+  <a class="button" href="/administration/catalog/armor/new">Add armor or shield</a>
+  {% endif %}
+  <a class="button primary" href="/administration/catalog/{{ add_kind }}/new{% if add_kind == 'equipment' and equipment_group %}?equipment_group={{ equipment_group|urlencode }}{% endif %}">Add {{ add_labels[add_kind] }}</a>
+</div>
+{% endif %}
+{% endset %}
 <header class="page-header"><div><h1>{{ "Equipment" if kind == "equipment" else "Rules catalog" }}</h1>{% if kind != "equipment" %}<p>Edit feats, skills, deities, and character classes.</p>{% endif %}</div></header>
 {% include 'admin_tabs.html' %}
 {% if kind != "equipment" %}<nav class="tabs" aria-label="Catalog lists">{% for value,label in kinds.items() if value not in ("equipment", "weapons", "armor") %}<a href="?kind={{ value }}" {% if kind == value %}class="active" aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>{% endif %}
@@ -12,7 +24,6 @@
   <a href="?equipment_group={{ label|urlencode }}&amp;q={{ search|urlencode }}&amp;equipment_status={{ equipment_status }}"{% if label == equipment_group %} class="active" aria-current="page"{% endif %}>{{ label or 'All equipment' }} <span class="count">{{ equipment_counts[label] if label else equipment_counts.values()|sum }}</span></a>
   {% endfor %}
 </nav>
-<div class="row"><a class="button small" href="/administration/catalog/weapons/new">Add weapon</a><a class="button small" href="/administration/catalog/armor/new">Add armor or shield</a></div>
 {% endif %}
 <section class="card"><form method="get" class="filter-bar catalog-toolbar">{% if kind != "equipment" %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}<label class="search-input"><input name="q" value="{{ search }}" aria-label="Search catalog" placeholder="Search {{ kinds[kind]|lower }}"></label>{% if kind=='weapons' %}<select name="group" aria-label="Filter by proficiency"><option value="">All proficiencies</option>{% for id,label in weapon_groups.items() %}<option value="{{ id }}" {% if group_filter==id %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><select name="category" aria-label="Filter by weapon category"><option value="">All categories</option>{% for id,label in weapon_categories.items() %}<option value="{{ id }}" {% if category_filter==id %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% elif kind == 'equipment' %}
 <input type="hidden" name="equipment_group" value="{{ equipment_group }}">

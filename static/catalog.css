@@ -3,4 +3,5 @@
 .catalog-source-link{text-decoration:underline}.catalog-editor textarea{min-height:90px}.catalog-source-link:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 
 .catalog-toolbar { flex-wrap:wrap; }
-.catalog-toolbar .catalog-add-entry { margin-inline-start:auto; white-space:nowrap; }
+.catalog-toolbar .catalog-add-entry { margin-inline-start:auto; flex-wrap:wrap; justify-content:flex-end; }
+.catalog-add-entry .button { white-space:nowrap; }
