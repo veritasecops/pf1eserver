@@ -26,13 +26,16 @@ def ability_name(name):
     return normalized(re.sub(r"\s+(?:\([^)]*\)|[+]?\d.*)$", "", name).strip())
 
 
-def ability_options(character, catalog):
+def ability_options(character, catalog, include_prompts=True):
     class_id = class_key(character, catalog)
     profile = class_profile(catalog, class_id) if class_id else {}
     class_url = safe_weapon_url(profile.get("url", ""))
     features = {}
     for level in profile.get("levels", [])[:character.level]:
-        for name in [*re.split(r",\s*(?![^()]*\))", level["features"]), *level.get("choices", [])]:
+        names = re.split(r",\s*(?![^()]*\))", level["features"])
+        if include_prompts:
+            names.extend(level.get("choices", []))
+        for name in names:
             if name:
                 features[ability_name(name)] = (name, class_url)
     race = next((key for key, item in RACES.items() if normalized(item["name"]) == normalized(character.ancestry)), None)
@@ -42,7 +45,7 @@ def ability_options(character, catalog):
 
 
 def automatic_class_abilities(values, character, catalog):
-    features, _ = ability_options(character, catalog)
+    features, _ = ability_options(character, catalog, include_prompts=False)
     recorded = {ability_name(values[f"feature.{row}"].split(":", 1)[0]) for row in range(56)}
     return [(name, url) for key, (name, url) in features.items()
             if key not in recorded and "feat" not in key.split()]
