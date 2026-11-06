@@ -413,3 +413,30 @@ def test_autosave_retry_cannot_hide_a_later_edit_from_another_window(env):
     assert autosave(client,path,values).status_code == 409
     with Session(engine()) as db:
         assert db.get(Character,character.id).notes == 'Edit from another window'
+
+
+def test_feature_names_link_to_catalog_class_and_race_rules(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    form = SheetForm(client.get(path).text)
+    form.values.update({
+        'feature.0': 'Weapon Focus (Longsword)',
+        'feature.1': 'Armor Training +1',
+        'feature.2': 'Skilled',
+        'feature.3': 'Custom campaign ability',
+    })
+    response = client.post(path + '/play-sheet', data=form.values, headers={
+        'Accept': 'application/json', 'X-Sheet-Save-Id': 'a' * 32,
+    })
+    assert response.status_code == 200, response.text
+    links = response.json()['feature_links']
+    assert links['0']['url'].endswith('ItemName=Weapon%20Focus')
+    assert links['1']['url'].endswith('ItemName=Fighter')
+    assert links['2']['url'].endswith('ItemName=Human')
+    assert '3' not in links
+    page = client.get(path)
+    assert '>Weapon Focus (Longsword)</a>' in page.text
+    assert '>Armor Training +1</a>' in page.text
+    assert '>Skilled</a>' in page.text
+    assert SheetForm(page.text).values['feature.3'] == 'Custom campaign ability'

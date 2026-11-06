@@ -22,6 +22,25 @@
     errors.textContent = message;
     errors.hidden = false;
   };
+  const featureRows = [...form.querySelectorAll('[data-feature-row]')];
+  function showFeature(row) {
+    const input = row.querySelector('input');
+    const link = row.querySelector('a');
+    const linked = document.activeElement !== input && link.hasAttribute('href') &&
+      link.textContent === input.value.trim();
+    input.hidden = linked;
+    link.hidden = !linked;
+    row.querySelector('button').hidden = !linked;
+  }
+  for (const row of featureRows) {
+    const input = row.querySelector('input');
+    row.querySelector('button').addEventListener('click', () => {
+      input.hidden = false;
+      input.focus();
+      showFeature(row);
+    });
+    input.addEventListener('blur', () => showFeature(row));
+  }
   const applyTotals = result => {
     if (levelUp && typeof result.can_level_up === 'boolean') levelUp.hidden = !result.can_level_up;
     if(result.equipment_effects)equipmentEffects=result.equipment_effects;
@@ -47,6 +66,16 @@
         link.textContent = linked ? reference.name : '';
         if (linked) link.href = reference.url;
         else link.removeAttribute('href');
+      }
+    }
+    if (result.feature_links) {
+      for (const row of featureRows) {
+        const reference = result.feature_links[row.dataset.featureRow];
+        const link = row.querySelector('a');
+        link.textContent = reference?.name || '';
+        if (reference) link.href = reference.url;
+        else link.removeAttribute('href');
+        showFeature(row);
       }
     }
     window.PathkeeperEquipment?.update(result.equipment_state,result.equipment_groups);

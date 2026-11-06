@@ -19,6 +19,7 @@ from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .rule_catalog import character_catalog, load_catalog
 from .weapons import sheet_weapon_links
+from .feature_links import sheet_feature_links
 from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
@@ -333,16 +334,20 @@ def render_character(ctx, character, values=None, errors=()):
     owner = ctx.db.get(User, character.owner_id)
     campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
     gm = ctx.db.get(User, campaign.owner_id) if campaign else None
+    if values is None:
+        values = sheet_values(character, owner, campaign, gm)
+    catalog = load_catalog(ctx.db)
     response = render(ctx, "character.html", title=character.name, character=character, owner=owner, campaign=campaign,
                       can_delete=can_delete_character(ctx.user, character),
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       header_background_url=header_background_url(ctx.db,character),default_header_background=DEFAULT_HEADER_BACKGROUND,
                       can_edit_header_background=ctx.user.id == character.owner_id,
-                      can_level_up=ctx.user.id == character.owner_id and level_up.available(character, campaign, load_catalog(ctx.db)),
+                      can_level_up=ctx.user.id == character.owner_id and level_up.available(character, campaign, catalog),
                       advancement_history=(character.play_data or {}).get("advancement_history", []),
-                      armor_links=sheet_armor_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
-                      weapon_links=sheet_weapon_links(values if values is not None else sheet_values(character,owner,campaign,gm),character,load_catalog(ctx.db)),
-                      **view_context(character, owner, campaign, gm, values, errors,deity_catalog=load_catalog(ctx.db).get('deities',{})))
+                      armor_links=sheet_armor_links(values,character,catalog),
+                      weapon_links=sheet_weapon_links(values,character,catalog),
+                      feature_links=sheet_feature_links(values, character, catalog),
+                      **view_context(character, owner, campaign, gm, values, errors,deity_catalog=catalog.get('deities',{})))
     if errors:
         response.status_code = 422
     return response
@@ -453,7 +458,8 @@ def autosave_response(ctx, character):
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values),
                          'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
                          'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
-                         'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db))},
+                         'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db)),
+                         'feature_links':sheet_feature_links(values,character,load_catalog(ctx.db))},
                         headers={'Cache-Control':'no-store'})
 
 
