@@ -358,7 +358,7 @@ def submit(character, advancement, form):
     entry = {
         "level": target, "class": character.class_name, "hit_die": roll, "hp": hp,
         "favored": favored, "ability": ability, "features": advancement["features"], "choices": selections,
-        "spells": spell_additions, "spell_swap": swap_record, "notes": text("other_changes", 3000),
+        "spells": spell_additions, "spell_swap": swap_record,
     }
     if not errors:
         character.play_data = {

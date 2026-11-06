@@ -79,10 +79,6 @@
         {% endif %}
       {% endfor %}
     {% endif %}
-    <label class="field"><span>Other class changes</span>
-      <textarea name="other_changes" rows="4" maxlength="3000">{{ submitted.get('other_changes', '') }}</textarea>
-      <span class="secondary-text">Record archetype replacements, domain or bloodline details, companion changes, and other GM-approved adjustments here. Apply their situational modifiers on the character sheet.</span>
-    </label>
   {% if advancement.current.get('slots') or advancement.current.get('known') %}
   <section class="stack">
     <h3>Spells and formulae</h3>
@@ -92,7 +88,7 @@
     {% if advancement.current.get('prepared') %}
     <p>Spells prepared · {% for level, count in advancement.current.prepared|dictsort %}{{ level }}: {{ count }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     {% endif %}
-    {% if advancement.known %}<p>Enter new spells known, one per line. Use Other class changes for bonus spells from a bloodline, mystery, or similar feature.</p>{% endif %}
+    {% if advancement.known %}<p>Enter new spells known, one per line.</p>{% endif %}
     {% if profile.book %}<p>Enter {{ profile.book }} new spellbook, familiar, or formula-book entries, one per line, under the appropriate spell levels.</p>{% endif %}
     {% for level, count in advancement.known|dictsort %}
     <label class="field"><span>Level {{ level }} · {{ count }} new</span><textarea name="spells_{{ level }}" data-spell-count="{{ count }}" rows="3" maxlength="2000" required>{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
@@ -110,7 +106,7 @@
       <label class="field"><span>Level {{ level }} additions</span><textarea name="spells_{{ level }}" data-book-spells rows="2" maxlength="2000">{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
       {% endfor %}
     {% endif %}
-    {% if not advancement.known and not profile.book %}<p>Review newly available spells or implements in the class rules. Record any choices under Other class changes.</p>{% endif %}
+    {% if not advancement.known and not profile.book %}<p>Review newly available spells or implements in the class rules.</p>{% endif %}
   </section>
   {% endif %}
     <p>Base attack bonus {{ '%+d'|format(advancement.bab) }} · Fortitude {{ '%+d'|format(advancement.saves[0]) }} · Reflex {{ '%+d'|format(advancement.saves[1]) }} · Will {{ '%+d'|format(advancement.saves[2]) }}</p>

@@ -93,6 +93,7 @@ def test_wizard_gates_level_and_saves_choices_once(env):
     assert wizard.text.count('data-level-step>') == 3
     assert '>Current ranks</th>' in wizard.text and 'ItemName=Climb' in wizard.text
     assert 'Review and advance' not in wizard.text
+    assert 'other_changes' not in wizard.text
     assert env.login(env.admin).get(path + "/level-up").status_code == 403
     data = {"version": saved.json()["version"], "target": 4, "hit_die": 5, "favored": "hp",
             "ability": "con", "rank_climb": 3, "choice_0": "Improved Initiative", "reviewed": "1"}
@@ -163,3 +164,23 @@ def test_bard_level_up_requires_new_spells_and_updates_slots(env):
     assert sheet.values["spell.1.bonus"] == "1"
     assert sheet.values["spell.1.list"] == "Cure Light Wounds\nCharm Person"
     assert sheet.values["caster_level"] == "2"
+
+def test_migration_removes_only_retired_advancement_notes(env, isolated_database):
+    from pathkeeper.migrations import migrate
+
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.play_data = {
+            "experience": "7500",
+            "advancement_history": [{"level": 3, "choices": [], "notes": "Retired text"}],
+        }
+        db.commit()
+    migrate(isolated_database)
+    migrate(isolated_database)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        assert record.notes == character.notes
+        assert record.play_data == {
+            "experience": "7500", "advancement_history": [{"level": 3, "choices": []}],
+        }

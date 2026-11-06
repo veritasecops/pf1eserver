@@ -191,4 +191,16 @@ def migrate(admin_engine):
             record.data = {**record.data, "feats": merge_feat_index(record.data["feats"])}
             db.add(SchemaMigration(version=19, name="archives_of_nethys_feat_categories"))
             db.commit()
-    print("Database migrations applied through 019 (Archives of Nethys feat categories).")
+        if not db.get(SchemaMigration, 20):
+            query = select(Character).where(Character.play_data.is_not(None)).order_by(Character.id).with_for_update()
+            for character in db.scalars(query):
+                data = character.play_data or {}
+                history = data.get("advancement_history", [])
+                if any("notes" in entry for entry in history):
+                    character.play_data = {**data, "advancement_history": [
+                        {key: value for key, value in entry.items() if key != "notes"}
+                        for entry in history
+                    ]}
+            db.add(SchemaMigration(version=20, name="remove_level_up_notes"))
+            db.commit()
+    print("Database migrations applied through 020 (remove level-up notes).")
