@@ -1,0 +1,14 @@
+{% macro character_picker(options, optional=false) -%}
+{% if options %}
+<label class="field"><span>Existing character{% if optional %} (optional){% endif %}</span>
+  <select name="character_id"{% if not optional %} required{% endif %}>
+    <option value="">{{ 'Skip for now' if optional else 'Choose a character' }}</option>
+    {% for character, owner_name in options %}
+    <option value="{{ character.id }}">{{ character.name }} · {{ character.class_name or 'Adventurer' }} {{ character.level }} · {{ owner_name }}</option>
+    {% endfor %}
+  </select>
+</label>
+{% else %}
+<p class="hint">No unassigned characters are available to add.</p>
+{% endif %}
+{%- endmacro %}

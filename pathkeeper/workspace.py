@@ -82,6 +82,37 @@ async def campaigns_page(request: Request, db: Session = Depends(get_db)):
     return render(ctx, "campaigns.html", title="Campaigns", campaigns=campaigns)
 
 
+def available_campaign_characters(account):
+    query = select(Character).where(Character.campaign_id.is_(None))
+    if account.role != "admin":
+        query = query.where(Character.owner_id == account.id)
+    return query
+
+
+def campaign_character_options(ctx):
+    return ctx.db.execute(
+        available_campaign_characters(ctx.user).add_columns(User.name)
+        .join(User, User.id == Character.owner_id).order_by(Character.name, Character.id)
+    ).all()
+
+
+def assign_campaign_character(ctx, campaign, form):
+    character_id = integer(form, "character_id", 1, 2**63 - 1)
+    character = ctx.db.scalar(
+        available_campaign_characters(ctx.user).where(Character.id == character_id)
+        .with_for_update().execution_options(populate_existing=True)
+    )
+    if character is None:
+        raise HTTPException(422, "Choose an available character that is unassigned to a campaign.")
+    preserve_xp(character, "slow")
+    character.campaign_id = campaign.id
+    if character.sheet_data:
+        character.sheet_data = {**character.sheet_data, "input": {
+            **character.sheet_data["input"], "campaign_id": campaign.id,
+        }}
+    audit(ctx.db, ctx.user, "campaign.character_added", f"Added {character.name} to {campaign.name}.")
+
+
 @router.get("/campaigns/new")
 async def campaign_new(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
@@ -89,7 +120,8 @@ async def campaign_new(request: Request, db: Session = Depends(get_db)):
     if account.role == "player":
         raise HTTPException(403, "Only Game Masters and Admins can create campaigns.")
     owners = list(db.scalars(select(User).where(User.role.in_(["gm", "admin"]), User.active.is_(True)).order_by(User.name))) if account.role == "admin" else []
-    return render(ctx, "campaign_form.html", title="Create campaign", campaign=None, owners=owners, xp_tracks=XP_TRACKS)
+    return render(ctx, "campaign_form.html", title="Create campaign", campaign=None, owners=owners, xp_tracks=XP_TRACKS,
+                  character_options=campaign_character_options(ctx))
 
 
 @router.post("/campaigns")
@@ -105,6 +137,9 @@ async def campaign_create(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(422, "Choose an active Game Master or Admin as owner.")
     campaign = Campaign(xp_speed=campaign_xp_speed(form), owner_id=owner_id, name=field(form, "name"), description=field(form, "description", 20000, False), setting=field(form, "setting", 150, False))
     db.add(campaign)
+    if form.get("character_id"):
+        db.flush()
+        assign_campaign_character(ctx, campaign, form)
     audit(db, account, "campaign.created", f"Created campaign {campaign.name}.")
     commit(db)
     return redirect(ctx, f"/campaigns/{campaign.id}", "Campaign created. You can now invite players.")
@@ -120,7 +155,17 @@ async def campaign_page(campaign_id: int, request: Request, db: Session = Depend
     invitations = list(db.scalars(select(Invitation).where(Invitation.campaign_id == campaign_id).order_by(Invitation.id.desc()).limit(50))) if manage else []
     owner = db.get(User, campaign.owner_id)
     return render(ctx, "campaign.html", title=campaign.name, campaign=campaign, manage=manage,
-                  characters=characters, members=members, invitations=invitations, owner=owner, now=utcnow())
+                  characters=characters, members=members, invitations=invitations, owner=owner, now=utcnow(),
+                  character_options=campaign_character_options(ctx))
+
+
+@router.post("/campaigns/{campaign_id}/characters")
+async def campaign_add_character(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    form = await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, lock=True)
+    assign_campaign_character(ctx, campaign, form)
+    return redirect(ctx, f"/campaigns/{campaign.id}", "Character added to the campaign.")
 
 
 @router.get("/campaigns/{campaign_id}/edit")

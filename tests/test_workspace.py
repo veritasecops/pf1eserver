@@ -267,3 +267,41 @@ def test_character_level_validation(env):
     c = env.login(env.player)
     for invalid in (0, 41, "1.5", "wrong"):
         assert env.post(c, "/characters", char_form(level=invalid)).status_code == 422
+
+
+def test_campaign_creation_can_attach_an_existing_character(env):
+    c = env.login(env.gm)
+    own = seed_character(env.gm, name="Unassigned GM character")
+    private = seed_character(env.player, name="Private player character")
+    response = c.get("/campaigns/new")
+    assert own.name in response.text and private.name not in response.text
+    assert env.post(c, "/campaigns", {"name": "Invalid selection", "character_id": private.id}).status_code == 422
+    response = env.post(c, "/campaigns", {"name": "New party", "xp_speed": "fast", "character_id": own.id})
+    assert response.status_code == 303
+    campaign_id = int(response.headers["location"].rsplit("/", 1)[1])
+    with Session(engine()) as db:
+        assert db.scalar(select(Campaign).where(Campaign.name == "Invalid selection")) is None
+        character = db.get(Character, own.id)
+        assert character.campaign_id == campaign_id and character.owner_id == env.gm.id
+        assert character.play_data["experience"] == "7500"
+    assert own.name in c.get(response.headers["location"]).text
+
+
+def test_campaign_members_can_add_only_their_own_unassigned_characters(env):
+    campaign = seed_campaign(env.gm, members=[env.player])
+    elsewhere = seed_campaign(env.gm2)
+    own = seed_character(env.player, name="Available adventurer")
+    assigned = seed_character(env.player, elsewhere, name="Already assigned adventurer")
+    private = seed_character(env.player2, name="Private adventurer")
+    c = env.login(env.player)
+    path = f"/campaigns/{campaign.id}"
+    page = c.get(path)
+    assert own.name in page.text
+    assert assigned.name not in page.text and private.name not in page.text
+    assert "/characters/new?campaign_id=" not in page.text
+    for character in (assigned, private):
+        assert env.post(c, path + "/characters", {"character_id": character.id}).status_code == 422
+    assert env.post(c, f"/campaigns/{elsewhere.id}/characters", {"character_id": own.id}).status_code == 404
+    assert env.post(c, path + "/characters", {"character_id": own.id}).status_code == 303
+    assert env.post(c, path + "/characters", {"character_id": own.id}).status_code == 422
+    assert f'href="/characters/{own.id}"' in c.get(path).text
