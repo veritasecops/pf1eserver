@@ -39,7 +39,8 @@ def calculated_fields(character, values):
             locked.update({f'skill.{key}.total',f'skill.{key}.ability'})
     locked.update(f'weapon.{row}.{part}' for row in range(6) for part in ('name','quantity','attack','critical','type','range','ammunition','damage'))
     locked.update(f'armor.{row}.{part}' for row in range(6) for part in ('name','quantity','type','bonus','max_dex','penalty','failure','weight'))
-    locked.update(f"gear.{row}.{part}" for row in range(GEAR_SLOTS) for part in ("name", "weight", "notes"))
+    locked.update(f"gear.{row}.{part}" for row in range(GEAR_SLOTS) for part in ("name", "weight"))
+    locked.update(f"gear.{row}.notes" for row in range(GEAR_SLOTS) if not values.get(f"gear.{row}.name"))
     locked.update(f'feature.{row}' for row in range(56))
     locked.update(f'spell.{level}.known' for level in range(10))
     # These are calculated by the first-level wizard. At later levels they need

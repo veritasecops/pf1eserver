@@ -37,7 +37,6 @@ def project_backpack(character, values):
             continue
         values[f"gear.{row}.name"] = gear_label(item)
         values[f"gear.{row}.weight"] = gear_weight(item, values.get("size", ""))
-        values[f"gear.{row}.notes"] = item.get("notes", "")
 
 
 def seed_backpack(character, values, catalog):

@@ -170,8 +170,12 @@ def test_backpack_add_remove_and_sell_use_the_sheet_treasure(env):
     }).json()['purchase_fields']['gear.0.notes'] == 'Family heirloom'
     assert result['purchase_fields']['money.gp'] == '100'
     sheet = SheetForm(client.get(path).text)
+    assert sheet.values['gear.0.notes'] == 'Family heirloom'
+    sheet.values['gear.0.notes'] = 'Passed down for generations'
     sheet.values['notes'] = 'Keep backpack on autosave'
     assert env.post(client, path + '/play-sheet', sheet.values).status_code == 303
+    with Session(engine()) as db:
+        assert db.get(Character, character).play_data['backpack'][0]['notes'] == 'Passed down for generations'
     sale = disposal(client, character, kind='backpack', row=add['item_id'], action='sell', coins={'gp': 6, 'sp': 5})
     sold = env.post(client, path + '/equipment/dispose', sale)
     assert sold.status_code == 200, sold.text

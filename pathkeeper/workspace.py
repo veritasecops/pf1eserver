@@ -485,8 +485,15 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
     metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation") if key in (character.play_data or {})}
+    if "backpack" in metadata:
+        metadata["backpack"] = [
+            {**item, "notes": values[f"gear.{row}.notes"]}
+            if (row := item.get("gear_row")) is not None else item
+            for item in metadata["backpack"]
+        ]
     character.play_data = {"calculation_version":1, **metadata, **{key:value for key,value in values.items()
-                           if key not in core | {"player", "next_level"} and value != base[key]}, **persist_effects(character, values), "experience": values["experience"]}
+                           if key not in core | {"player", "next_level"} and value != base[key]
+                           and not (key.startswith("gear.") and key.endswith(".notes"))}, **persist_effects(character, values), "experience": values["experience"]}
     for key in core - {"level"}:
         setattr(character, key, values[key])
     if character.sheet_data:

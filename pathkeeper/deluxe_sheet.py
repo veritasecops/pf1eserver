@@ -183,6 +183,9 @@ def sheet_values(character, owner, campaign=None, gm=None):
     values = baseline(character,owner,campaign,gm)
     saved = character.play_data or {}
     values.update({key:value for key,value in saved.items() if key in FIELDS})
+    for item in saved.get("backpack", []):
+        if (row := item.get("gear_row")) is not None:
+            values[f"gear.{row}.notes"] = item.get("notes", "")
     # Older sheets grouped the wizard's Dodge bonus into AC Misc. Separate it
     # once without counting the existing bonus twice. New saves carry a version.
     if not saved.get('calculation_version') and 'ac.misc' in saved and 'ac.dodge' not in saved:

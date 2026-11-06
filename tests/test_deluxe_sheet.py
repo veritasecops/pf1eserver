@@ -182,7 +182,8 @@ def test_migrate_legacy_gear_to_backpack_without_duplicate_stacks(env, isolated_
     migrate(isolated_database)
     client = env.login(env.player)
     sheet = SheetForm(client.get(f'/characters/{character.id}').text)
-    assert {'gear.0.name', 'gear.0.weight', 'gear.1.notes'} <= sheet.readonly
+    assert {'gear.0.name', 'gear.0.weight'} <= sheet.readonly
+    assert 'gear.1.notes' not in sheet.readonly
     assert 'gear.0.equipped' not in sheet.readonly and sheet.values['gear.0.equipped'] == '1'
     assert sheet.values['gear.1.notes'] == 'Travel notes'
     with Session(engine()) as db:

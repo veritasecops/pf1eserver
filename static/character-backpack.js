@@ -146,7 +146,15 @@
   });
   let trigger = opener;
   for (const button of [opener, ...document.querySelectorAll('[data-open-backpack]')]) {
-    button.addEventListener('click', () => { trigger = button; bag.showModal(); });
+    button.addEventListener('click', () => {
+      trigger = button;
+      items = items.map(item => {
+        const note = sheet.elements.namedItem(`gear.${item.gear_row}.notes`);
+        return note ? {...item, notes: note.value} : item;
+      });
+      render();
+      bag.showModal();
+    });
   }
   bag.addEventListener('close', () => trigger.focus());
   bag.querySelector('[data-close-backpack]').addEventListener('click', () => { if (!busy) bag.close(); });

@@ -75,6 +75,7 @@ def sheet_formulas(character, values):
     for coin in ("cp", "sp", "gp", "pp"):
         formulas[f"money.{coin}"] = "On-hand balance changes through the treasure chest, purchases, and sales."
     for row in range(GEAR_SLOTS):
-        for part in ("name", "weight", "notes"):
+        for part in ("name", "weight"):
             formulas[f"gear.{row}.{part}"] = "This information comes from the backpack."
+        formulas[f"gear.{row}.notes"] = "Add an item to this slot before entering a note."
     return {key:formulas[key] for key in locked}
