@@ -112,7 +112,9 @@
       }
       this.dialog.querySelector('#equipment-results').setAttribute('aria-labelledby',`equipment-${tab}-tab`);
       this.dialog.querySelector('[data-weapon-proficiency]').hidden=armor;
-      this.dialog.querySelector('[name="weapon-group"]').value='';
+      const group = this.dialog.querySelector('[name="weapon-group"]');
+      group.value = '';
+      window.PathkeeperDropdown?.refresh(group);
       this.dialog.querySelector('[name="weapon-search"]').value='';
       this.dialog.querySelector('[name="weapon-search"]').placeholder=armor?'Chain shirt, shield…':'Longsword, crossbow…';
       this.dialog.querySelector('[data-equipment-type-label]').textContent=armor?'Armor type':'Weapon type';
@@ -133,7 +135,11 @@
         const price = item.cost === null && !fixedPrice ? `<label class="pw-weapon-price-label">Agreed unit price (gp)<input type="number" data-weapon-price="${escape(id)}" min="0" max="1000000" step="0.01" value="${escape(this.prices[id] ?? '')}" aria-label="Agreed unit price for ${escape(item.name)}"></label><span class="secondary-text">Published: ${escape(item.cost_text || 'Special price')}</span>` : money(item.cost === null ? this.options.prices[id] : item.cost);
         const armor=isArmor(item);
         const details=armor?`${armorCategories[item.category]} · Bonus ${item.bonus_text || (item.kind==='shield'?item.shield:item.armor) || '—'} · Max Dex ${item.max_dex===100?'—':item.max_dex} · Check ${item.acp} · Spell failure ${item.spell_failure_text || '—'} · Speed ${item.speed_30_text || '—'}/${item.speed_20_text || '—'} · ${item.weight_text || (item.weight ?? '—')+' lb.'}`:`${item.group || ''} · ${categories[item.category] || 'Weapon'} · ${item.damage || '—'}`;
-        return `<tr data-weapon-row="${escape(id)}"><th scope="row"><strong>${escape(item.name)}</strong><span class="secondary-text">${escape(details)}</span>${item.url ? `<a href="${escape(item.url)}" target="_blank" rel="noopener noreferrer">${armor?'Armor':'Weapon'} reference ↗</a>` : ''}${this.options.owned[id] ? `<span class="secondary-text">Already in inventory: ${this.options.owned[id]}</span>` : ''}</th><td>${price}</td><td><input type="number" data-weapon-quantity="${escape(id)}" min="0" max="${available}" step="1" value="${escape(this.quantities[id] || 0)}" aria-label="Add quantity of ${escape(item.name)}" ${available ? '' : 'disabled'}></td><td data-weapon-line="${escape(id)}">${money(0)}</td></tr>`;
+        const reference = window.PathkeeperDropdown.referenceURL(item.url);
+        const name = reference
+          ? `<a class="equipment-name-reference" href="${escape(reference)}" target="_blank" rel="noopener noreferrer">${escape(item.name)}</a>`
+          : escape(item.name);
+        return `<tr data-weapon-row="${escape(id)}"><th scope="row"><strong>${name}</strong><span class="secondary-text">${escape(details)}</span>${this.options.owned[id] ? `<span class="secondary-text">Already in inventory: ${this.options.owned[id]}</span>` : ''}</th><td>${price}</td><td><input type="number" data-weapon-quantity="${escape(id)}" min="0" max="${available}" step="1" value="${escape(this.quantities[id] || 0)}" aria-label="Add quantity of ${escape(item.name)}" ${available ? '' : 'disabled'}></td><td data-weapon-line="${escape(id)}">${money(0)}</td></tr>`;
       }).join('') || '<tr><td colspan="4">No matching equipment. Try another name or type.</td></tr>';
       this.dialog.querySelector('.pw-weapon-result-count').textContent = `${items.length} matching ${items.length === 1 ? 'entry' : 'entries'}`;
       this.update();

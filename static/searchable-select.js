@@ -6,15 +6,16 @@
     const items = [...options];
     if (value && !items.some(item => item.value === value)) items.push({ value, label:value, hint:'Saved selection; confirm with your GM.' });
     const selected = items.find(item => item.value === value);
+    const url = window.PathkeeperDropdown.referenceURL(selected?.url);
     return `<div class="pw-search-select" data-search-select data-allow-custom="${allowCustom}" data-custom-label="GM approval required">
       <span class="pw-search-label">${escape(label)}</span>
       <input type="hidden" data-search-select-value data-path="${escape(path)}" value="${escape(value)}">
-      <button type="button" class="pw-search-trigger" role="combobox" aria-label="${escape(name)}" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" aria-describedby="${id}-selected" data-search-trigger><span id="${id}-selected" data-search-selected>${escape(selected?.label || value || placeholder)}</span><span aria-hidden="true">▾</span></button>
+      <span class="dropdown-picker"><a class="dropdown-value" id="${id}-selected" data-search-selected ${url?`href="${escape(url)}"`:''} target="_blank" rel="noopener noreferrer">${escape(selected?.label || value || placeholder)}</a><button type="button" class="pw-search-trigger dropdown-arrow" role="combobox" aria-label="${escape(name)}" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" aria-describedby="${id}-selected" data-search-trigger><span aria-hidden="true">▾</span></button></span>
       <div class="pw-search-panel" data-search-panel hidden>
         <div class="pw-search-box"><input type="search" data-search-query aria-label="Search ${escape(name)}" placeholder="Search options…" autocomplete="off"></div>
         <div class="pw-search-options" id="${id}-list" role="listbox" aria-label="${escape(name)} options" data-search-options>
           <button type="button" role="option" tabindex="-1" aria-label="No selection" aria-selected="${!value}" data-search-option data-value="" data-filter="">No selection</button>
-          ${items.map((item,index)=>`<button type="button" role="option" tabindex="-1" aria-label="${escape(item.label)}" ${item.hint?`aria-describedby="${id}-hint-${index}"`:""} aria-selected="${item.value === value}" data-search-option data-value="${escape(item.value)}" data-filter="${escape(`${item.label} ${item.hint || ''}`.toLowerCase())}" ${item.disabled?'disabled aria-disabled="true"':''}><span>${escape(item.label)}</span>${item.hint?`<span class="secondary-text" id="${id}-hint-${index}">${escape(item.hint)}</span>`:''}</button>`).join('')}
+          ${items.map((item,index)=>`<button type="button" role="option" tabindex="-1" aria-label="${escape(item.label)}" ${item.hint?`aria-describedby="${id}-hint-${index}"`:""} aria-selected="${item.value === value}" data-search-option data-value="${escape(item.value)}" data-reference-url="${escape(item.url || '')}" data-filter="${escape(`${item.label} ${item.hint || ''}`.toLowerCase())}" ${item.disabled?'disabled aria-disabled="true"':''}><span>${escape(item.label)}</span>${item.hint?`<span class="secondary-text" id="${id}-hint-${index}">${escape(item.hint)}</span>`:''}</button>`).join('')}
           ${allowCustom?'<button type="button" role="option" tabindex="-1" aria-selected="false" data-search-custom hidden></button>':''}
           <p class="pw-search-empty" data-search-empty hidden>No matching options.</p>
         </div>
@@ -83,7 +84,11 @@
     if (!option || option.disabled) return;
     const input = widget.querySelector('[data-search-select-value]');
     input.value = option.dataset.value;
-    widget.querySelector('[data-search-selected]').textContent = option.dataset.value ? option.getAttribute('aria-label').replace(/^Use (.*) \(GM approval required\)$/,'$1') : 'Choose an option';
+    const selected = widget.querySelector('[data-search-selected]');
+    selected.textContent = option.dataset.value ? option.getAttribute('aria-label').replace(/^Use (.*) \(GM approval required\)$/,'$1') : 'Choose an option';
+    const url = window.PathkeeperDropdown.referenceURL(option.dataset.referenceUrl);
+    if (url) selected.href = url;
+    else selected.removeAttribute('href');
     close(widget,true);
     input.dispatchEvent(new Event('change',{bubbles:true}));
   });

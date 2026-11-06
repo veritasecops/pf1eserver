@@ -1,9 +1,8 @@
 {% macro control(key, caption=none, bare=false, rows=3) -%}
 {% set meta=sheet_fields[key] %}
-{% if meta.kind == 'deity' %}<div class="ds-field"><span>{{ caption or meta.label }}</span><div class="deity-picker">
-<a data-deity-reference target="_blank" rel="noopener noreferrer"></a><span class="deity-arrow" aria-hidden="true">▾</span>
-<select id="ds-{{ key }}" name="{{ key }}" aria-label="Change deity or belief" data-deity-select><option value="">Choose deity or belief</option>{% for item in deity_options %}<option value="{{ item.id }}" data-description-url="{{ item.url }}"{% if deluxe.get(key) == item.id %} selected{% endif %}>{{ item.name }}</option>{% endfor %}</select>
-</div></div>
+{% if meta.kind == 'deity' %}<label class="ds-field"><span>{{ caption or meta.label }}</span>
+<select id="ds-{{ key }}" name="{{ key }}" aria-label="Change deity or belief"><option value="">Choose deity or belief</option>{% for item in deity_options %}<option value="{{ item.id }}" data-reference-url="{{ item.url }}"{% if deluxe.get(key) == item.id %} selected{% endif %}>{{ item.name }}</option>{% endfor %}</select>
+</label>
 {% else %}
 {% if not bare %}<label class="ds-field" for="ds-{{ key }}"><span>{{ caption or meta.label }}</span>{% endif %}
 {% if meta.kind == 'textarea' %}<textarea id="ds-{{ key }}" name="{{ key }}" rows="{{ rows }}" maxlength="{{ meta.maximum }}"{% if bare %} aria-label="{{ caption or meta.label }}"{% endif %}>{{ deluxe.get(key,'') }}</textarea>

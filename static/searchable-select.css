@@ -1,8 +1,7 @@
 .pw-stage-card { overflow:visible; }
 .pw-search-select { position:relative; min-width:0; display:grid; gap:7px; }
 .pw-search-label { font-weight:600; font-size:1rem; }
-.pw-search-select .pw-search-trigger { width:100%; min-height:44px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; font:inherit; color:#332419; background:#fff8e9; border:1px solid #b8a27c; border-radius:3px; }
-.pw-search-trigger>span:first-child { min-width:0; overflow-wrap:anywhere; }
+.pw-search-select .pw-search-trigger { background:transparent; border:0; border-left:1px solid #b6aa98; font:inherit; min-width:0; }
 .pw-search-select .pw-search-trigger[aria-expanded=true] { outline:2px solid #9a5a19; outline-offset:1px; }
 .pw-search-panel { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:60; background:#fff8e9; border:1px solid #a78754; border-radius:3px; box-shadow:0 8px 24px #25110933; overflow:hidden; }
 .pw-search-panel.pw-search-above { top:auto; bottom:calc(100% + 4px); }
