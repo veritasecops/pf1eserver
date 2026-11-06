@@ -131,8 +131,14 @@ def test_wizard_gates_level_and_saves_choices_once(env):
     next_level = client.get(advanced.headers["location"])
     assert 'name="target" value="5"' in next_level.text
     assert "Advance to level 5</button>" in next_level.text
+    assert "Extra Bombs" not in next_level.text
+    assert "Extra Discovery" not in next_level.text
     second = {"version": SheetForm(client.get(path).text).values["version"], "target": 5, "hit_die": 5, "favored": "none",
               "rank_climb": 2, "rank_swim": 1, "choice_0": "Toughness", "choice_1": "Axes"}
+    for feat in ("Extra Bombs", "Extra Discovery", "Implant Bomb"):
+        blocked = env.post(client, path + "/level-up", {**second, "choice_0": feat})
+        assert blocked.status_code == 422
+        assert "Choose an available feat for General feat" in blocked.text
     # An earlier level's ranks count toward the cap for the next level.
     invalid = env.post(client, path + "/level-up", {**second, "rank_climb": 3})
     assert invalid.status_code == 422
@@ -207,3 +213,27 @@ def test_migration_removes_only_retired_advancement_notes(env, isolated_database
         assert record.play_data == {
             "experience": "7500", "advancement_history": [{"level": 3, "choices": []}],
         }
+
+
+def test_class_feat_gate_uses_features_granted_by_the_target_level():
+    from types import SimpleNamespace
+
+    from pathkeeper.class_catalog import class_profile
+    from pathkeeper.feat_class_requirements import class_feat_gate
+
+    character = SimpleNamespace(play_data={})
+
+    def blocked(class_id, target):
+        profile = class_profile({}, class_id)
+        return class_feat_gate(character, class_id, profile, target, profile["levels"][target - 1]["bab"], [])
+
+    assert "extra bombs" not in blocked("alchemist", 1)
+    assert "extra discovery" in blocked("alchemist", 1)
+    assert "extra discovery" not in blocked("alchemist", 2)
+    assert "implant bomb" in blocked("alchemist", 8)
+    assert "planar preservationist" in blocked("alchemist", 8)
+    assert "advanced weapon training" in blocked("fighter", 4)
+    assert "advanced weapon training" not in blocked("fighter", 5)
+    assert "advanced weapon training" in blocked("barbarian", 10)
+    fighter = class_profile({}, "fighter")
+    assert "extra bombs" in class_feat_gate(character, "fighter", fighter, 5, 5, [("Bomb", "")])

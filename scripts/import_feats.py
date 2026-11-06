@@ -13,6 +13,24 @@ ROW = re.compile(
 )
 
 
+
+CLASS_REQUIREMENT = re.compile(
+    r"class\s*feature|\b(?:alchemist\s+)?discover(?:y|ies)\b|"
+    r"\b[a-z][a-z -]* level \d+(?:st|nd|rd|th)\b|\b\w+ archetype\b", re.I
+)
+NON_CLASS_LEVEL = re.compile(r"\b(?:character|caster|manifester|spell|item) level \d+(?:st|nd|rd|th)\b", re.I)
+
+
+def class_requirements(prerequisites):
+    # Citation superscripts can run directly into the feature name.
+    clean = re.sub(r"<sup\b[^>]*>.*?</sup>", "", prerequisites, flags=re.I | re.S)
+    clean = html.unescape(re.sub(r"<[^>]*>", "", clean))
+    clean = re.sub(r"\s+", " ", clean)
+    clauses = re.split(r"[,;]\s*(?![^()]*\))", clean)
+    # An omitted final "class feature" can describe every option in an "or" list.
+    return [clause.strip(" .") for clause in clauses
+            if CLASS_REQUIREMENT.search(NON_CLASS_LEVEL.sub("", clause))]
+
 def entries(page):
     feats = {}
     for name, label, prerequisites in ROW.findall(page):
@@ -35,12 +53,14 @@ def entries(page):
             else:
                 requirements.clear()
                 break
+        class_rules = class_requirements(prerequisites)
         feats[name.casefold()] = (name, {
             "url": SOURCE + quote(name, safe=""),
             **({"combat": True} if "*" in marker else {}),
             **({"mastery": mastery} if mastery else {}),
             **({"pfs_marked": True} if pfs_marked else {}),
             **requirements,
+            **({"class_requirements": class_rules} if class_rules else {}),
         })
     if not feats:
         raise ValueError("No feat rows found.")

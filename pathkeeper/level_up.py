@@ -5,6 +5,7 @@ from decimal import Decimal
 from .advancement import XP_TRACKS, eligible, level_for, saved_xp, track
 from .deluxe_sheet import SAVES, sheet_values, skill_rows
 from .equipment_effects import persist_effects
+from .feat_class_requirements import class_feat_gate
 from .models import Campaign, User
 from .class_catalog import class_key, class_profile
 from .pf1_data import ABILITIES
@@ -101,6 +102,7 @@ def plan(ctx, character):
                 if spell_level <= highest - lower and spell_level + 10 <= casting_score:
                     spells = values[f"spell.{spell_level}.list"].splitlines()
                     swaps.update({f"{spell_level}.{index}": (spell_level, spell) for index, spell in enumerate(spells) if spell.strip()})
+    feat_bab = float(Decimal(values["bab"] or previous["bab"]) + bab)
     return {
         "class_id": class_id, "swaps": swaps, "profile": profile, "target": target, "values": values, "features": features,
         "choices": choices, "rows": rows, "known": known, "bab": bab,
@@ -116,7 +118,8 @@ def plan(ctx, character):
         "fighter_weapon_choices": sorted(fighter_weapon_groups().keys() - trained_weapon_groups(character).keys())
                                   if class_id == "fighter" else [],
         "feat_catalog": feats, "owned_feats": sorted(owned), "feat_targets": targets,
-        "feat_bab": float(Decimal(values["bab"] or previous["bab"]) + bab),
+        "feat_bab": feat_bab,
+        "blocked_class_feats": class_feat_gate(character, class_id, profile, target, feat_bab, owned),
         "feat_scores": {key: float(Decimal(values[f"ability.{key}.score"] or 0)) for key in ABILITIES},
         "feat_slots": {index: feat_slot(class_id, label) for index, label in enumerate(choices)
                        if "feat" in label.casefold()},
@@ -143,7 +146,7 @@ def feat_options(advancement):
             "choice": item.get("choice", ""),
         }
         for name, item in sorted(advancement["feat_catalog"].items(), key=lambda entry: entry[0].casefold())
-        if item.get("enabled", True)
+        if item.get("enabled", True) and name.casefold() not in advancement["blocked_class_feats"]
     }
 
 
