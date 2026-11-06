@@ -165,6 +165,10 @@ def test_special_materials_and_miscellaneous_share_the_equipment_cart(env):
     path = f'/characters/{character_id}/equipment'
     state = client.get(path).json()
     catalog = state['equipment']
+    categories = state['equipment_categories']
+    assert 'Martial' in categories['Weapons'] and 'Heavy' in categories['Armor']
+    assert 'Martial' in catalog['longsword']['categories']
+    assert 'Light' in catalog['leather']['categories']
     material = 'special-materials-adamantine'
     abacus = 'miscellaneous-abacus'
     assert sum(item['kind'] == 'material' for item in catalog.values()) >= 48

@@ -125,21 +125,22 @@
         button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;
       }
       this.dialog.querySelector('#equipment-results').setAttribute('aria-labelledby',`equipment-${tab}-tab`);
-      this.dialog.querySelector('[data-weapon-proficiency]').hidden=tab!=='weapons';
+      const catalogFilters=this.options.equipment_categories;
+      this.dialog.querySelector('[data-weapon-proficiency]').hidden=Boolean(catalogFilters)||tab!=='weapons';
       const group = this.dialog.querySelector('[name="weapon-group"]');
       group.value = '';
       window.PathkeeperDropdown?.refresh(group);
       const search=this.dialog.querySelector('[name="weapon-search"]');
-      search.value='';
+      if (!catalogFilters) search.value='';
       search.placeholder=tab==='weapons'?'Longsword, crossbow…':tab==='armor'?'Chain shirt, shield…':'Search by name…';
-      this.dialog.querySelector('[data-equipment-type-label]').textContent=catalog.types?`${catalog.heading.split(' /')[0]} type`:'Category';
+      this.dialog.querySelector('[data-equipment-type-label]').textContent=!catalogFilters&&catalog.types?`${catalog.heading.split(' /')[0]} type`:'Category';
       this.dialog.querySelector('[data-equipment-name-heading]').textContent=catalog.heading;
       this.dialog.querySelector('.pw-weapon-results').setAttribute('aria-label',catalog.label);
       const type=this.dialog.querySelector('[name="weapon-type"]');
-      const types=catalog.types?Object.entries(catalog.types):
+      const types=catalogFilters?catalogFilters[catalog.label].map(label=>[label,label]):catalog.types?Object.entries(catalog.types):
         [...new Set(Object.values(this.options.equipment).filter(catalog.match).flatMap(item=>item.categories))].sort().map(label=>[label,label]);
-      type.closest('label').hidden=types.length<=1;
-      type.replaceChildren(new Option('All types',''),...types.map(([id,label])=>new Option(label,id)));
+      type.closest('label').hidden=!catalogFilters&&types.length<=1;
+      type.replaceChildren(new Option(catalogFilters?'All categories':'All types',''),...types.map(([id,label])=>new Option(label,id)));
       window.PathkeeperDropdown?.refresh(type);
       this.renderResults();
     }
@@ -148,7 +149,8 @@
       const group = this.dialog.querySelector('[name="weapon-group"]').value;
       const type = this.dialog.querySelector('[name="weapon-type"]').value;
       const selected = this.dialog.querySelector('[name="selected-only"]').checked;
-      const items = Object.entries(this.options.equipment).filter(([id,item]) => catalogs[this.tab].match(item) && item.enabled !== false && (!group || item.group === group) && (!type || item.category === type || item.categories?.includes(type)) && (!selected || Number(this.quantities[id]) > 0) && [item.name,...(item.aliases || [])].some(name => name.toLocaleLowerCase().includes(query))).sort((a,b) => a[1].name.localeCompare(b[1].name));
+      const catalogFilters = this.options.equipment_categories;
+      const items = Object.entries(this.options.equipment).filter(([id,item]) => catalogs[this.tab].match(item) && item.enabled !== false && (!group || item.group === group) && (!type || item.categories?.includes(type) || (!catalogFilters && item.category === type)) && (!selected || Number(this.quantities[id]) > 0) && [item.name,...(catalogFilters ? [] : item.aliases || [])].some(name => name.toLocaleLowerCase().includes(query))).sort((a,b) => a[1].name.localeCompare(b[1].name));
       this.dialog.querySelector('tbody').innerHTML = items.slice(0,this.limit).map(([id,item]) => {
         const available = 100 - (this.options.owned[id] || 0);
         const fixedPrice = item.cost === null && (this.options.owned[id] || 0) > 0 && this.options.prices?.[id] !== undefined;

@@ -86,10 +86,26 @@ POUNDS = re.compile(
 )
 
 
-def sheet_gear(catalog):
+def equipment_categories(entries, group):
+    return sorted({label for item in entries.values() if item["group"] == group for label in item["categories"]})
+
+
+def sheet_equipment(catalog):
+    entries = equipment_entries(catalog)
+    items = {**catalog["weapons"], **catalog.get("armor", {}), **sheet_gear(catalog, entries)}
+    categories = {}
+    for entry in entries.values():
+        if key := entry.get("editor_key"):
+            categories.setdefault(key, set()).update(entry["categories"])
+    for key, labels in categories.items():
+        items[key] = {**items[key], "categories": sorted(labels)}
+    return items, {group: equipment_categories(entries, group) for group in GROUPS}
+
+
+def sheet_gear(catalog, entries=None):
     """Adapt the two AoN inventory catalogs to the sheet's purchase format."""
     result = {}
-    for key, entry in equipment_entries(catalog).items():
+    for key, entry in (equipment_entries(catalog) if entries is None else entries).items():
         if entry["group"] not in {"Special Materials", "Miscellaneous"}:
             continue
         material = entry["group"] == "Special Materials"

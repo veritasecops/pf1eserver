@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from .database import get_db
 from .feats import FEAT_CATEGORIES
-from .equipment_index import GROUPS as EQUIPMENT_GROUPS, equipment_entries
+from .equipment_index import GROUPS as EQUIPMENT_GROUPS, equipment_categories as catalog_categories, equipment_entries
 from .class_catalog import class_profile
 from .class_editor import editor as class_editor, parse_class
 from .models import Guard, RuleCatalog, utcnow
@@ -112,8 +112,7 @@ def render_catalog(ctx, request, kind):
                                if equipment_category and equipment_category in item["categories"]}
             equipment_group = next(iter(matching_groups)) if len(matching_groups) == 1 else EQUIPMENT_GROUPS[0]
         items = [(key, item) for key, item in items if item["group"] == equipment_group]
-        equipment_categories = sorted({label for item in entries.values()
-                                       if item["group"] == equipment_group for label in item["categories"]})
+        equipment_categories = catalog_categories(entries, equipment_group)
         if equipment_category in equipment_categories:
             items = [(key, item) for key, item in items if equipment_category in item["categories"]]
     items.sort(key=lambda pair:pair[1].get('name',pair[0]).casefold())

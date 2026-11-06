@@ -13,7 +13,7 @@ from .database import commit, get_db
 from .models import Campaign, Character, RuleCatalog, User
 from .rule_catalog import character_catalog, effect_total, load_catalog, equipment
 from .armor import armor_fields, purchasable
-from .equipment_index import sheet_gear
+from .equipment_index import sheet_equipment, sheet_gear
 from .security import audit, context, digest, get_character, integer, read_form
 
 router = APIRouter()
@@ -150,8 +150,9 @@ def shop_state(ctx,character):
         if key:
             owned[key]=owned.get(key,0)+entry['quantity']
             if entry.get('agreed_unit_price') is not None: prices[key]=entry['agreed_unit_price']
+    items, categories = sheet_equipment(catalog)
     return {'version':character.version,'catalog_version':record.version if record else 0,
-            'equipment':{**catalog['weapons'],**catalog.get('armor',{}),**sheet_gear(catalog)},'owned':owned,'prices':prices,'budget':treasure(values),
+            'equipment':items,'equipment_categories':categories,'owned':owned,'prices':prices,'budget':treasure(values),
             'maxNewArmor':6-sum(bool(values.get(f'armor.{row}.name','').strip()) for row in range(6)),
             'maxNewWeapons':6-sum(bool(values.get(f'weapon.{row}.name','').strip()) for row in range(6))}
 
