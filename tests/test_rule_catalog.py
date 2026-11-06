@@ -162,7 +162,9 @@ def test_character_class_editor_updates_creation_and_future_advancement(env):
     original = calculate(data, {})
     assert player.get('/administration/catalog?kind=classes').status_code == 403
     listing = admin.get('/administration/catalog?kind=classes&q=Fighter')
-    assert listing.status_code == 200 and 'Class reference' in listing.text
+    assert listing.status_code == 200
+    assert re.search(r'<a class="catalog-source-link" href="https://www.aonprd.com/[^"]+"[^>]*>Fighter</a>', listing.text)
+    assert 'Class reference' not in listing.text
     editor = admin.get('/administration/catalog/classes/fighter')
     assert editor.status_code == 200 and 'name="level.20.bab"' in editor.text
     profile = class_profile(default_catalog(), 'fighter')
