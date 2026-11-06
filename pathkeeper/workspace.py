@@ -24,6 +24,7 @@ from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
 from .sheet_formulas import sheet_formulas
+from .sheet_feats import removable_rows, remove_feat
 from .trait_defenses import trait_defenses
 from .equipment_state import equipment_groups, equipped_values, sync_equipped
 from .equipment_effects import contributions, persist_effects
@@ -383,6 +384,7 @@ def render_character(ctx, character, values=None, errors=()):
     if values is None:
         values = sheet_values(character, owner, campaign, gm)
     catalog = load_catalog(ctx.db)
+    ability_blocks = sheet_ability_blocks(values, character, catalog)
     response = render(ctx, "character.html", title=character.name, character=character, owner=owner, campaign=campaign,
                       can_delete=can_delete_character(ctx.user, character),
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
@@ -393,7 +395,8 @@ def render_character(ctx, character, values=None, errors=()):
                       armor_links=sheet_armor_links(values,character,catalog),
                       weapon_links=sheet_weapon_links(values,character,catalog),
                       feature_links=sheet_feature_links(values, character, catalog),
-                      ability_blocks=sheet_ability_blocks(values, character, catalog),
+                      ability_blocks=ability_blocks,
+                      removable_feats=removable_rows(character, values, catalog, ability_blocks),
                       trait_defenses=trait_defenses(character, values),
                       **view_context(character, owner, campaign, gm, values, errors,deity_catalog=catalog.get('deities',{})))
     if errors:
@@ -559,6 +562,29 @@ async def character_feature_add(character_id: int, request: Request, db: Session
     audit(db, ctx.user, "character.feature_added", f"Added {name} to {character.name}.")
     commit(db)
     return JSONResponse({"location": f"/characters/{character.id}#abilities-skills"}, status_code=201)
+
+
+
+@router.post("/characters/{character_id}/features/remove")
+async def character_feature_remove(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    form = await read_form(ctx)
+    character = get_character(ctx, character_id)
+    db.refresh(character, with_for_update=True)
+    get_character(ctx, character_id)
+    verify_version(form, character)
+    row = integer(form, "row", 0, 55)
+    owner = db.get(User, character.owner_id)
+    campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
+    values = sheet_values(character, owner, campaign)
+    catalog = load_catalog(db)
+    name = removable_rows(character, values, catalog, sheet_ability_blocks(values, character, catalog)).get(row)
+    if not name:
+        raise HTTPException(422, "Choose a removable feat.")
+    remove_feat(character, values, catalog, row, name)
+    audit(db, ctx.user, "character.feat_removed", f"Removed {name} from {character.name}.")
+    commit(db)
+    return JSONResponse({"location": f"/characters/{character.id}#abilities-skills"})
 
 
 

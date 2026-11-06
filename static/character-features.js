@@ -59,6 +59,37 @@
     render();
   }
 
+  const removeError = document.getElementById('sheet-feat-remove-error');
+  for (const button of sheet.querySelectorAll('[data-remove-feat]')) {
+    button.addEventListener('click', async () => {
+      if (busy || !window.confirm(button.getAttribute('aria-label') + '?')) return;
+      busy = true;
+      button.disabled = true;
+      removeError.hidden = true;
+      try {
+        await window.PathkeeperSheet.flush();
+        const body = new FormData();
+        body.set('row', button.dataset.removeFeat);
+        body.set('csrf', sheet.elements.csrf.value);
+        body.set('version', sheet.elements.version.value);
+        const response = await fetch(dialog.dataset.endpoint + '/remove', {
+          method: 'POST', body, headers: {Accept: 'application/json'},
+        });
+        if (response.redirected) throw new Error('Sign in again before removing a feat.');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || 'Unable to remove the feat.');
+        window.history.replaceState(null, '', result.location);
+        window.location.reload();
+      } catch (failure) {
+        removeError.textContent = failure.message;
+        removeError.hidden = false;
+      } finally {
+        busy = false;
+        button.disabled = false;
+      }
+    });
+  }
+
   launcher.addEventListener('click', async () => {
     dialog.showModal();
     catalog = null;

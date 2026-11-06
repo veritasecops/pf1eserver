@@ -500,3 +500,36 @@ def test_standing_class_and_ancestry_effects_recalculate_on_existing_sheet(env):
     sheet = SheetForm(client.get(path).text)
     assert sheet.values['save.fortitude.total'] == '5'
     assert sheet.values['skill.perception.total'] == '2'
+
+
+def test_remove_sheet_and_advancement_feats(env):
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.play_data = {
+            "feature.0": "Improved Initiative", "feature.1": "Toughness", "feature.2": "Skilled",
+            "initiative.misc": "6", "ability.dex.score": "12",
+            "advancement_history": [{"level": 3, "class": "Fighter", "hp": 5, "ability": "", "features": [],
+                                     "choices": [{"feature": "General feat", "choice": "Improved Initiative"}]}],
+        }
+        db.commit()
+    client = env.login(env.player)
+    path = f"/characters/{character.id}"
+    page = client.get(path)
+    assert 'data-remove-feat="0"' in page.text and 'data-remove-feat="1"' in page.text
+    assert 'data-remove-feat="2"' not in page.text
+    sheet = SheetForm(page.text)
+    data = {"version": sheet.values["version"]}
+    assert env.post(client, path + "/features/remove", {**data, "row": 2}).status_code == 422
+    assert env.post(client, path + "/features/remove", {**data, "row": 0}).status_code == 200
+    assert env.post(client, path + "/features/remove", {**data, "row": 1}).status_code == 409
+    sheet = SheetForm(client.get(path).text)
+    assert sheet.values["feature.0"] == ""
+    assert sheet.values["initiative.misc"] == "2"
+    assert sheet.values["initiative.total"] == "3"
+    assert env.post(client, path + "/features/remove", {"version": sheet.values["version"], "row": 1}).status_code == 200
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        assert record.play_data["advancement_history"][0]["choices"] == []
+        assert record.play_data["feature.1"] == ""
+        assert record.level == 3

@@ -74,12 +74,16 @@
 {% endfor %}
 </div>
 <div class="ds-weapon-heading"><h3>Feats</h3><button class="button primary" type="button" id="add-sheet-feature" aria-haspopup="dialog" aria-controls="sheet-feature-picker">Add Feat</button></div>
+<p class="error" id="sheet-feat-remove-error" role="alert" hidden></p>
 <div class="ds-feature-grid">{% for i in range(56) %}{% set reference = feature_links.get(i|string) %}
 <div class="ds-feature-row" data-feature-row="{{ i }}"{% if i in ability_blocks.slots %} hidden{% endif %}>
   {{ control('feature.' ~ i,bare=true,hidden=true) }}
   {% if i not in ability_blocks.slots %}
   <span class="ds-feature-name"{% if reference %} hidden{% endif %}>{{ deluxe.get('feature.' ~ i, '') }}</span>
   <a class="ds-feature-link" target="_blank" rel="noopener noreferrer"{% if reference %} href="{{ reference.url }}"{% else %} hidden{% endif %}>{{ reference.name if reference else '' }}</a>
+  {% if i in removable_feats %}
+  <button class="button small" type="button" data-remove-feat="{{ i }}" aria-label="Remove {{ deluxe.get('feature.' ~ i) }}">Remove</button>
+  {% endif %}
   {% endif %}
 </div>{% endfor %}</div>
 <h3>Skills</h3><div class="ds-fields ds-four">{{ control('skill_points.total','Skill points / level') }}{{ control('skill_points.base','Base') }}{{ control('skill_points.int','INT modifier') }}{{ control('skill_points.misc','Misc') }}</div><p class="ds-equation">◆ Class skill · * Trained only · Any class can invest ranks in any skill. Class skills with ranks receive +3.</p>

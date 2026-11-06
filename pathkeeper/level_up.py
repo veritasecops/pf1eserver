@@ -222,6 +222,24 @@ def validate_feats(advancement, selections, ability, errors, options=None):
         taken.append((name, target))
 
 
+
+def feat_adjustments(feat, entry, level):
+    """Sheet fields changed when a feat is selected in the level-up wizard."""
+    for effect, amount in feat.get("effects", {}).items():
+        if effect == "hp":
+            amount = max(level, amount) if entry["choice"].casefold() == "toughness" else amount
+            yield "hp.total", amount
+            yield "hp.current", amount
+        elif effect in {"fortitude", "reflex", "will"}:
+            yield f"save.{effect}.misc", amount
+        elif effect == "initiative":
+            yield "initiative.misc", amount
+        elif effect == "dodge":
+            yield "ac.dodge", amount
+        elif effect == "selected_skill" or effect.startswith("skill:"):
+            skill = entry.get("target") if effect == "selected_skill" else effect.partition(":")[2]
+            yield f"skill.{skill}.misc", amount
+
 def submit(character, advancement, form):
     target, profile = advancement["target"], advancement["profile"]
     values = advancement["values"]
@@ -325,27 +343,18 @@ def submit(character, advancement, form):
         hp += 1
     for entry in selections:
         name = entry["choice"].casefold()
-        if "feat" not in entry["feature"].casefold() or name not in feat_names or name in previous_feats:
+        if "feat" not in entry["feature"].casefold():
             continue
-        previous_feats.add(name)
-        feat = feats[feat_names[name]]
-        for effect, amount in feat.get("effects", {}).items():
-            if effect == "hp":
-                amount = max(target, amount) if name == "toughness" else amount
-                add("hp.total", amount)
-                add("hp.current", amount)
+        adjustments = []
+        if name in feat_names and name not in previous_feats:
+            previous_feats.add(name)
+            adjustments = [(key, amount) for key, amount in feat_adjustments(feats[feat_names[name]], entry, target)
+                           if key in values]
+        entry["sheet_adjustments"] = adjustments
+        for key, amount in adjustments:
+            add(key, amount)
+            if key == "hp.total":
                 hp += amount
-            elif effect in {"fortitude", "reflex", "will"}:
-                add(f"save.{effect}.misc", amount)
-            elif effect == "initiative":
-                add("initiative.misc", amount)
-            elif effect == "dodge":
-                add("ac.dodge", amount)
-            elif effect == "selected_skill" or effect.startswith("skill:"):
-                skill = entry.get("target") if effect == "selected_skill" else effect.partition(":")[2]
-                key = f"skill.{skill}.misc"
-                if key in values:
-                    add(key, amount)
 
     replacement = text("replacement_spell", 150)
     swap = form.get("swap_spell", "")
