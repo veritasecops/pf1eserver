@@ -37,8 +37,8 @@ def calculated_fields(character, values):
     for skill in SKILLS:
         for key in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):
             locked.update({f'skill.{key}.total',f'skill.{key}.ability'})
-    locked.update(f'weapon.{row}.{part}' for row in range(6) for part in ('name','quantity','attack','critical','type','range','ammunition','damage'))
-    locked.update(f'armor.{row}.{part}' for row in range(6) for part in ('name','quantity','type','bonus','max_dex','penalty','failure','weight'))
+    locked.update(f'weapon.{row}.{part}' for row in range(6) for part in ('name','quantity','attack','critical','type','range','ammunition','damage','base_damage','proficiency','weight','special'))
+    locked.update(f'armor.{row}.{part}' for row in range(6) for part in ('name','quantity','type','bonus','max_dex','penalty','failure','speed','weight'))
     locked.update(f"gear.{row}.{part}" for row in range(GEAR_SLOTS) for part in ("name", "weight"))
     locked.update(f"gear.{row}.notes" for row in range(GEAR_SLOTS) if not values.get(f"gear.{row}.name"))
     locked.update(f'feature.{row}' for row in range(56))

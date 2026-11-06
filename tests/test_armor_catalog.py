@@ -51,6 +51,8 @@ def test_wizard_mixed_cart_persists_equipped_armor_and_shield(env):
     sheet=SheetForm(client.get(made.json()['location']).text)
     assert sheet.values['armor.1.name']=='Chain shirt'
     assert sheet.values['armor.1.failure']=='20%'
+    assert sheet.values['armor.1.speed']=='30 ft. / 20 ft.'
+    assert 'armor.1.speed' in sheet.readonly
     assert sheet.values['money.gp']=='58'
 
 
@@ -66,6 +68,7 @@ def test_sheet_mixed_purchase_idempotency_readonly_notes_and_autosave(env):
     assert retry.status_code==200 and retry.json()['version']==body['version']
     assert body['values']['armor.0.name']=='Leather'
     assert body['values']['armor.0.quantity']=='2'
+    assert body['values']['armor.0.speed']=='30 ft. / 20 ft.'
     assert body['values']['armor.1.bonus']=='1'
     assert body['values']['armor.1.failure']=='5%'
     assert body['armor_links']['0']['url']==table_armor()['leather']['url']

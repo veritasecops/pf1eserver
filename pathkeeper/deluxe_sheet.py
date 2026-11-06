@@ -10,8 +10,13 @@ from .sheet_calculations import class_record, calculated_fields, recalculate, ba
 from .sheet_formulas import sheet_formulas
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
 
-WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('equipped','Equipped'),('attack','Attack bonus'),('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),('damage','Damage'),('notes','Notes')]
-ARMOR_COLUMNS = [('name','Item'),('quantity','Quantity'),('equipped','Equipped'),('type','Type'),('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),('weight','Weight'),('notes','Notes')]
+WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('equipped','Equipped'),('attack','Attack bonus'),
+                  ('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),
+                  ('damage','Damage'),('base_damage','Base damage (S / M)'),('proficiency','Proficiency'),
+                  ('weight','Weight'),('special','Special'),('notes','Notes')]
+ARMOR_COLUMNS = [('name','Item'),('quantity','Quantity'),('equipped','Equipped'),('type','Type'),
+                 ('bonus','Armor bonus'),('max_dex','Max Dex'),('penalty','Check penalty'),('failure','Spell failure'),
+                 ('speed','Speed (30 / 20 ft.)'),('weight','Weight'),('notes','Notes')]
 GEAR_COLUMNS = [('name','Item'),('equipped','Equipped'),('weight','Weight'),('notes','Note')]
 FACTION_COLUMNS = [('type','Type'),('value','Value')]
 SAVES = [('fortitude','Fortitude','con'),('reflex','Reflex','dex'),('will','Will','wis')]

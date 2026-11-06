@@ -47,6 +47,9 @@ def test_purchases_populate_locked_fields_notes_and_inventory_and_deduct_once(en
     assert result['values']['weapon.0.attack']=='8'
     assert result['values']['weapon.0.damage']=='1d8+3'
     assert result['values']['weapon.0.critical']=='19-20/x2'
+    assert result['values']['weapon.0.base_damage']=='1d6 / 1d8'
+    assert result['values']['weapon.0.proficiency']=='Martial'
+    assert result['values']['weapon.0.weight']=='4 lb.'
     assert result['purchase_fields']['weapon.0.notes']=='Keep my personal note'
     assert 'Longsword × 2' in result['purchase_fields'].values()
     retry=env.post(client,path+'/weapons',payload)
@@ -78,6 +81,9 @@ def test_existing_legacy_weapon_and_notes_are_preserved_when_buying_more(env):
         character.play_data={**character.play_data,'weapon.0.name':'Longsword','weapon.0.attack':'12','weapon.0.damage':'1d8+7','weapon.0.notes':'Legacy note'}
         db.commit()
     path=f'/characters/{character_id}'
+    legacy=SheetForm(client.get(path).text)
+    assert legacy.values['weapon.0.weight']=='4 lb.'
+    assert 'weapon.0.weight' in legacy.readonly
     result=env.post(client,path+'/weapons',purchase_data(client,character_id,{'longsword':2})).json()
     assert result['values']['weapon.0.quantity']=='3'
     assert result['values']['weapon.0.attack']=='12'

@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from .database import commit, get_db
 from .models import Campaign, Character, RuleCatalog, User
 from .rule_catalog import character_catalog, effect_total, load_catalog, equipment
-from .armor import armor_fields, purchasable
+from .armor import armor_fields, purchasable, table_armor
+from .weapons import table_weapons
 from .equipment_index import sheet_equipment
 from .gear_backpack import GEAR_SLOTS, available_slot
 from .security import audit, context, digest, get_character, integer, read_form
@@ -104,11 +105,23 @@ def apply_inventory(character, values):
             prefix=f"armor.{entry['armor_row']}."
             fields=entry.get('armor_fields') or armor_fields(entry['item'],entry['quantity'],values.get('size',''))
             for part,value in fields.items(): values[prefix+part]=value
+            item = {**table_armor().get(entry.get('id'), {}), **entry['item']}
+            speeds = [f'{item[f"speed_{base}"]} ft.' if item.get(f'speed_{base}') is not None
+                      else item.get(f'speed_{base}_text') for base in (30, 20)]
+            values[prefix+'speed'] = ' / '.join(speed or '—' for speed in speeds) if any(speeds) else ''
             values[prefix+'quantity']=str(entry['quantity'])
             continue
         row=entry.get('row')
         if row is None: continue
         prefix=f'weapon.{row}.'
+        stats = {**table_weapons().get(entry.get('id'), {}), **entry['item']}
+        damage_dice = [stats.get('small_damage'), stats.get('damage')]
+        values[prefix+'base_damage'] = ' / '.join(dice or '—' for dice in damage_dice) if any(damage_dice) else ''
+        values[prefix+'proficiency'] = stats.get('group', '').capitalize()
+        weight = stats.get('weight')
+        scale = .5 if str(values.get('size', '')).casefold() == 'small' else 1
+        values[prefix+'weight'] = f'{weight * scale:g} lb.' if weight is not None else stats.get('weight_text', '')
+        values[prefix+'special'] = stats.get('special', '')
         if 'fields' in entry and not (values.get(prefix+'equipped')=='1' and entry['item'].get('damage')):
             for part,value in entry['fields'].items(): values[prefix+part]=value
         else:

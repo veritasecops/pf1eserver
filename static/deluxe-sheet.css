@@ -63,8 +63,10 @@
 .ds-page .ds-saves { min-width:390px; }
 .ds-saves th:first-child { width:30%; }
 .ds-saves tbody th span { font-size:.875rem; display:block; }
-.ds-page :is(.ds-weapon,.ds-armor) { min-width:850px; }
-.ds-page :is(.ds-weapon,.ds-armor) th:first-child { width:24%; }
+.ds-page .ds-weapon { min-width:1200px; }
+.ds-page .ds-armor { min-width:1000px; }
+.ds-page :is(.ds-weapon,.ds-armor) th:first-child { width:14%; }
+.ds-page :is(.ds-weapon,.ds-armor) thead th { overflow-wrap:anywhere; }
 .ds-page .ds-table th.ds-inventory-notes { width:18%; }
 .ds-page .ds-table .ds-inventory-actions { width:88px; padding-inline:2px; }
 .ds-page :is(.ds-weapon,.ds-armor) td:first-child input,.ds-page .ds-table td.ds-inventory-notes input { text-align:left; }
