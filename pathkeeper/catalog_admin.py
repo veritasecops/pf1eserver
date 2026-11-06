@@ -123,7 +123,7 @@ def render_catalog(ctx, request, kind):
     if kind in {'feats', 'equipment'}:
         items = items[(page - 1) * 100:page * 100]
     return render(ctx,'catalog.html',title='Equipment' if kind == 'equipment' else 'Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories,
-                  equipment_counts=equipment_counts,equipment_status=equipment_status)
+                  equipment_counts=equipment_counts,equipment_status=equipment_status,weapon_items=record.data.get('weapons', {}))
 
 
 @router.get('/{kind}/new')
