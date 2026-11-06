@@ -11,7 +11,7 @@ def sheet_formulas(character, values):
     formulas={
         'level':'Character level is the last completed level. XP on the campaign track unlocks the next level-up wizard.',
         'next_level':'Total XP required for the next level on the campaign advancement track. Blank at level 20.',
-        'load.total':'Add the weights of every named gear entry. The total stays blank while any item has an unknown or unrecorded weight.',
+        'load.total':'Add the weights of named gear entries and catalog items in the backpack. The total stays blank while any of those entries has an unknown weight.',
         'speed.base':speed_source,
         'player':'The name of the account that owns this character.',
         'class_name':'The class recorded for this character.',

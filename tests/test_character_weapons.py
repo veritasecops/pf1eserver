@@ -105,7 +105,9 @@ def test_special_prices_ammunition_and_free_weapons(env):
     assert response.status_code==200,response.text
     fields=response.json()['purchase_fields']
     assert treasure(fields)==8875
-    assert 'Arrows, common (20) × 2' in fields.values()
+    arrows = response.json()['backpack'][0]
+    assert arrows['name'] == 'Arrows, common (20)' and arrows['quantity'] == 2
+    assert 'Arrows, common (20) × 2' not in fields.values()
     again=env.post(client,path+'/weapons',purchase_data(client,character_id,{'shield-light':1}))
     assert again.status_code==200 and treasure(again.json()['purchase_fields'])==7950
 
@@ -184,10 +186,24 @@ def test_special_materials_and_miscellaneous_share_the_equipment_cart(env):
     assert response.status_code == 200, response.text
     fields = response.json()['purchase_fields']
     assert treasure(fields) == 8700
-    assert 'Adamantine × 1' in fields.values() and 'Abacus × 2' in fields.values()
-    row = next(key for key, value in fields.items() if key.startswith('gear.') and value == 'Abacus × 2')
-    assert float(fields[row.removesuffix('name') + 'weight']) == 4
+    items = {item['catalog_id']: item for item in response.json()['backpack']}
+    assert items[abacus]['quantity'] == 2 and items[abacus]['unit_cp'] == 200
+    assert items[abacus]['catalog']['weight'] == 2
+    assert items[abacus]['catalog']['url'] == catalog[abacus]['url']
+    assert items[material]['catalog']['cost_text'] == catalog[material]['cost_text']
+    assert 'Adamantine × 1' not in fields.values() and 'Abacus × 2' not in fields.values()
     assert response.json()['values']['weapon.0.name'] == 'Dagger'
     assert env.post(client, path, payload).json()['purchase_fields'] == fields
     state = client.get(path).json()
     assert state['owned'][material] == 1 and state['prices'][material] == 700
+    second = env.post(client, path, purchase_data(client, character_id, {abacus: 1}))
+    stack = next(item for item in second.json()['backpack'] if item['catalog_id'] == abacus)
+    assert stack['id'] == items[abacus]['id'] and stack['quantity'] == 3
+    state = second.json()
+    assert state['values']['load.total'] == ''
+    removed = env.post(client, path + '/dispose', {
+        'version': state['version'], 'request_id': secrets.token_hex(16), 'kind': 'backpack',
+        'row': items[material]['id'], 'action': 'remove', 'coins': '{}',
+    })
+    assert removed.status_code == 200
+    assert float(removed.json()['values']['load.total']) == 7

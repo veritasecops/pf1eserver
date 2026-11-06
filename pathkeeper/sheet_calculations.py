@@ -120,7 +120,7 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
         write('cmd.size',-size)
     total('cmb.total',['cmb.bab','cmb.str','cmb.size'],['cmb.misc'])
     total('cmd.total',['cmd.bab','cmd.str','cmd.dex','cmd.size'],['cmd.misc'],10)
-    from .equipment_effects import apply_effects
+    from .equipment_effects import apply_effects, carried_weight
     apply_effects(character, values, equipment_previous, equipment_keep)
     ac_parts = ['ac.armor','ac.shield','ac.dex','ac.size','ac.natural','ac.deflection','ac.dodge','ac.misc']
     total('cmd.total',['cmd.bab','cmd.str','cmd.dex','cmd.size'],['cmd.misc'],10)
@@ -151,7 +151,6 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=()):
     write('skill_points.total',None if base is None or intelligence is None or misc is None else max(Decimal(1),base+intelligence)+misc+human_bonus)
     for level in range(10):
         write(f'spell.{level}.known',len([line for line in values.get(f'spell.{level}.list','').splitlines() if line.strip()]))
-    weights = [number(f'gear.{row}.weight') for row in range(56) if values.get(f'gear.{row}.name', '').strip()]
-    write('load.total', None if any(weight is None for weight in weights) else sum(weights, Decimal(0)))
+    write('load.total', carried_weight(character, values))
     from .character_weapons import apply_inventory
     return apply_inventory(character,values)

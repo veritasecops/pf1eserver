@@ -41,6 +41,9 @@
         for (const [name,value] of Object.entries(job)) body.set(name,value);
         const result=await request({method:'POST',body});
         PathkeeperSheet.applyPurchase(result);
+        document.getElementById('character-backpack')?.dispatchEvent(
+          new CustomEvent('backpackchange', {detail: result.backpack}));
+
       }});
     } catch(error) { showError(error.message); }
     finally { button.disabled=false; }

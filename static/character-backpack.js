@@ -17,7 +17,37 @@
     list.hidden = items.length === 0;
     list.querySelector('tbody').replaceChildren(...items.map(item => {
       const row = document.createElement('tr');
-      for (const value of [item.name, item.quantity, gold(item.unit_cp), gold(item.unit_cp * item.quantity)]) {
+      const nameCell = row.insertCell();
+      const catalog = item.catalog;
+      const url = window.PathkeeperDropdown?.referenceURL(catalog?.url);
+      const name = document.createElement(url ? 'a' : 'strong');
+      name.textContent = item.name;
+      if (url) {
+        name.href = url;
+        name.target = '_blank';
+        name.rel = 'noopener noreferrer';
+      }
+      nameCell.append(name);
+      if (catalog) {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Catalog details';
+        details.append(summary);
+        const weight = catalog.weight_text || (catalog.weight == null ? '' : `${catalog.weight} lb.`);
+        for (const value of [
+          [catalog.group, ...(catalog.categories || [])].filter(Boolean).join(' · '),
+          weight && `Weight per item: ${weight}`,
+          catalog.cost_text && `Published price: ${catalog.cost_text}`,
+          catalog.details, catalog.special, catalog.notes, catalog.source,
+        ].filter(Boolean)) {
+          const line = document.createElement('p');
+          line.className = 'secondary-text';
+          line.textContent = value;
+          details.append(line);
+        }
+        nameCell.append(details);
+      }
+      for (const value of [item.quantity, gold(item.unit_cp), gold(item.unit_cp * item.quantity)]) {
         row.insertCell().textContent = value;
       }
       const actions = document.createElement('div');

@@ -39,6 +39,8 @@ def sale_changes(form, action, values):
 @router.post('/characters/{character_id}/equipment/dispose')
 async def dispose_equipment(character_id: int, request: Request, db: Session = Depends(get_db)):
     from .workspace import verify_version
+    from .equipment_effects import contributions, persist_effects
+    from .sheet_calculations import recalculate
     ctx = context(request, db)
     character = get_character(ctx, character_id)
     form = await read_form(ctx)
@@ -70,8 +72,11 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
         entry = next((item for item in items if item['id'] == item_id), None)
         if entry is None:
             raise HTTPException(409, 'This backpack entry was already removed. Reload the sheet.')
+        before = contributions(character, values)
         character.play_data = {**data, **coin_changes, 'backpack': [item for item in items if item['id'] != item_id],
                                'equipment_disposal': operation}
+        updated = recalculate(character, {**values, **coin_changes}, equipment_previous=before)
+        character.play_data = {**character.play_data, **persist_effects(character, updated)}
         audit(db, ctx.user, 'character.backpack_' + ('sold' if action == 'sell' else 'removed'),
               f"{action.capitalize()} {entry['quantity']} × {entry['name']} on {character.name}; proceeds {proceeds} copper pieces.")
         commit(db)
@@ -89,8 +94,6 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
         changes.update({field:'' for field in values if field.startswith(f'gear.{gear}.')})
     changes.update(coin_changes)
     entries.remove(entry)
-    from .equipment_effects import contributions, persist_effects
-    from .sheet_calculations import recalculate
     before = contributions(character, values)
     character.play_data = {**(character.play_data or {}), 'weapon_inventory':entries}
     updated = recalculate(character, {**values, **changes}, equipment_previous=before)

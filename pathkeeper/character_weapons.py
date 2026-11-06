@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from math import floor
 import json
 import re
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
@@ -13,7 +14,7 @@ from .database import commit, get_db
 from .models import Campaign, Character, RuleCatalog, User
 from .rule_catalog import character_catalog, effect_total, load_catalog, equipment
 from .armor import armor_fields, purchasable
-from .equipment_index import sheet_equipment, sheet_gear
+from .equipment_index import sheet_equipment
 from .security import audit, context, digest, get_character, integer, read_form
 
 router = APIRouter()
@@ -150,6 +151,11 @@ def shop_state(ctx,character):
         if key:
             owned[key]=owned.get(key,0)+entry['quantity']
             if entry.get('agreed_unit_price') is not None: prices[key]=entry['agreed_unit_price']
+    for entry in (character.play_data or {}).get('backpack', []):
+        if key := entry.get('catalog_id'):
+            owned[key] = owned.get(key, 0) + entry['quantity']
+            if entry.get('agreed_unit_price') is not None:
+                prices[key] = entry['agreed_unit_price']
     items, categories = sheet_equipment(catalog)
     return {'version':character.version,'catalog_version':record.version if record else 0,
             'equipment':items,'equipment_categories':categories,'owned':owned,'prices':prices,'budget':treasure(values),
@@ -168,7 +174,9 @@ async def weapon_shop(character_id: int,request: Request,db: Session=Depends(get
 @router.post('/characters/{character_id}/weapons')
 async def purchase_weapons(character_id: int,request: Request,db: Session=Depends(get_db)):
     from .character_rules import bounded_int
-    from .workspace import autosave_response, verify_version
+    from .workspace import verify_version
+    from .equipment_effects import contributions, persist_effects
+    from .sheet_calculations import recalculate
     ctx=context(request,db)
     character=get_character(ctx,character_id)
     form=await read_form(ctx)
@@ -195,17 +203,24 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
     entries=inventory(character,values,catalog)
     changes={}
     cost=0
-    gear = sheet_gear(catalog)
+    backpack = deepcopy((character.play_data or {}).get('backpack', []))
+    before = contributions(character, values)
+    shop_items, _ = sheet_equipment(catalog)
     existing_equipment = equipment(catalog)
     for key,quantity in quantities.items():
-        item = gear.get(key) or existing_equipment.get(key)
-        if not item or not item.get('enabled',True) or (key not in gear and not purchasable(item)):
+        item = shop_items.get(key) or existing_equipment.get(key)
+        if not item or not item.get('enabled',True) or (not purchasable(item) and item.get('kind') not in {'misc', 'material'}):
             raise HTTPException(422, 'Choose available equipment from the catalog.')
         quantity=bounded_int(quantity,1,100,'Equipment quantity')
-        bounded_int(sum(entry['quantity'] for entry in entries if entry.get('id')==key)+quantity,1,100,'Total inventory quantity')
+        carried = [entry for entry in backpack if entry.get('catalog_id') == key]
+        old_quantity = sum(entry['quantity'] for entry in entries if entry.get('id') == key)
+        bounded_int(old_quantity + sum(entry['quantity'] for entry in carried) + quantity, 1, 100, 'Total inventory quantity')
         entry=next((entry for entry in entries if entry.get('id')==key),None)
         if item['cost'] is None:
-            prior=entry.get('agreed_unit_price') if entry else None
+            prior = next((stack['agreed_unit_price'] for stack in carried
+                          if stack.get('agreed_unit_price') is not None), None)
+            if prior is None and entry:
+                prior = entry.get('agreed_unit_price')
             if prior is not None:
                 if key in prices and prices[key]!=prior: raise HTTPException(422,'Use the existing agreed unit price for this item.')
                 price=prior
@@ -214,6 +229,17 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
         elif key in prices: raise HTTPException(422,'Published equipment prices are calculated by the server.')
         else: price=item['cost']
         cost+=quantity*price
+        if item['kind'] not in {'weapon', 'armor', 'shield'}:
+            stack = next((stack for stack in carried if stack['unit_cp'] == price and stack['catalog'] == item), None)
+            if stack is not None:
+                stack['quantity'] += quantity
+            else:
+                if len(backpack) >= 200:
+                    raise HTTPException(422, 'The backpack has reached its 200-entry limit.')
+                backpack.append({'id':secrets.token_hex(16), 'catalog_id':key, 'catalog':deepcopy(item),
+                                 'name':item['name'], 'quantity':quantity, 'unit_cp':price,
+                                 'agreed_unit_price':price if item['cost'] is None else None})
+            continue
         if entry:
             entry['quantity']=bounded_int(entry['quantity']+quantity,1,100,'Total inventory quantity')
             if item['cost'] is None: entry['agreed_unit_price']=price
@@ -246,8 +272,9 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
         changes[f'gear.{gear_row}.weight']=str(weight*gear_quantity*(.5 if str(values.get('size','')).casefold()=='small' and item['kind'] in {'weapon','armor','shield'} else 1)) if weight is not None else values.get(f'gear.{gear_row}.weight','') or item.get('weight_text','Special')
         values.update(changes)
     changes.update(deduct_coins(values,cost))
-    from .equipment_effects import persist_effects
-    character.play_data={**(character.play_data or {}),**persist_effects(character,values),**changes,'weapon_inventory':entries,
+    character.play_data = {**(character.play_data or {}), 'backpack': backpack, 'weapon_inventory': entries}
+    updated = recalculate(character, {**values, **changes}, equipment_previous=before)
+    character.play_data={**character.play_data,**changes,**persist_effects(character,updated),
                          'weapon_purchase':{'id':request_id,'actor':ctx.user.id,'fingerprint':fingerprint,'version':character.version+1}}
     audit(db,ctx.user,'character.weapons_purchased',f'Purchased {sum(quantities.values())} equipment units for {cost} copper pieces on {character.name}.')
     commit(db)

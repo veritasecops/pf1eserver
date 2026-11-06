@@ -38,6 +38,16 @@ def validate_armor(character, values):
             raise HTTPException(422, 'Equip only one suit of armor and one shield at a time.')
 
 
+def carried_weight(character, values):
+    weights = [number(values.get(f'gear.{row}.weight', ''), None) for row in range(56)
+               if values.get(f'gear.{row}.name', '').strip()]
+    for entry in (character.play_data or {}).get('backpack', []):
+        if 'catalog' in entry:
+            weight = number(entry['catalog'].get('weight'), None)
+            weights.append(None if weight is None else weight * entry['quantity'])
+    return None if None in weights else sum(weights, Decimal(0))
+
+
 def contributions(character, values, original=False):
     from .sheet_calculations import base_speed_race
     catalog = character_catalog(character)
@@ -70,9 +80,7 @@ def contributions(character, values, original=False):
     dodge = 0
     if not original:
         level = int(values.get("level") or getattr(character, "level", 1))
-        weights = [number(values.get(f'gear.{row}.weight', ''), None) for row in range(56)
-                   if values.get(f'gear.{row}.name', '').strip()]
-        weight = None if None in weights else sum(weights)
+        weight = carried_weight(character, values)
         strength = number(values.get('ability.str.temp_score') or values.get('ability.str.score', ''), None)
         size = (values.get('size') or race.get('size', '')).casefold()
         load = load_category(strength, size, weight)
