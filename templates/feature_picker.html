@@ -1,0 +1,23 @@
+<dialog id="sheet-feature-picker" class="pw-weapon-picker" aria-labelledby="sheet-feature-title" data-endpoint="/characters/{{ character.id }}/features">
+  <form class="pw-weapon-picker-form" id="sheet-feature-form">
+    <header class="pw-weapon-picker-heading">
+      <div><h2 id="sheet-feature-title">Add Feat or Ability</h2><p>Choose an entry to record on the character sheet. Adding an entry here records its name and reference. The level-up wizard handles advancement.</p></div>
+      <button type="button" class="icon-button" data-feature-close aria-label="Close feat and ability picker">×</button>
+    </header>
+    <div class="pw-weapon-filters">
+      <label>Search by name<input type="search" data-feature-search autocomplete="off" autofocus></label>
+      <label>Type<select name="kind"><option value="feat">Feats</option><option value="class">Class abilities</option><option value="racial">Racial abilities</option></select></label>
+    </div>
+    <p class="pw-weapon-result-count" data-feature-status role="status"></p>
+    <div class="pw-weapon-results">
+      <table><thead><tr><th scope="col">Name and reference</th><th scope="col">Select</th></tr></thead><tbody data-feature-results></tbody></table>
+      <button class="button" type="button" data-feature-more hidden>Show more</button>
+    </div>
+    <div class="card-body stack">
+      <p data-feature-selection>No entry selected.</p>
+      <label class="field" data-feature-target hidden><span>Additional selection</span><select name="target" disabled></select></label>
+      <p class="error" data-feature-error role="alert" hidden></p>
+      <div class="row"><button class="button primary" type="submit" disabled>Add to sheet</button><button class="button" type="button" data-feature-close>Cancel</button></div>
+    </div>
+  </form>
+</dialog>

@@ -419,13 +419,18 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     character = seed_character(env.player)
     client = env.login(env.player)
     path = f'/characters/{character.id}'
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.play_data = {
+            'feature.0': 'Weapon Focus (Longsword)',
+            'feature.1': 'Armor Training +1',
+            'feature.2': 'Skilled',
+            'feature.3': 'Custom campaign ability',
+        }
+        db.commit()
     form = SheetForm(client.get(path).text)
-    form.values.update({
-        'feature.0': 'Weapon Focus (Longsword)',
-        'feature.1': 'Armor Training +1',
-        'feature.2': 'Skilled',
-        'feature.3': 'Custom campaign ability',
-    })
+    assert {'feature.0', 'feature.1', 'feature.2', 'feature.3'} <= form.readonly
+    form.values['feature.0'] = 'Forged feat'
     response = client.post(path + '/play-sheet', data=form.values, headers={
         'Accept': 'application/json', 'X-Sheet-Save-Id': 'a' * 32,
     })
@@ -440,3 +445,18 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert '>Armor Training +1</a>' in page.text
     assert '>Skilled</a>' in page.text
     assert SheetForm(page.text).values['feature.3'] == 'Custom campaign ability'
+
+def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    options = client.get(path + '/features').json()
+    assert any(item['name'].lower().startswith('armor training') for item in options['options']['class'])
+    assert any(item['name'] == 'Skilled' for item in options['options']['racial'])
+    form = SheetForm(client.get(path).text)
+    data = {'version': form.values['version'], 'kind': 'feat', 'feature': 'Weapon Focus'}
+    assert env.post(client, path + '/features', data).status_code == 422
+    assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 201
+    assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 409
+    page = client.get(path)
+    assert 'id="sheet-feature-picker"' in page.text and '>Weapon Focus (Longsword)</a>' in page.text

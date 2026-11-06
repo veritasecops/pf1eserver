@@ -73,8 +73,8 @@
 .ds-feature-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-flow:column; grid-template-rows:repeat(14,auto); gap:5px 20px; margin:18px 0 28px; }
 .ds-feature-row { display:flex; align-items:center; gap:6px; min-width:0; }
 .ds-feature-link { padding:6px 7px; text-decoration:underline; overflow-wrap:anywhere; flex:1; }
-.ds-feature-edit { border:0; background:transparent; padding:4px; min-width:32px; min-height:36px; }
-@media print { .ds-feature-edit { display:none!important; } }
+.ds-feature-name { min-height:38px; padding:6px 7px; overflow-wrap:anywhere; }
+@media print { #add-sheet-feature { display:none!important; } }
 
 .ds-skill-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
 .ds-page .ds-skills { min-width:430px; }

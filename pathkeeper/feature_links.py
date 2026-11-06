@@ -4,6 +4,7 @@ from urllib.parse import quote
 
 from .class_catalog import class_key, class_profile
 from .pf1_data import RACES
+from .rule_catalog import equipment
 from .weapons import safe_weapon_url
 
 RACIAL_ABILITIES = {
@@ -25,29 +26,53 @@ def ability_name(name):
     return normalized(re.sub(r"\s+(?:\([^)]*\)|[+]?\d.*)$", "", name).strip())
 
 
-def sheet_feature_links(values, character, catalog):
-    feats = {normalized(name): item["url"] for name, item in catalog["feats"].items()
-             if safe_weapon_url(item.get("url", ""))}
+def ability_options(character, catalog):
     class_id = class_key(character, catalog)
     profile = class_profile(catalog, class_id) if class_id else {}
     class_url = safe_weapon_url(profile.get("url", ""))
-    features = set()
+    features = {}
     for level in profile.get("levels", [])[:character.level]:
-        features.update(ability_name(name) for name in re.split(r",\s*(?![^()]*\))", level["features"]) if name)
-        features.update(ability_name(name) for name in level.get("choices", []))
+        for name in [*re.split(r",\s*(?![^()]*\))", level["features"]), *level.get("choices", [])]:
+            if name:
+                features.setdefault(ability_name(name), (name, class_url))
     race = next((key for key, item in RACES.items() if normalized(item["name"]) == normalized(character.ancestry)), None)
-    racial = {normalized(name) for name in RACIAL_ABILITIES.get(race, ())}
+    race_url = "https://www.aonprd.com/RacesDisplay.aspx?ItemName=" + quote(RACES[race]["name"]) if race else ""
+    racial = {normalized(name): (name, race_url) for name in RACIAL_ABILITIES.get(race, ())}
+    return features, racial
 
+
+def feature_picker(character, catalog):
+    features, racial = ability_options(character, catalog)
+    feats = [{"name": name, "url": safe_weapon_url(item.get("url", "")), "choice": item.get("choice", "")}
+             for name, item in catalog["feats"].items() if item.get("enabled", True)]
+    return {
+        "feat": sorted(feats, key=lambda item: item["name"].casefold()),
+        "class": [{"name": name, "url": url} for name, url in sorted(features.values())],
+        "racial": [{"name": name, "url": url} for name, url in sorted(racial.values())],
+    }
+
+
+def feature_targets(catalog):
+    return {
+        "skill": {key: item["name"] for key, item in catalog["skills"].items() if item.get("enabled", True)},
+        "weapon": {key: item["name"] for key, item in equipment(catalog).items()
+                   if item.get("kind") == "weapon" and item.get("enabled", True)},
+    }
+
+
+def sheet_feature_links(values, character, catalog):
+    feats = {normalized(name): item.get("url", "") for name, item in catalog["feats"].items()}
+    features, racial = ability_options(character, catalog)
     links = {}
     for index in range(56):
         name = values[f"feature.{index}"].strip()
         base = re.sub(r"\s+\([^)]*\)$", "", name)
-        url = feats.get(normalized(name)) or feats.get(normalized(base))
+        url = safe_weapon_url(feats.get(normalized(name)) or feats.get(normalized(base)))
         ability = ability_name(name.split(":", 1)[0])
         if not url and ability in racial:
-            url = "https://www.aonprd.com/RacesDisplay.aspx?ItemName=" + quote(RACES[race]["name"])
+            url = racial[ability][1]
         if not url and ability in features:
-            url = class_url
+            url = features[ability][1]
         if url:
             links[str(index)] = {"name": name, "url": url}
     return links
