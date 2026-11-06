@@ -11,7 +11,7 @@ from .character_rules import bounded_int, calculate, clean, defaults
 from .database import commit, get_db
 from .rule_catalog import load_catalog, equipment, class_skills
 from .deities import deity_choices, choose_deity
-from .models import Campaign, Character, CharacterDraft, DiceRoll, RuleCatalog, utcnow
+from .models import Campaign, Character, CharacterDraft, DiceRoll, RuleCatalog, User, utcnow
 from .class_catalog import creation_class
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, SPELL_SUGGESTIONS, STEPS
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
@@ -258,6 +258,11 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
         db.refresh(existing, with_for_update=True)
         if existing.version != draft.existing_version:
             raise HTTPException(409, "The character changed after this draft began. Start a fresh editing draft.")
+    from .deluxe_sheet import baseline
+    from .treasure import record_coin_change
+
+    owner = db.get(User, values["owner_id"])
+    prior_treasure = {**baseline(existing, owner), **(existing.play_data or {})} if existing else {}
     old_speed = track(db.get(Campaign, existing.campaign_id)) if existing and existing.campaign_id else "slow"
     character = existing or Character(**values)
     if existing:
@@ -284,6 +289,8 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     character.sheet_data = {"schema":1,"catalog":snapshot,"input":data,"computed":computed,"rolls":selected,"source":OUTLINE}
     db.add(character)
     db.flush()
+    record_coin_change(db, character, ctx.user, "creation_edit" if existing else "starting_wealth",
+                       prior_treasure, {**baseline(character, owner), **(character.play_data or {})})
     draft.finalized_at,draft.completed_id,draft.updated_at = utcnow(),character.id,utcnow()
     audit(db,ctx.user,"character.wizard_saved",f"{'Updated' if existing else 'Created'} {character.name} through the first-level creation wizard.")
     commit(db)

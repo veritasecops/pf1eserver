@@ -100,6 +100,19 @@ class Character(Base):
     __mapper_args__ = {"version_id_col": version}
 
 
+class CoinTransaction(Base):
+    __tablename__ = "coin_transactions"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    source: Mapped[str] = mapped_column(String(32))
+    before: Mapped[dict] = mapped_column(JSON)
+    after: Mapped[dict] = mapped_column(JSON)
+    delta: Mapped[dict] = mapped_column(JSON)
+    net_cp: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class Invitation(Base):
     __tablename__ = "invitations"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

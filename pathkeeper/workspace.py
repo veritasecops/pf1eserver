@@ -28,6 +28,7 @@ from .sheet_feats import removable_rows, remove_feat
 from .trait_defenses import trait_defenses
 from .equipment_state import equipment_groups, equipped_values, sync_equipped
 from .equipment_effects import contributions, persist_effects
+from .treasure import COINS, record_coin_change, treasure
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
 
 router = APIRouter()
@@ -483,7 +484,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack") if key in (character.play_data or {})}
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","coin_operation") if key in (character.play_data or {})}
     character.play_data = {"calculation_version":1, **metadata, **{key:value for key,value in values.items()
                            if key not in core | {"player", "next_level"} and value != base[key]}, **persist_effects(character, values), "experience": values["experience"]}
     for key in core - {"level"}:
@@ -515,6 +516,48 @@ def autosave_response(ctx, character):
                          'feature_links':sheet_feature_links(values,character,load_catalog(ctx.db)),
                          'trait_defenses':trait_defenses(character,values)},
                         headers={'Cache-Control':'no-store'})
+
+
+@router.post("/characters/{character_id}/treasure")
+async def change_treasure(character_id: int, request: Request, db: Session = Depends(get_db)):
+    from decimal import Decimal
+    from .character_weapons import character_values, purchase_response
+
+    ctx = context(request, db)
+    form = await read_form(ctx)
+    character = get_character(ctx, character_id)
+    db.refresh(character, with_for_update=True)
+    character = get_character(ctx, character_id)
+    request_id = str(form.get("request_id", ""))
+    if not re.fullmatch(r"[a-f0-9]{32}", request_id):
+        raise HTTPException(422, "Enter a valid coin operation identifier.")
+    data = character.play_data or {}
+    fingerprint = digest(json.dumps(sorted((key, value) for key, value in form.multi_items() if key != "csrf")))
+    previous = data.get("coin_operation", {})
+    if previous.get("id") == request_id and previous.get("actor") == ctx.user.id:
+        if previous.get("fingerprint") != fingerprint or previous.get("version") != character.version:
+            raise HTTPException(409, "The character changed after this coin operation. Reload the sheet.")
+        return purchase_response(ctx, character)
+    verify_version(form, character)
+    coin = str(form.get("coin", ""))
+    action = str(form.get("action", ""))
+    if coin not in COINS or action not in {"add", "remove"}:
+        raise HTTPException(422, "Choose a coin type and action.")
+    values = character_values(ctx, character)
+    key = "money." + coin
+    if action == "add":
+        amount = integer(form, "amount", 1, 1000000000)
+        value = Decimal(values[key] or "0") + amount
+    else:
+        value = Decimal(0)
+    changes = {key: format(value, "f")}
+    treasure({**values, **changes})
+    record_coin_change(db, character, ctx.user, "chest_" + action, values, {**values, **changes})
+    character.play_data = {**data, **changes, "coin_operation": {
+        "id": request_id, "actor": ctx.user.id, "fingerprint": fingerprint, "version": character.version + 1,
+    }}
+    commit(db)
+    return purchase_response(ctx, character)
 
 
 def sheet_feat_rules(ctx, character):

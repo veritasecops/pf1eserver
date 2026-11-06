@@ -33,3 +33,18 @@ def deduct_coins(values, cost):
         counts[coin]+=change
     return {'money.'+coin:str(count) for coin,count in counts.items()}
 
+
+
+def record_coin_change(db, character, actor, source, before, after):
+    from .models import CoinTransaction
+
+    net = treasure(after) - treasure(before)
+    old = {coin: Decimal(before.get(f"money.{coin}") or "0") for coin in COINS}
+    new = {coin: Decimal(after.get(f"money.{coin}") or "0") for coin in COINS}
+    if old != new:
+        db.add(CoinTransaction(
+            character_id=character.id, actor_id=actor.id, source=source, net_cp=net,
+            before={coin: format(amount, "f") for coin, amount in old.items()},
+            after={coin: format(amount, "f") for coin, amount in new.items()},
+            delta={coin: format(new[coin] - amount, "f") for coin, amount in old.items()},
+        ))

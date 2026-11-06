@@ -63,7 +63,8 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     assert set(form.names) == set(FIELDS) | {'csrf','version'}
     assert len(form.names) == len(set(form.names))
     assert {'player','class_name','initiative.total','ac.total','ability.str.mod','skill.climb.total'} <= form.readonly
-    assert not {'hp.current','ability.str.score','ability.str.temp_score','skill.climb.ranks','skill.climb.misc','money.gp'} & form.readonly
+    assert not {'hp.current','ability.str.score','ability.str.temp_score','skill.climb.ranks','skill.climb.misc'} & form.readonly
+    assert 'money.gp' in form.readonly
     assert form.options['alignment'] == ['',*ALIGNMENTS]
     for key,meta in FIELDS.items():
         if key in form.readonly: continue

@@ -1,3 +1,4 @@
+import secrets
 import json
 import re
 import secrets
@@ -12,8 +13,11 @@ from .test_equipment_disposal import disposal
 
 
 def buy(env, client, character, cart):
-    form=saved_form(client,character);form.values['money.gp']='200'
-    assert env.post(client,f'/characters/{character}/play-sheet',form.values).status_code==303
+    form = saved_form(client, character)
+    assert env.post(client, f'/characters/{character}/treasure', {
+        'version': form.values['version'], 'request_id': secrets.token_hex(16),
+        'action': 'add', 'coin': 'gp', 'amount': 200,
+    }).status_code == 200
     response=env.post(client,f'/characters/{character}/equipment',purchase_data(client,character,cart))
     assert response.status_code==200,response.text
 

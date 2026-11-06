@@ -6,6 +6,7 @@ from .class_catalog import class_key, creation_class
 from .pf1_data import ABILITIES, RACES
 from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
 from .trait_rules import class_skill_bonus, racial_skill_bonus
+from .treasure import COINS
 
 
 def class_record(character, catalog):
@@ -21,6 +22,7 @@ def calculated_fields(character, values):
     SKILLS = character_catalog(character)["skills"]
     locked = {'level','next_level','player','class_name','speed.base','initiative.total','initiative.dex','cmb.total','cmd.total',
               'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int','load.total'}
+    locked.update(f"money.{coin}" for coin in COINS)
     for ability in ABILITIES:
         locked.update({f'ability.{ability}.mod',f'ability.{ability}.temp_mod'})
     for save in ('fortitude','reflex','will'):
@@ -51,6 +53,9 @@ SIZE_MODIFIERS = {'fine':8,'diminutive':4,'tiny':2,'small':1,'medium':0,'large':
 
 def recalculate(character, values, equipment_previous=None, equipment_keep=()):
     """Recompute from editable components; a missing essential input stays blank."""
+    for coin in COINS:
+        key = f"money.{coin}"
+        values[key] = values.get(key) or "0"
     race=base_speed_race(character)
     if race: values['speed.base']=str(race['speed'])
     catalog = character_catalog(character)

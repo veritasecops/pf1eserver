@@ -3,11 +3,12 @@ import json
 import secrets
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from pathkeeper.character_rules import calculate, defaults
 from pathkeeper.database import engine
-from pathkeeper.models import Character
+from pathkeeper.models import Character, CoinTransaction
 from pathkeeper.rule_catalog import default_catalog
 from .test_character_weapons import setup_sheet, purchase_data
 from .test_character_wizard import fighter
@@ -109,7 +110,12 @@ def test_access_csrf_stale_versions_overflow_and_detached_gear(env):
     assert env.post(env.login(env.player2),path+'/equipment/dispose',payload).status_code==404
     assert env.post(client,path+'/equipment/dispose',payload,use_csrf=False).status_code==403
     assert env.post(client,path+'/equipment/dispose',{**payload,'version':1}).status_code==409
-    form=SheetForm(client.get(path).text);form.values.update({'money.gp':'1000000000','gear.0.name':'My unrelated bag'})
+    form=SheetForm(client.get(path).text)
+    assert env.post(client, path + '/treasure', {
+        'version': form.values['version'], 'request_id': secrets.token_hex(16), 'action': 'add', 'coin': 'gp',
+        'amount': 1000000000 - int(form.values['money.gp']),
+    }).status_code == 200
+    form=SheetForm(client.get(path).text);form.values['gear.0.name']='My unrelated bag'
     assert env.post(client,path+'/play-sheet',form.values).status_code==303
     payload=disposal(client,character,action='sell',coins={'gp':1})
     assert env.post(client,path+'/equipment/dispose',payload).status_code==422
@@ -165,3 +171,7 @@ def test_backpack_add_remove_and_sell_use_the_sheet_treasure(env):
     assert removed.json()['backpack'] == []
     assert removed.json()['purchase_fields']['money.gp'] == '106'
     assert removed.json()['purchase_fields']['money.sp'] == '5'
+    with Session(engine()) as db:
+        sales = db.scalars(select(CoinTransaction).where(CoinTransaction.character_id == character,
+                                                         CoinTransaction.source == 'backpack_sale')).all()
+        assert len(sales) == 1 and sales[0].net_cp == 650 and sales[0].delta['sp'] == '5'

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from pathkeeper.character_weapons import deduct_coins, treasure
 from pathkeeper.database import engine
-from pathkeeper.models import AuditEvent, Character, RuleCatalog
+from pathkeeper.models import AuditEvent, Character, CoinTransaction, RuleCatalog
 from pathkeeper.rule_catalog import default_catalog
 from .test_deluxe_sheet import SheetForm
 from .test_workspace import seed_campaign, seed_character
@@ -19,8 +19,12 @@ def setup_sheet(env):
     client=env.login(env.player)
     path=f'/characters/{character.id}'
     form=SheetForm(client.get(path).text)
-    form.values.update({'money.gp':'100','bab':'5','ability.str.score':'16','ability.dex.score':'14','size':'Medium','weapon.0.notes':'Keep my personal note'})
+    form.values.update({'bab':'5','ability.str.score':'16','ability.dex.score':'14','size':'Medium','weapon.0.notes':'Keep my personal note'})
     assert env.post(client,path+'/play-sheet',form.values).status_code==303
+    assert env.post(client, path + '/treasure', {
+        'version': SheetForm(client.get(path).text).values['version'], 'request_id': secrets.token_hex(16),
+        'action': 'add', 'coin': 'gp', 'amount': 100,
+    }).status_code == 200
     return client,character.id
 
 
@@ -50,6 +54,9 @@ def test_purchases_populate_locked_fields_notes_and_inventory_and_deduct_once(en
     with Session(engine()) as db:
         assert db.scalar(select(AuditEvent).where(AuditEvent.event=='character.weapons_purchased'))
         assert db.get(Character,character_id).play_data['weapon_inventory'][0]['quantity']==2
+        rows = db.scalars(select(CoinTransaction).where(CoinTransaction.character_id == character_id)
+                          .order_by(CoinTransaction.id)).all()
+        assert [(row.source, row.net_cp) for row in rows] == [('chest_add', 10000), ('equipment_purchase', -3600)]
     form=SheetForm(client.get(path).text)
     assert {'weapon.0.name','weapon.0.quantity','weapon.0.attack','weapon.0.damage','weapon.0.ammunition'} <= form.readonly
     assert 'weapon.0.notes' not in form.readonly

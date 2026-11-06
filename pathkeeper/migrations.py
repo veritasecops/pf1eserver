@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Campaign, Character, CharacterDraft, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration
+from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration
 
 
 def remove_manual_class_fields(db):
@@ -50,7 +50,7 @@ def remove_automatic_racial_summaries(db):
 def migrate(admin_engine):
     # MariaDB DDL commits separately. Complete all DDL before opening a read
     # transaction, so snapshot isolation cannot retain pre-DDL table definitions.
-    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog):
+    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction):
         model.__table__.create(admin_engine, checkfirst=True)
     additions = {
         "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'"},
@@ -203,4 +203,7 @@ def migrate(admin_engine):
                     ]}
             db.add(SchemaMigration(version=20, name="remove_level_up_notes"))
             db.commit()
-    print("Database migrations applied through 020 (remove level-up notes).")
+        if not db.get(SchemaMigration, 21):
+            db.add(SchemaMigration(version=21, name="character_coin_transactions"))
+            db.commit()
+    print("Database migrations applied through 021 (character coin transactions).")

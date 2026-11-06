@@ -11,7 +11,7 @@ from .character_weapons import character_values, inventory, purchase_response
 from .database import commit, get_db
 from .rule_catalog import character_catalog, equipment, load_catalog
 from .security import audit, context, digest, get_character, integer, read_form
-from .treasure import COINS, treasure
+from .treasure import COINS, treasure, record_coin_change
 
 router = APIRouter()
 
@@ -77,6 +77,8 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
                                'equipment_disposal': operation}
         updated = recalculate(character, {**values, **coin_changes}, equipment_previous=before)
         character.play_data = {**character.play_data, **persist_effects(character, updated)}
+        if action == 'sell':
+            record_coin_change(db, character, ctx.user, 'backpack_sale', values, updated)
         audit(db, ctx.user, 'character.backpack_' + ('sold' if action == 'sell' else 'removed'),
               f"{action.capitalize()} {entry['quantity']} × {entry['name']} on {character.name}; proceeds {proceeds} copper pieces.")
         commit(db)
@@ -100,6 +102,8 @@ async def dispose_equipment(character_id: int, request: Request, db: Session = D
     changes.update({key:updated[key] for key in contributions(character, updated)})
     character.play_data = {**(character.play_data or {}), **changes, **persist_effects(character, updated), 'weapon_inventory':entries,
         'equipment_disposal':{**operation, 'changed_fields':list(changes)}}
+    if action == 'sell':
+        record_coin_change(db, character, ctx.user, 'equipment_sale', values, updated)
     audit(db, ctx.user, 'character.equipment_' + ('sold' if action == 'sell' else 'removed'),
           f"{action.capitalize()} {entry['quantity']} inventory units on {character.name}; proceeds {proceeds} copper pieces.")
     commit(db)

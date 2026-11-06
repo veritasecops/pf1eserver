@@ -19,7 +19,7 @@ from .security import audit, context, digest, get_character, integer, read_form
 
 router = APIRouter()
 PARTS = ('name','quantity','attack','critical','type','range','ammunition','damage')
-from .treasure import COINS, treasure, deduct_coins
+from .treasure import COINS, treasure, deduct_coins, record_coin_change
 
 
 def character_values(ctx, character):
@@ -276,6 +276,7 @@ async def purchase_weapons(character_id: int,request: Request,db: Session=Depend
     updated = recalculate(character, {**values, **changes}, equipment_previous=before)
     character.play_data={**character.play_data,**changes,**persist_effects(character,updated),
                          'weapon_purchase':{'id':request_id,'actor':ctx.user.id,'fingerprint':fingerprint,'version':character.version+1}}
+    record_coin_change(db, character, ctx.user, 'equipment_purchase', values, updated)
     audit(db,ctx.user,'character.weapons_purchased',f'Purchased {sum(quantities.values())} equipment units for {cost} copper pieces on {character.name}.')
     commit(db)
     return purchase_response(ctx,character)
