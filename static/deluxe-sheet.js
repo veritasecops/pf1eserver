@@ -23,11 +23,13 @@
     errors.hidden = false;
   };
   const featureRows = [...form.querySelectorAll('[data-feature-row]:not([hidden])')];
-  const defensePanel = document.getElementById('sheet-trait-defenses');
+  const defenseTable = document.getElementById('sheet-trait-defenses-table');
+  const defenseEmpty = document.getElementById('sheet-trait-defenses-empty');
   const defenseBody = document.getElementById('sheet-trait-defense-rows');
   const updateDefenses = defenses => {
     if (!defenseBody || !defenses) return;
-    defensePanel.hidden = defenses.length === 0;
+    defenseTable.hidden = defenses.length === 0;
+    defenseEmpty.hidden = defenses.length > 0;
     defenseBody.replaceChildren(...defenses.map(defense => {
       const row = document.createElement('tr');
       const situation = document.createElement('th');

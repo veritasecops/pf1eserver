@@ -38,10 +38,11 @@
 <h3>Saving throws</h3><div class="ds-table-scroll"><table class="ds-table ds-saves"><thead><tr><th scope="col">Save</th>{% for label in ['Total','Base','Ability','Magic','Misc'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for key,label,ability in save_rows %}<tr><th scope="row">{{ label }} <span>({{ ability|upper }})</span></th>{% for part in ['total','base','ability','magic','misc'] %}<td>{{ control('save.' ~ key ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{{ control('save_modifiers',rows=2) }}
 <h3>Resistances</h3>{{ control('resistance.spell') }}<div class="ds-table-scroll"><table class="ds-table"><thead><tr>{% for label in ['Damage reduction','Bypassed by','Energy resistance','Energy type'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for row in range(3) %}<tr>{% for key in ['damage','bypass','energy','type'] %}<td>{{ control('resistance.' ~ row ~ '.' ~ key,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
 </div></div>
-<details id="sheet-trait-defenses"{% if not trait_defenses %} hidden{% endif %}>
-  <summary>Situational checks and defenses</summary>
+<section aria-labelledby="sheet-trait-defenses-title">
+  <h3 id="sheet-trait-defenses-title">Situational checks and defenses</h3>
+  <p class="ds-record-note" id="sheet-trait-defenses-empty"{% if trait_defenses %} hidden{% endif %}>No situational checks or defenses apply.</p>
   <p class="ds-record-note">Each row applies to the named situation. When several situations apply, count each trait bonus only once.</p>
-  <div class="ds-table-scroll" tabindex="0" role="region" aria-label="Situational checks and defenses">
+  <div id="sheet-trait-defenses-table" class="ds-table-scroll"{% if not trait_defenses %} hidden{% endif %} tabindex="0" role="region" aria-label="Situational checks and defenses">
     <table class="ds-table">
       <thead><tr><th scope="col">Situation</th><th scope="col">Check</th><th scope="col">Result</th><th scope="col">Traits</th></tr></thead>
       <tbody id="sheet-trait-defense-rows">
@@ -52,7 +53,7 @@
       </tbody>
     </table>
   </div>
-</details>
+</section>
 <div class="ds-weapon-heading"><h3>Weapons and attacks</h3><button class="button primary" type="button" id="add-sheet-weapons">Add Equipment</button></div><p class="ds-equation">Purchases use on-hand PP, GP, SP, and CP. Weapon and armor statistics are read-only; Notes remain editable. Equipped items apply supported combat, skill, and speed modifiers. Equip one suit of armor and one shield; manual modifier adjustments are retained.</p>{{ table('weapon',weapon_columns,6) }}
 <h3>Armor and protection</h3>{{ table('armor',armor_columns,6) }}
 <div class="ds-columns ds-campaign"><div><h3>Languages</h3>{{ control('languages',bare=true,rows=5) }}</div><div><h3>Campaign information</h3><div class="ds-fields ds-three">{{ control('campaign') }}{{ control('campaign_traits',rows=3) }}{{ control('gm') }}<p class="ds-record-note">Use Manage character to change campaign membership.</p></div></div></div><footer class="ds-footer">PATHKEEPER <span>Combat & identity · 1 / 4</span></footer>
