@@ -3,8 +3,7 @@
 .deluxe-sheet .ds-page { scroll-margin-top:var(--sheet-dock-height,120px); }
 .deluxe-sheet .ds-identity { grid-template-columns:1fr; gap:22px; }
 .ds-sheet-masthead { display:flex; align-items:center; justify-content:space-between; gap:14px; }
-.treasure-chest { flex:0 0 76px; width:76px; height:76px; padding:0; border:0; border-radius:8px; background:transparent; cursor:pointer; }
-.treasure-chest svg { display:block; width:100%; height:100%; overflow:visible; }
+.treasure-chest svg { overflow:visible; }
 .chest-lid { transform-origin:48px 35px; transition:transform 260ms ease; }
 .chest-coins { opacity:0; transition:opacity 180ms ease; }
 @media (hover:hover) { .treasure-chest:hover .chest-lid { transform:translateY(-13px) rotate(-13deg); } .treasure-chest:hover .chest-coins { opacity:1; } }
@@ -46,7 +45,6 @@
 .treasure-dialog :focus-visible { outline:2px solid #94542b; outline-offset:2px; }
 .treasure-print-coins { display:none; }
 @media(max-width:650px) {
-  .treasure-chest { flex-basis:60px; width:60px; height:60px; }
   .ds-sheet-masthead .ds-brand { gap:8px; }
   .ds-sheet-masthead .ds-brand>div>span { font-size:1.125rem; letter-spacing:0; }
   .ds-sheet-masthead .ds-brand p { font-size:.75rem; letter-spacing:0; }
@@ -64,7 +62,6 @@
   .treasure-print-coins span { font-size:.875rem; }
 }
 
-.sheet-storage-icons { display:flex; flex:none; gap:4px; }
 .backpack-flap { transform-origin:48px 22px; transition:transform 260ms ease; }
 .backpack-contents { opacity:0; transition:opacity 180ms ease; }
 @media (hover:hover) {
@@ -84,7 +81,7 @@
 @media (max-width:500px) {
   .backpack-fields { grid-template-columns:1fr 1fr; }
   .backpack-fields label:first-child { grid-column:1 / -1; }
-  .sheet-storage-icons .treasure-chest { flex-basis:48px; width:48px; height:48px; }
 }
 @media (prefers-reduced-motion:reduce) { .backpack-flap,.backpack-contents { transition:none; } }
-@media print { .sheet-storage-icons { display:none; } }
+
+@media screen { .deluxe-bottom { margin-bottom:80px; } }
