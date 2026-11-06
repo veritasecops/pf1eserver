@@ -266,7 +266,11 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
     assert player.get('/administration/equipment').status_code == 403
     admin = env.login(env.admin)
     listing = admin.get('/administration/equipment')
-    assert listing.status_code == 200 and f'{len(equipment_entries(default_catalog()))} entries' in listing.text
+    groups = {item['group'] for item in equipment_entries(default_catalog()).values()}
+    assert groups == {'Weapons', 'Armor', 'Special Materials', 'Miscellaneous'}
+    weapons_count = sum(item['group'] == 'Weapons' for item in equipment_entries(default_catalog()).values())
+    assert listing.status_code == 200 and f'{weapons_count} entries' in listing.text
+    assert 'All equipment' not in listing.text
     assert 'aria-label="Equipment groups"' in listing.text
     assert 'href="/administration/equipment" class="active"' in listing.text
     assert '<h1>Equipment</h1>' in listing.text
@@ -326,7 +330,7 @@ def test_equipment_tab_includes_custom_combat_items_and_archived_gear(env):
     page = admin.get('/administration/equipment?q=Custom&equipment_status=archived')
     assert 'href="/administration/catalog/weapons/custom-sword"' in page.text
     assert '/administration/catalog/armor/custom-coat' not in page.text
-    page = admin.get('/administration/equipment?q=Custom&equipment_status=available')
+    page = admin.get('/administration/equipment?equipment_group=Armor&q=Custom&equipment_status=available')
     assert 'href="/administration/catalog/armor/custom-coat"' in page.text
     assert '/administration/catalog/weapons/custom-sword' not in page.text
     response = env.post(admin, '/administration/catalog/equipment', {

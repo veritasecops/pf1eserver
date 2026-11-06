@@ -6,10 +6,6 @@
 {% set add_entry %}
 {% if add_kind in add_labels %}
 <div class="catalog-add-entry row">
-  {% if kind == 'equipment' and not equipment_group %}
-  <a class="button" href="/administration/catalog/weapons/new">Add weapon</a>
-  <a class="button" href="/administration/catalog/armor/new">Add armor or shield</a>
-  {% endif %}
   <a class="button primary" href="/administration/catalog/{{ add_kind }}/new{% if add_kind == 'equipment' and equipment_group %}?equipment_group={{ equipment_group|urlencode }}{% endif %}">Add {{ add_labels[add_kind] }}</a>
 </div>
 {% endif %}
@@ -20,8 +16,8 @@
 <div class="inline-note">{% if kind == "classes" %}Class edits apply to character creation and future level-ups. Saved characters keep their existing stats and creation rules.{% elif kind == "equipment" %}Browse and edit the equipment catalog. Use the weapon and armor editors for combat statistics. Available miscellaneous items and special materials appear in Add Equipment on the character sheet.{% else %}Changes apply to open drafts after reloading and to newly completed characters. Existing character sheets retain a snapshot of their creation rules. Archive entries to stop offering them; stable identifiers preserve saved selections. Deity names and description links use the current catalog on character sheets.{% endif %}</div>
 {% if kind == 'equipment' %}
 <nav class="tabs" aria-label="Equipment groups">
-  {% for label in [''] + equipment_groups|list %}
-  <a href="?equipment_group={{ label|urlencode }}&amp;q={{ search|urlencode }}&amp;equipment_status={{ equipment_status }}"{% if label == equipment_group %} class="active" aria-current="page"{% endif %}>{{ label or 'All equipment' }} <span class="count">{{ equipment_counts[label] if label else equipment_counts.values()|sum }}</span></a>
+  {% for label in equipment_groups %}
+  <a href="?equipment_group={{ label|urlencode }}&amp;q={{ search|urlencode }}&amp;equipment_status={{ equipment_status }}"{% if label == equipment_group %} class="active" aria-current="page"{% endif %}>{{ label }} <span class="count">{{ equipment_counts[label] }}</span></a>
   {% endfor %}
 </nav>
 {% endif %}

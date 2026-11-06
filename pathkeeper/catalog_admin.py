@@ -107,12 +107,13 @@ def render_catalog(ctx, request, kind):
         else:
             equipment_status = ''
         if equipment_group not in EQUIPMENT_GROUPS:
-            equipment_group = ''
-        if equipment_group:
-            items = [(key, item) for key, item in items if item["group"] == equipment_group]
+            # Older category bookmarks may not specify a group.
+            matching_groups = {item["group"] for item in entries.values()
+                               if equipment_category and equipment_category in item["categories"]}
+            equipment_group = next(iter(matching_groups)) if len(matching_groups) == 1 else EQUIPMENT_GROUPS[0]
+        items = [(key, item) for key, item in items if item["group"] == equipment_group]
         equipment_categories = sorted({label for item in entries.values()
-                                       if not equipment_group or item["group"] == equipment_group
-                                       for label in item["categories"]})
+                                       if item["group"] == equipment_group for label in item["categories"]})
         if equipment_category in equipment_categories:
             items = [(key, item) for key, item in items if equipment_category in item["categories"]]
     items.sort(key=lambda pair:pair[1].get('name',pair[0]).casefold())
