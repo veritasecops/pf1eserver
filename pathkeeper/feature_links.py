@@ -44,11 +44,32 @@ def ability_options(character, catalog, include_prompts=True):
     return features, racial
 
 
-def automatic_abilities(values, character, catalog):
-    features, racial = ability_options(character, catalog, include_prompts=False)
-    recorded = {ability_name(values[f"feature.{row}"].split(":", 1)[0]) for row in range(56)}
-    granted = {key: item for key, item in features.items() if "feat" not in key.split()}
-    return [item for key, item in {**granted, **racial}.items() if key not in recorded]
+def sheet_ability_blocks(values, character, catalog):
+    granted, racial = ability_options(character, catalog, include_prompts=False)
+    class_choices, _ = ability_options(character, catalog)
+    class_abilities = {key: item for key, item in granted.items() if "feat" not in key.split()}
+    feat_names = {normalized(name) for name in catalog["feats"]}
+    recorded_class, recorded_racial, slots = {}, {}, set()
+    for row in range(56):
+        name = values[f"feature.{row}"].strip()
+        base = re.sub(r"\s+\([^)]*\)$", "", name)
+        if normalized(name) in feat_names or normalized(base) in feat_names:
+            continue
+        key = ability_name(name.split(":", 1)[0])
+        if key in racial:
+            recorded_racial.setdefault(key, []).append((name, racial[key][1]))
+        elif key in class_choices:
+            recorded_class.setdefault(key, []).append((name, class_choices[key][1]))
+        else:
+            continue
+        slots.add(row)
+
+    def entries(automatic, recorded):
+        return [item for key in dict.fromkeys([*automatic, *recorded])
+                for item in (recorded[key] if key in recorded else [automatic[key]])]
+
+    return {"class": entries(class_abilities, recorded_class),
+            "racial": entries(racial, recorded_racial), "slots": slots}
 
 
 def feature_picker(catalog):

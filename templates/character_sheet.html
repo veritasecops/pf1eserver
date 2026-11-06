@@ -43,18 +43,29 @@
 <div class="ds-columns ds-campaign"><div><h3>Languages</h3>{{ control('languages',bare=true,rows=5) }}</div><div><h3>Campaign information</h3><div class="ds-fields ds-three">{{ control('campaign') }}{{ control('campaign_traits',rows=3) }}{{ control('gm') }}<p class="ds-record-note">Use Manage character to change campaign membership.</p></div></div></div><footer class="ds-footer">PATHKEEPER <span>Combat & identity · 1 / 4</span></footer>
 </section>
 <section class="ds-page" id="abilities-skills" aria-labelledby="skills-title">
-<div class="ds-weapon-heading"><h2 id="skills-title" class="ds-bar">Feats, class, and racial abilities</h2><button class="button primary" type="button" id="add-sheet-feature" aria-haspopup="dialog" aria-controls="sheet-feature-picker">Add Feat</button></div>{% if automatic_abilities %}
-<ul class="ds-automatic-abilities" aria-label="Automatic class and racial abilities">
-{% for name, url in automatic_abilities %}
-  <li>{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }}</a>{% else %}{{ name }}{% endif %}</li>
+<h2 id="skills-title" class="ds-bar">Feats, class, and racial abilities</h2>
+<div class="ds-ability-blocks">
+{% for kind, label in [('class', 'Class Abilities'), ('racial', 'Racial Abilities')] %}
+  <section class="ds-ability-block" aria-labelledby="{{ kind }}-abilities-title">
+    <h3 id="{{ kind }}-abilities-title">{{ label }}</h3>
+    {% if ability_blocks[kind] %}
+    <ul>
+    {% for name, url in ability_blocks[kind] %}
+      <li>{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }}</a>{% else %}{{ name }}{% endif %}</li>
+    {% endfor %}
+    </ul>
+    {% else %}<p class="ds-record-note">No {{ label|lower }} recorded.</p>{% endif %}
+  </section>
 {% endfor %}
-</ul>
-{% endif %}
+</div>
+<div class="ds-weapon-heading"><h3>Feats</h3><button class="button primary" type="button" id="add-sheet-feature" aria-haspopup="dialog" aria-controls="sheet-feature-picker">Add Feat</button></div>
 <div class="ds-feature-grid">{% for i in range(56) %}{% set reference = feature_links.get(i|string) %}
-<div class="ds-feature-row" data-feature-row="{{ i }}">
+<div class="ds-feature-row" data-feature-row="{{ i }}"{% if i in ability_blocks.slots %} hidden{% endif %}>
   {{ control('feature.' ~ i,bare=true,hidden=true) }}
+  {% if i not in ability_blocks.slots %}
   <span class="ds-feature-name"{% if reference %} hidden{% endif %}>{{ deluxe.get('feature.' ~ i, '') }}</span>
   <a class="ds-feature-link" target="_blank" rel="noopener noreferrer"{% if reference %} href="{{ reference.url }}"{% else %} hidden{% endif %}>{{ reference.name if reference else '' }}</a>
+  {% endif %}
 </div>{% endfor %}</div>
 <h3>Skills</h3><div class="ds-fields ds-four">{{ control('skill_points.total','Skill points / level') }}{{ control('skill_points.base','Base') }}{{ control('skill_points.int','INT modifier') }}{{ control('skill_points.misc','Misc') }}</div><p class="ds-equation">◆ Class skill · * Trained only · Any class can invest ranks in any skill. Class skills with ranks receive +3.</p>
 <div class="ds-skill-columns">{% for half in skill_rows|batch((skill_rows|length + 1)//2) %}<div class="ds-table-scroll"><table class="ds-table ds-skills"><thead><tr><th scope="col">Skill</th>{% for label in ['Total','Ability','Ranks','Misc'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for key,meta in half %}{% set base=key.removesuffix('-2') %}<tr><th scope="row"><span class="ds-skill-name">{% if base in class_skills %}<span class="ds-class-skill" title="Class skill" aria-label="Class skill">◆</span>{% endif %}{{ meta.name }}{{ '*' if base in trained_only }} <span class="ds-skill-ability">{{ meta.ability|upper }}</span></span>{% if base in ['craft','perform','profession'] %}{{ control('skill.' ~ key ~ '.specialty',bare=true) }}{% endif %}</th>{% for part in ['total','ability','ranks','misc'] %}<td>{{ control('skill.' ~ key ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endfor %}</div>{{ control('skill_specialties',rows=2) }}<footer class="ds-footer">PATHKEEPER <span>Abilities & skills · 2 / 4</span></footer>

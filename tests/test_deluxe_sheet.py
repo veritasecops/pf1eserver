@@ -442,7 +442,11 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert '3' not in links
     page = client.get(path)
     assert '>Weapon Focus (Longsword)</a>' in page.text
-    assert '>Armor Training +1</a>' in page.text
+    class_start = page.text.index('id="class-abilities-title"')
+    race_start = page.text.index('id="racial-abilities-title"')
+    feats_start = page.text.index('<h3>Feats</h3>')
+    assert '>Armor Training +1</a>' in page.text[class_start:race_start]
+    assert '>Skilled</a>' in page.text[race_start:feats_start]
     assert page.text.count('>Skilled</a>') == 1
     assert SheetForm(page.text).values['feature.3'] == 'Custom campaign ability'
 

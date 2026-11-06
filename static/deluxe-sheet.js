@@ -22,7 +22,7 @@
     errors.textContent = message;
     errors.hidden = false;
   };
-  const featureRows = [...form.querySelectorAll('[data-feature-row]')];
+  const featureRows = [...form.querySelectorAll('[data-feature-row]:not([hidden])')];
   const applyTotals = result => {
     if (levelUp && typeof result.can_level_up === 'boolean') levelUp.hidden = !result.can_level_up;
     if(result.equipment_effects)equipmentEffects=result.equipment_effects;
