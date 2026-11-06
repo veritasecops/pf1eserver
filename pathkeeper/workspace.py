@@ -24,6 +24,7 @@ from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
 from .sheet_calculations import calculated_fields, recalculate
 from .sheet_formulas import sheet_formulas
+from .trait_defenses import trait_defenses
 from .equipment_state import equipment_groups, equipped_values, sync_equipped
 from .equipment_effects import contributions, persist_effects
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
@@ -348,6 +349,7 @@ def render_character(ctx, character, values=None, errors=()):
                       weapon_links=sheet_weapon_links(values,character,catalog),
                       feature_links=sheet_feature_links(values, character, catalog),
                       ability_blocks=sheet_ability_blocks(values, character, catalog),
+                      trait_defenses=trait_defenses(character, values),
                       **view_context(character, owner, campaign, gm, values, errors,deity_catalog=catalog.get('deities',{})))
     if errors:
         response.status_code = 422
@@ -397,7 +399,8 @@ async def character_play_sheet_calculate(character_id: int, request: Request, db
     if errors:
         return JSONResponse({"errors":errors},status_code=422)
     locked = calculated_fields(character, values)
-    return JSONResponse({"values":{key:values[key] for key in locked},"readonly":sorted(locked),"formulas":sheet_formulas(character,values)},
+    return JSONResponse({"values":{key:values[key] for key in locked},"readonly":sorted(locked),"formulas":sheet_formulas(character,values),
+                         "trait_defenses":trait_defenses(character,values)},
                         headers={"Cache-Control":"no-store"})
 
 
@@ -460,7 +463,8 @@ def autosave_response(ctx, character):
                          'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
                          'armor_links':sheet_armor_links(values,character,load_catalog(ctx.db)),
                          'weapon_links':sheet_weapon_links(values,character,load_catalog(ctx.db)),
-                         'feature_links':sheet_feature_links(values,character,load_catalog(ctx.db))},
+                         'feature_links':sheet_feature_links(values,character,load_catalog(ctx.db)),
+                         'trait_defenses':trait_defenses(character,values)},
                         headers={'Cache-Control':'no-store'})
 
 

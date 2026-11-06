@@ -23,7 +23,40 @@
     errors.hidden = false;
   };
   const featureRows = [...form.querySelectorAll('[data-feature-row]:not([hidden])')];
+  const defensePanel = document.getElementById('sheet-trait-defenses');
+  const defenseBody = document.getElementById('sheet-trait-defense-rows');
+  const updateDefenses = defenses => {
+    if (!defenseBody || !defenses) return;
+    defensePanel.hidden = defenses.length === 0;
+    defenseBody.replaceChildren(...defenses.map(defense => {
+      const row = document.createElement('tr');
+      const situation = document.createElement('th');
+      situation.scope = 'row';
+      situation.textContent = defense.situation;
+      row.append(situation);
+      row.insertCell().textContent = defense.check;
+      const result = row.insertCell();
+      result.textContent = defense.result;
+      if (defense.formula) result.title = defense.formula;
+      const traits = row.insertCell();
+      defense.sources.forEach((source, index) => {
+        if (index) traits.append(', ');
+        if (source.url) {
+          const link = document.createElement('a');
+          link.href = source.url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = source.name;
+          traits.append(link);
+        } else {
+          traits.append(source.name);
+        }
+      });
+      return row;
+    }));
+  };
   const applyTotals = result => {
+    updateDefenses(result.trait_defenses);
     if (levelUp && typeof result.can_level_up === 'boolean') levelUp.hidden = !result.can_level_up;
     if(result.equipment_effects)equipmentEffects=result.equipment_effects;
     for (const [name,value] of Object.entries(result.equipment_fields||{})) {
