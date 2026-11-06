@@ -1,3 +1,27 @@
-.deity-reference { display:inline-block; margin-top:5px; font-size:.9375rem; text-decoration:underline; }
-.deity-reference[hidden] { display:none; }
-@media print { .deity-reference { display:none!important; } }
+.deity-picker:not([data-ready]) > :not(select) { display: none; }
+.deity-picker[data-ready] {
+  --deity-arrow-width: 2.5rem;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--deity-arrow-width);
+  min-height: 38px;
+  border: 1px solid #b6aa98;
+  background: #fffdf7;
+  font-size: 1rem;
+}
+.deity-picker [data-deity-reference], .deity-arrow { padding: 6px 7px; }
+.deity-picker a[href] { text-decoration: underline; overflow-wrap: anywhere; }
+.deity-arrow { text-align: center; border-left: 1px solid #b6aa98; }
+.deity-picker:has(select:focus-visible) .deity-arrow { outline: 2px solid currentColor; outline-offset: -2px; }
+.deity-picker[data-ready] select, .ds-page .deity-picker[data-ready] select {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--deity-arrow-width);
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+@media print {
+  .deity-picker[data-ready] { display: block; }
+  .deity-picker[data-ready] :is(select, .deity-arrow) { display: none !important; }
+}

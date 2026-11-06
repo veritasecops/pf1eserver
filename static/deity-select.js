@@ -1,18 +1,28 @@
 (() => {
-  function update(select){
-    const label=select.closest('label');
-    const link=label?.querySelector('[data-deity-reference]');
-    if(!link)return;
-    const url=select.selectedOptions[0]?.dataset.descriptionUrl||'';
-    let safe=false;
-    try{safe=['http:','https:'].includes(new URL(url).protocol);}catch{}
-    link.hidden=!safe;
-    if(safe){link.href=url;link.setAttribute('aria-label','Description of '+select.selectedOptions[0].textContent);}
-    else link.removeAttribute('href');
+  function update(select) {
+    const picker = select.closest('.deity-picker');
+    const link = picker?.querySelector('[data-deity-reference]');
+    if (!link) return;
+    picker.dataset.ready = '';
+    const option = select.selectedOptions[0];
+    const name = option?.textContent || '';
+    if (link.textContent !== name) link.textContent = name;
+    const url = option?.dataset.descriptionUrl || '';
+    try {
+      if (['http:', 'https:'].includes(new URL(url).protocol)) {
+        link.href = url;
+        return;
+      }
+    } catch {}
+    link.removeAttribute('href');
   }
-  document.addEventListener('change',event=>{if(event.target.matches('[data-deity-select]'))update(event.target);});
-  function refresh(){for(const select of document.querySelectorAll('[data-deity-select]'))update(select);}
+  document.addEventListener('change', event => {
+    if (event.target.matches('[data-deity-select]')) update(event.target);
+  });
+  function refresh() {
+    document.querySelectorAll('[data-deity-select]').forEach(update);
+  }
   refresh();
-  const stage=document.getElementById('pw-stage');
-  if(stage)new MutationObserver(refresh).observe(stage,{childList:true,subtree:true});
+  const stage = document.getElementById('pw-stage');
+  if (stage) new MutationObserver(refresh).observe(stage, {childList:true, subtree:true});
 })();
