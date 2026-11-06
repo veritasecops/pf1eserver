@@ -1,6 +1,9 @@
 """Administrator forms for the supported first-level rule catalog."""
+import json
 import re
 from copy import deepcopy
+from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -23,6 +26,7 @@ from .ui import redirect, render
 
 router = APIRouter(prefix='/administration/catalog')
 equipment_router = APIRouter(prefix='/administration/equipment')
+magic_items_router = APIRouter(prefix='/administration/magic-items')
 KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
 
 
@@ -77,6 +81,39 @@ async def equipment_page(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     administrator(ctx)
     return render_catalog(ctx, request, 'equipment')
+
+
+@lru_cache
+def magic_items():
+    return json.loads((Path(__file__).parent / 'data' / 'magic_items.json').read_text())
+
+
+@magic_items_router.get('')
+async def magic_items_page(request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    administrator(ctx)
+    params = request.query_params
+    search = params.get('q', '').strip()[:100]
+    catalog = magic_items()
+    groups = sorted({item['group'] for item in catalog})
+    group = params.get('group', '')
+    if group not in groups:
+        group = ''
+    group_items = [item for item in catalog if not group or item['group'] == group]
+    categories = sorted({category for item in group_items for category in item['categories']})
+    category = params.get('category', '')
+    if category not in categories:
+        category = ''
+    items = [item for item in group_items if search.casefold() in item['name'].casefold()
+             and (not category or category in item['categories'])]
+    total = len(items)
+    pages = max(1, (total + 99) // 100)
+    raw_page = params.get('page', '')
+    page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
+    query = urlencode({'q': search, 'group': group, 'category': category})
+    return render(ctx, 'magic_items.html', title='Magic Items', items=items[(page - 1) * 100:page * 100],
+                  groups=groups, group=group, categories=categories, category=category,
+                  search=search, total=total, page=page, pages=pages, query=query)
 
 
 def render_catalog(ctx, request, kind):

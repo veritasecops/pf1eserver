@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/catalog.css?v=contextual-equipment-actions">{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div><h1>Magic Items</h1><p>Browse the Pathfinder magic item index from <a href="https://www.aonprd.com/MagicItems.aspx" target="_blank" rel="noopener noreferrer">Archives of Nethys</a>.</p></div>
+</header>
+{% include 'admin_tabs.html' %}
+<section class="card">
+  <form method="get" class="filter-bar catalog-toolbar">
+    <label class="search-input"><input name="q" value="{{ search }}" aria-label="Search magic items" placeholder="Search magic items"></label>
+    <select name="group" aria-label="Filter by magic item group">
+      <option value="">All groups</option>
+      {% for label in groups %}<option{% if label == group %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="category" aria-label="Filter by magic item category">
+      <option value="">All categories</option>
+      {% for label in categories %}<option{% if label == category %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button class="button primary" type="submit">Filter</button>
+  </form>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th scope="col">Name</th><th scope="col">Category</th><th scope="col">Published details</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <th scope="row"><a class="catalog-source-link" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.name }}</a></th>
+          <td>{{ item.group }}{% if item.categories %}<span class="secondary-text">{{ item.categories|join(' · ') }}</span>{% endif %}</td>
+          <td>{% for label, value in item.fields.items() %}<span class="secondary-text">{{ label }} {{ value }}</span>{% else %}—{% endfor %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3">No matching magic items.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    {{ total }} {{ 'entry' if total == 1 else 'entries' }}
+    {% if pages > 1 %}
+    <nav class="row" aria-label="Catalog pages">
+      {% if page > 1 %}<a class="button small" href="?{{ query }}&amp;page={{ page - 1 }}">Previous</a>{% endif %}
+      <span>Page {{ page }} of {{ pages }}</span>
+      {% if page < pages %}<a class="button small" href="?{{ query }}&amp;page={{ page + 1 }}">Next</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
