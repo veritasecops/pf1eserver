@@ -46,6 +46,8 @@ def sheet_formulas(character, values):
         for row in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):
             formulas[f'skill.{row}.ability']=f'Use the {ability} modifier, or its temporary modifier when a temporary {ability} score is entered.'
             formulas[f'skill.{row}.total']=f'{meta["name"]} total = {ability} modifier + invested ranks + miscellaneous modifier. Add +3 if this is a class skill and at least one rank is invested. The miscellaneous field holds recorded racial, feat, armor-check, and other adjustments.'
+    for row in range(56):
+        formulas[f'feature.{row}'] = "Recorded during character creation, level-up, or through Add Feat or Ability."
     for level in range(10):
         formulas[f'spell.{level}.known']='Count the nonblank lines in this level’s spell list. Each nonblank line counts as one spell.'
     from .character_weapons import inventory as current_inventory
