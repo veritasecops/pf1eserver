@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% from 'components.html' import csrf_input %}
+{% block extra_head %}<link rel="stylesheet" href="/static/character-wizard.css?v=20261104-equipment-flow-1"><link rel="stylesheet" href="/static/level-up.css">{% endblock %}
 {% block content %}
 <a class="text-button back-link" href="/characters/{{ character.id }}">Back to character sheet</a>
-<div class="page-heading"><div>
+<div class="page-heading pw-heading"><div>
   <h1>Level up {{ character.name }}</h1>
   {% if advancement %}<p>{{ character.class_name }} · Level {{ character.level }} → {{ advancement.target }} · {{ advancement.threshold }} XP on the {{ advancement.speed|capitalize }} track</p>{% endif %}
 </div></div>
@@ -14,13 +15,18 @@
 {% set profile = advancement.profile %}
 {% set target = advancement.target %}
 {% if errors %}<div class="card padded narrow" role="alert"><h2>Review these entries</h2><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
-<form method="post" class="card padded narrow stack" id="level-up-form"
-      data-ranks="{{ profile.ranks }}" data-int="{{ advancement['values']['ability.int.score'] }}" data-target="{{ target }}" data-human="{{ 1 if advancement.human else 0 }}">
+<nav class="pw-steps" aria-label="Level-up steps" hidden>
+  {% for label in ['Hit points and abilities', 'Skill ranks', 'Class features and feats'] %}
+  <button type="button" data-level-nav="{{ loop.index0 }}"><span>{{ loop.index }}</span><span class="secondary-text">{{ label }}</span></button>
+  {% endfor %}
+</nav>
+<form method="post" class="card pw-stage-card" id="level-up-form"
+      data-book="{{ profile.book }}" data-ranks="{{ profile.ranks }}" data-int="{{ advancement['values']['ability.int.score'] }}" data-target="{{ target }}" data-human="{{ 1 if advancement.human else 0 }}">
   {{ csrf_input(csrf) }}
   <input type="hidden" name="version" value="{{ character.version }}">
   <input type="hidden" name="target" value="{{ target }}">
-  <p class="hint"><a href="{{ profile.url }}" target="_blank" rel="noopener noreferrer">{{ profile.name }} class rules ↗</a></p>
-  <p data-level-position hidden aria-live="polite"></p>
+  <header class="pw-stage-heading"><div><span class="overline" data-level-position aria-live="polite"></span><a href="{{ profile.url }}" target="_blank" rel="noopener noreferrer">{{ profile.name }} class rules ↗</a></div><span class="pw-level">LEVEL {{ target }}</span></header>
+  <div class="pw-stage stack">
   <section data-level-step>
     <h2>1. Hit points and abilities</h2>
     <div class="form-grid">
@@ -32,7 +38,7 @@
       </select></label>
       {% if target % 4 == 0 %}
       <label class="field"><span>Permanent ability increase (+1)</span><select name="ability" required><option value="">Choose an ability</option>
-        {% for key, label in abilities.items() %}<option value="{{ key }}"{% if submitted.get('ability') == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        {% for key, label in abilities.items() if advancement['values']['ability.' ~ key ~ '.score'] %}<option value="{{ key }}"{% if submitted.get('ability') == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
       </select></label>
       {% endif %}
     </div>
@@ -42,33 +48,44 @@
     <h2>2. Skill ranks</h2>
     <p data-rank-budget aria-live="polite">Allocate {{ profile.ranks }} + Intelligence modifier ranks (at least 1), plus any ancestry or favored class rank. An increased Intelligence modifier can grant ranks for earlier levels.</p>
     <p>Any skill can receive ranks, up to {{ target }} ranks per skill. Class skills receive +3 once trained.</p>
-    <div class="form-grid">
-    {% for key, label, trained, ranks in advancement.rows if ranks < target %}
-      <label class="field"><span>{{ label }}</span><span class="secondary-text">{{ ranks }} current{% if trained %} · Class skill{% endif %}</span>
-        <input type="number" name="rank_{{ key }}" min="0" max="{{ target - ranks }}" value="{{ submitted.get('rank_' ~ key, '') }}" aria-label="Ranks to add to {{ label }}">
-      </label>
-    {% endfor %}
-    </div>
+    <div class="pw-skill-table"><table><thead><tr><th scope="col">Skill</th><th scope="col">Class skill</th><th scope="col">Current ranks</th><th scope="col">Add ranks</th><th scope="col">New total</th></tr></thead>
+    <tbody>{% for key, label, trained, ranks, url, enabled in advancement.rows %}
+      <tr><th scope="row">{% if url %}<a class="level-reference" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }}</a>{% else %}{{ label }}{% endif %}</th>
+      <td>{{ 'Yes' if trained else '—' }}</td><td data-current-ranks>{{ ranks }}</td>
+      <td>{% if not enabled %}Archived{% elif ranks >= target %}At limit{% else %}<input type="number" name="rank_{{ key }}" min="0" max="{{ target - ranks }}" data-rank-limit="{{ target - ranks }}" value="{{ submitted.get('rank_' ~ key, '') }}" aria-label="Ranks to add to {{ label }}">{% endif %}</td>
+      <td data-new-ranks>{{ ranks }}</td></tr>
+    {% endfor %}</tbody></table></div>
   </section>
   <section data-level-step>
     <h2>3. Class features and feats</h2>
     {% if advancement.features %}<ul>{% for feature in advancement.features %}<li>{{ feature }}</li>{% endfor %}</ul>{% else %}<p>No new features appear in this class’s level {{ target }} table.</p>{% endif %}
     {% for label, stat in advancement.current.get('statistics', {}).items() %}<p>{{ label }} · {{ stat }}</p>{% endfor %}
+    {% if advancement.feat_slots %}<p>Feat choices are filtered by the prerequisites recorded in the catalog. Open the feat name for any additional rules.</p>{% endif %}
     {% if advancement.choices %}
-      <p>Enter your choices after checking the class rules and prerequisites. <a href="{{ feat_index }}" target="_blank" rel="noopener noreferrer">Feat reference ↗</a></p>
-      <datalist id="level-up-feats">{% for feat in advancement.feats %}<option value="{{ feat }}">{% endfor %}</datalist>
       {% for choice in advancement.choices %}
-        <label class="field"><span>{{ choice|capitalize }}</span><input name="choice_{{ loop.index0 }}" value="{{ submitted.get('choice_' ~ loop.index0, '') }}" maxlength="150" {% if 'feat' in choice|lower %}list="level-up-feats" {% endif %}required></label>
+        {% set index = loop.index0 %}
+        {% if index in advancement.feat_slots %}
+        <fieldset class="level-feat stack" data-feat-slot="{{ index }}" data-feat-kind="{{ advancement.feat_slots[index] }}">
+          <legend>{{ choice|capitalize }}</legend>
+          <p data-feat-selection aria-live="polite"></p>
+          <input type="hidden" name="choice_{{ index }}" value="{{ submitted.get('choice_' ~ index, '') }}">
+          <label class="field" data-feat-target hidden><span>Feat choice</span><select name="target_{{ index }}" data-saved="{{ submitted.get('target_' ~ index, '') }}" aria-label="Feat choice"></select></label>
+          <label class="field"><span>Search available feats</span><input type="search" data-feat-search autocomplete="off"></label>
+          <div class="pw-skill-table"><table><thead><tr><th scope="col">Feat and reference</th><th scope="col">Select</th></tr></thead><tbody data-feat-results></tbody></table></div>
+          <button type="button" class="button" data-more-feats hidden>Show more feats</button>
+        </fieldset>
+        {% else %}
+        <label class="field"><span>{{ choice|capitalize }}</span><input name="choice_{{ index }}" value="{{ submitted.get('choice_' ~ index, '') }}" maxlength="150" required></label>
+        {% endif %}
       {% endfor %}
     {% endif %}
     <label class="field"><span>Other class changes</span>
       <textarea name="other_changes" rows="4" maxlength="3000">{{ submitted.get('other_changes', '') }}</textarea>
       <span class="secondary-text">Record archetype replacements, domain or bloodline details, companion changes, and other GM-approved adjustments here. Apply their situational modifiers on the character sheet.</span>
     </label>
-  </section>
   {% if advancement.current.get('slots') or advancement.current.get('known') %}
-  <section data-level-step>
-    <h2>4. Spells and formulae</h2>
+  <section class="stack">
+    <h3>Spells and formulae</h3>
     {% if advancement.current.get('slots') %}
     <p>Base slots at level {{ target }} · {% for level, slots in advancement.current.slots|dictsort %}{{ level }}: {{ slots }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     {% endif %}
@@ -78,7 +95,7 @@
     {% if advancement.known %}<p>Enter new spells known, one per line. Use Other class changes for bonus spells from a bloodline, mystery, or similar feature.</p>{% endif %}
     {% if profile.book %}<p>Enter {{ profile.book }} new spellbook, familiar, or formula-book entries, one per line, under the appropriate spell levels.</p>{% endif %}
     {% for level, count in advancement.known|dictsort %}
-    <label class="field"><span>Level {{ level }} · {{ count }} new</span><textarea name="spells_{{ level }}" rows="3" maxlength="2000" required>{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
+    <label class="field"><span>Level {{ level }} · {{ count }} new</span><textarea name="spells_{{ level }}" data-spell-count="{{ count }}" rows="3" maxlength="2000" required>{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
     {% endfor %}
     {% if advancement.swaps %}
       <label class="field"><span>Spell to replace (optional)</span><select name="swap_spell"><option value="">Keep current spells</option>
@@ -90,24 +107,27 @@
     {% endif %}
     {% if profile.book %}
       {% for level in advancement.spell_levels %}
-      <label class="field"><span>Level {{ level }} additions</span><textarea name="spells_{{ level }}" rows="2" maxlength="2000">{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
+      <label class="field"><span>Level {{ level }} additions</span><textarea name="spells_{{ level }}" data-book-spells rows="2" maxlength="2000">{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
       {% endfor %}
     {% endif %}
     {% if not advancement.known and not profile.book %}<p>Review newly available spells or implements in the class rules. Record any choices under Other class changes.</p>{% endif %}
   </section>
   {% endif %}
-  <section data-level-step>
-    <h2>Review and advance</h2>
     <p>Base attack bonus {{ '%+d'|format(advancement.bab) }} · Fortitude {{ '%+d'|format(advancement.saves[0]) }} · Reflex {{ '%+d'|format(advancement.saves[1]) }} · Will {{ '%+d'|format(advancement.saves[2]) }}</p>
-    <p>Finishing advances {{ character.name }} to level {{ target }} and keeps the XP already earned.</p>
-    <label class="checkbox"><input type="checkbox" name="reviewed" value="1" required{% if submitted.get('reviewed') %} checked{% endif %}> I reviewed the class rules and confirmed my choices.</label>
+    <p data-level-error role="alert" hidden></p>
   </section>
-  <div class="form-actions">
+  </div>
+  <footer class="pw-footer">
     <button class="button" type="button" data-level-back hidden>Previous</button>
     <button class="button primary" type="button" data-level-next hidden>Continue</button>
     <button class="button primary" type="submit" data-level-submit>Advance to level {{ target }}</button>
-  </div>
+  </footer>
 </form>
+<script type="application/json" id="level-up-feats">{{ {
+  'options': feat_options if advancement.feat_slots else {},
+  'owned': advancement.owned_feats, 'targets': advancement.feat_targets if advancement.feat_slots else {},
+  'scores': advancement.feat_scores, 'bab': advancement.feat_bab
+}|tojson }}</script>
 {% endif %}
 {% endblock %}
-{% block page_scripts %}<script src="/static/level-up.js" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/level-up.js?v=20261105-validation" defer></script>{% endblock %}

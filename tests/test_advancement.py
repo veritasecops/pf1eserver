@@ -88,13 +88,21 @@ def test_wizard_gates_level_and_saves_choices_once(env):
     assert saved.status_code == 200
     assert saved.json()["can_level_up"]
     assert saved.json()["values"]["level"] == "3"
-    assert client.get(path + "/level-up").status_code == 200
+    wizard = client.get(path + "/level-up")
+    assert wizard.status_code == 200
+    assert wizard.text.count('data-level-step>') == 3
+    assert '>Current ranks</th>' in wizard.text and 'ItemName=Climb' in wizard.text
+    assert 'Review and advance' not in wizard.text
     assert env.login(env.admin).get(path + "/level-up").status_code == 403
     data = {"version": saved.json()["version"], "target": 4, "hit_die": 5, "favored": "hp",
             "ability": "con", "rank_climb": 3, "choice_0": "Improved Initiative", "reviewed": "1"}
     invalid = env.post(client, path + "/level-up", {**data, "rank_climb": 2})
     assert invalid.status_code == 422
     assert "Assign exactly 3 skill ranks" in invalid.text
+    ineligible = env.post(client, path + "/level-up", {**data, "choice_0": "Toughness"})
+    assert ineligible.status_code == 422 and "Choose an available feat" in ineligible.text
+    missing_score = env.post(client, path + "/level-up", {**data, "choice_0": "Power Attack"})
+    assert missing_score.status_code == 422 and "ability score or base attack bonus" in missing_score.text
     assert env.post(client, path + "/level-up", data).status_code == 303
     assert env.post(client, path + "/level-up", data).status_code == 409
     page = client.get(path)

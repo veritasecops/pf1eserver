@@ -466,7 +466,8 @@ def level_up_character(ctx, character_id):
 
 def render_level_up(ctx, character, advancement, form=None, errors=()):
     response = render(ctx, "level_up.html", title="Level up", character=character, advancement=advancement,
-                      abilities=ABILITIES, class_index=level_up.CLASS_INDEX, feat_index=level_up.FEAT_INDEX,
+                      abilities=ABILITIES, class_index=level_up.CLASS_INDEX,
+                      feat_options=level_up.feat_options(advancement) if advancement else {},
                       submitted=form or {}, errors=errors)
     if errors:
         response.status_code = 422

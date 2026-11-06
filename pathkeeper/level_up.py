@@ -8,7 +8,8 @@ from .equipment_effects import persist_effects
 from .models import Campaign, User
 from .class_catalog import class_key, class_profile
 from .pf1_data import ABILITIES
-from .rule_catalog import character_catalog, class_skills, load_catalog
+from .rule_catalog import character_catalog, class_skills, equipment, load_catalog
+from .weapons import safe_weapon_url
 
 CLASS_INDEX = "https://www.aonprd.com/Classes.aspx"
 FEAT_INDEX = "https://www.aonprd.com/Feats.aspx"
@@ -63,9 +64,29 @@ def plan(ctx, character):
              if count > previous.get("known", {}).get(key, 0)}
     catalog = character_catalog(character)
     trained = set(class_skills(catalog, class_id, sheet_input.get("expert_skills", ())))
-    rows = [(key, item["name"] + (" (second specialty)" if key.endswith("-2") else ""),
-             key.removesuffix("-2") in trained, int(Decimal(values[f"skill.{key}.ranks"] or 0)))
-            for key, item in skill_rows(catalog) if item.get("enabled", True)]
+    rows = [
+        (key, item["name"] + (" (second specialty)" if key.endswith("-2") else ""),
+         key.removesuffix("-2") in trained, int(Decimal(values[f"skill.{key}.ranks"] or 0)),
+         safe_weapon_url(current_catalog["skills"].get(key.removesuffix("-2"), item).get("url", "")),
+         item.get("enabled", True))
+        for key, item in skill_rows(catalog)
+    ]
+    feats = current_catalog["feats"]
+    owned = {
+        (entry["name"], entry.get("choice", ""))
+        for entry in (character.sheet_data or {}).get("computed", {}).get("feats", [])
+    }
+    owned.update((name, "") for name in (character.sheet_data or {}).get("computed", {}).get("automatic_feats", []))
+    owned.update((entry["choice"], entry.get("target", ""))
+                 for record in (character.play_data or {}).get("advancement_history", [])
+                 for entry in record["choices"] if "feat" in entry["feature"].casefold())
+    owned.update((name, "") for i in range(56) if (name := values[f"feature.{i}"]) in feats
+                 and not any(existing == name for existing, _ in owned))
+    targets = {
+        "skill": {key: item["name"] for key, item in current_catalog["skills"].items() if item.get("enabled", True)},
+        "weapon": {key: item["name"] for key, item in equipment(current_catalog).items()
+                   if item.get("kind") == "weapon" and item.get("enabled", True)},
+    }
     swaps = {}
     if profile["spell_swap"] and profile["casting_ability"]:
         first, frequency, lower = profile["spell_swap"]
@@ -87,9 +108,70 @@ def plan(ctx, character):
         "human": character.ancestry.casefold() == "human",
         "missing": [ABILITIES[key] for key in ("con", "int") if not values[f"ability.{key}.score"]]
                    + (["Maximum HP"] if not values["hp.total"] else []),
-        "feat_catalog": current_catalog["feats"],
-        "feats": sorted(name for name, item in current_catalog["feats"].items() if item.get("enabled", True)),
+        "feat_catalog": feats, "owned_feats": sorted(owned), "feat_targets": targets,
+        "feat_bab": float(Decimal(values["bab"] or previous["bab"]) + bab),
+        "feat_scores": {key: float(Decimal(values[f"ability.{key}.score"] or 0)) for key in ABILITIES},
+        "feat_slots": {index: feat_slot(class_id, label) for index, label in enumerate(choices)
+                       if "feat" in label.casefold()},
+
     }
+
+
+def feat_slot(class_id, label):
+    label = label.casefold()
+    if "teamwork" in label:
+        return "teamwork"
+    if "combat" in label or (label == "bonus feat" and class_id in {"fighter", "gunslinger", "warpriest"}):
+        return "combat"
+    return ""
+
+
+def feat_options(advancement):
+    return {
+        name: {
+            "url": safe_weapon_url(item.get("url", "")),
+            "combat": item.get("combat", False), "teamwork": "Teamwork" in item.get("categories", ()),
+            "scores": {key: item[key] for key in ABILITIES if item.get(key)}, "bab": item.get("bab", 0),
+            "requires": item.get("requires", ""), "repeatable": item.get("repeatable", False),
+            "choice": item.get("choice", ""),
+        }
+        for name, item in sorted(advancement["feat_catalog"].items(), key=lambda entry: entry[0].casefold())
+        if item.get("enabled", True)
+    }
+
+
+def validate_feats(advancement, selections, ability, errors):
+    options = feat_options(advancement)
+    owned = advancement["owned_feats"]
+    slots = advancement["feat_slots"]
+    selected = {entry["choice"] for index, entry in enumerate(selections) if index in slots}
+    owned_names = {name for name, _ in owned}
+    taken = list(owned)
+    for index, slot in slots.items():
+        entry = selections[index]
+        name, target = entry["choice"], entry.get("target", "")
+        feat = options.get(name)
+        if not feat or slot and not feat[slot]:
+            errors.append(f"Choose an available feat for {entry['feature']}.")
+            continue
+        if feat["bab"] > advancement["feat_bab"] or any(
+            advancement["feat_scores"][key] + (key == ability) < score for key, score in feat["scores"].items()
+        ):
+            errors.append(f"{name} exceeds the character's ability score or base attack bonus.")
+        prerequisite = feat["requires"]
+        visited = {name}
+        while prerequisite and prerequisite not in owned_names:
+            if prerequisite not in selected or prerequisite in visited:
+                errors.append(f"{name} requires {prerequisite}.")
+                break
+            visited.add(prerequisite)
+            prerequisite = options.get(prerequisite, {}).get("requires", "")
+        choice = feat["choice"]
+        if choice and target not in advancement["feat_targets"].get(choice, {}):
+            errors.append(f"Choose a valid {choice} for {name}.")
+        if any(existing == name and (not feat["repeatable"] or previous == target) for existing, previous in taken):
+            errors.append(f"{name} is already selected.")
+        taken.append((name, target))
 
 
 def submit(character, advancement, form):
@@ -146,8 +228,8 @@ def submit(character, advancement, form):
     after = max(1, profile["ranks"] + old_int + int_increase)
     budget = after + (after - before) * (target - 1) + advancement["human"] + (favored == "skill")
     allocated = 0
-    for key, _, _, ranks in advancement["rows"]:
-        if form.get(f"rank_{key}", ""):
+    for key, _, _, ranks, _, enabled in advancement["rows"]:
+        if enabled and form.get(f"rank_{key}", ""):
             added = whole(f"rank_{key}", 0, max(0, target - ranks))
             allocated += added
             if added:
@@ -161,14 +243,18 @@ def submit(character, advancement, form):
         if not entry:
             errors.append(f"Record your choice for {label}.")
         selections.append({"feature": label, "choice": entry})
-    if not form.get("reviewed"):
-        errors.append("Confirm that you reviewed the class rules and your choices.")
+        if index in advancement["feat_slots"]:
+            selections[-1]["target"] = text(f"target_{index}", 100)
+    validate_feats(advancement, selections, ability, errors)
 
     existing_features = {values[f"feature.{i}"].casefold() for i in range(56)}
     free = iter(i for i in range(56) if not values[f"feature.{i}"])
     for entry in selections:
         label, choice = entry["feature"], entry["choice"]
         display = choice if "feat" in label.casefold() else f"{label}: {choice}"
+        if target_key := entry.get("target"):
+            kind = advancement["feat_catalog"].get(choice, {}).get("choice")
+            display += f" ({advancement['feat_targets'].get(kind, {}).get(target_key, target_key)})"
         if display.casefold() not in existing_features and (slot := next(free, None)) is not None:
             changes[f"feature.{slot}"] = display
             existing_features.add(display.casefold())
@@ -203,8 +289,9 @@ def submit(character, advancement, form):
                 add("initiative.misc", amount)
             elif effect == "dodge":
                 add("ac.dodge", amount)
-            elif effect.startswith("skill:"):
-                key = f"skill.{effect.partition(':')[2]}.misc"
+            elif effect == "selected_skill" or effect.startswith("skill:"):
+                skill = entry.get("target") if effect == "selected_skill" else effect.partition(":")[2]
+                key = f"skill.{skill}.misc"
                 if key in values:
                     add(key, amount)
 
