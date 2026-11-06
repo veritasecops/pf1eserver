@@ -112,7 +112,7 @@ def test_special_prices_ammunition_and_free_weapons(env):
     assert response.status_code==200,response.text
     fields=response.json()['purchase_fields']
     assert treasure(fields)==8875
-    arrows = response.json()['backpack'][0]
+    arrows = next(item for item in response.json()['backpack'] if item['catalog_id'] == 'arrows')
     assert arrows['name'] == 'Arrows, common (20)' and arrows['quantity'] == 2
     assert 'Arrows, common (20) × 2' in fields.values()
     again=env.post(client,path+'/weapons',purchase_data(client,character_id,{'shield-light':1}))

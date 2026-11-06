@@ -26,9 +26,12 @@ def test_remove_clears_complete_entry_gear_and_weight_and_survives_autosave(env)
     client,character=setup_sheet(env);path=f'/characters/{character}'
     bought=env.post(client,path+'/equipment',purchase_data(client,character,{'longsword':2,'leather':1})).json()
     assert bought['values']['load.total']=='23'
-    response=env.post(client,path+'/equipment/dispose',disposal(client,character))
+    sword = next(item for item in bought['backpack'] if item['catalog_id'] == 'longsword')
+    response = env.post(client, path + '/equipment/dispose',
+                        disposal(client, character, kind='backpack', row=sword['id']))
     assert response.status_code==200,response.text
     body=response.json()
+    assert all(item['id'] != sword['id'] for item in body['backpack'])
     assert body['purchase_fields']['weapon.0.name']==body['purchase_fields']['weapon.0.notes']==''
     assert body['purchase_fields']['gear.0.name']==body['purchase_fields']['gear.0.weight']==''
     assert body['purchase_fields']['money.gp']=='60'
