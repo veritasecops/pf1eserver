@@ -272,7 +272,7 @@ def test_equipment_catalog_covers_source_and_uses_existing_item_editors(env):
     assert '<h1>Equipment</h1>' in listing.text
     assert 'aria-label="Catalog lists"' not in listing.text
     rules = admin.get('/administration/catalog').text.split('aria-label="Catalog lists"', 1)[1].split('</nav>', 1)[0]
-    assert 'kind=equipment' not in rules
+    assert all(f'kind={kind}' not in rules for kind in ('equipment', 'weapons', 'armor'))
     legacy = admin.get('/administration/catalog?kind=equipment&q=Bedroll')
     assert legacy.status_code == 303 and legacy.headers['location'] == '/administration/equipment?q=Bedroll'
     for category, name in [('Fungal Grafts', 'Fungal Eyes'), ('Spellbooks', 'Arctic Call'), ('Vehicles', 'Airship')]:
