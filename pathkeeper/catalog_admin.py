@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .database import get_db
+from .feats import FEAT_CATEGORIES
 from .class_catalog import class_profile
 from .class_editor import editor as class_editor, parse_class
 from .models import Guard, RuleCatalog, utcnow
@@ -42,7 +43,7 @@ def editor(ctx, record, kind, key, item, errors=(), new=False):
     response = render(ctx,'catalog_edit.html',title='Add catalog entry' if new else 'Edit '+item.get('name',key),
                       kinds=KINDS,kind=kind,key=key,item=item,new=new,version=record.version,
                       abilities=ABILITIES,classes=CLASSES,skills=record.data['skills'],feats=record.data['feats'],
-                      effects=EFFECTS,errors=errors,weapon_url=safe_weapon_url,weapon_categories=WEAPON_CATEGORIES,weapon_groups=WEAPON_GROUPS,armor_categories=ARMOR_CATEGORIES)
+                      effects=EFFECTS,feat_categories=FEAT_CATEGORIES,errors=errors,weapon_url=safe_weapon_url,weapon_categories=WEAPON_CATEGORIES,weapon_groups=WEAPON_GROUPS,armor_categories=ARMOR_CATEGORIES)
     if errors: response.status_code=422
     return response
 
@@ -60,6 +61,9 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     group=request.query_params.get('group','') if kind=='weapons' else ''
     category=request.query_params.get('category','') if kind=='weapons' else ''
     if group in WEAPON_GROUPS: items=[(key,item) for key,item in items if item.get('group')==group]
+    feat_category = request.query_params.get('feat_category', '') if kind == 'feats' else ''
+    if feat_category in FEAT_CATEGORIES:
+        items = [(key, item) for key, item in items if feat_category in item.get('categories', ())]
     if category in WEAPON_CATEGORIES: items=[(key,item) for key,item in items if item.get('category')==category]
     items.sort(key=lambda pair:pair[1].get('name',pair[0]).casefold())
     total = len(items)
@@ -68,7 +72,7 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
     if kind == 'feats':
         items = items[(page - 1) * 100:page * 100]
-    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category)
+    return render(ctx,'catalog.html',title='Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES)
 
 
 @router.get('/{kind}/new')
@@ -118,6 +122,13 @@ def parse_entry(form,kind,key,catalog):
                     monk=form.get('monk')=='on',repeatable=form.get('repeatable')=='on',finesse=form.get('finesse')=='on',
                     pfs_marked=form.get('pfs_marked')=='on', prerequisite_notes=field(form,'prerequisite_notes',2000,required=False),
                     mastery=field(form,'mastery',20,required=False))
+        categories = set(form.getlist('categories'))
+        if categories - set(FEAT_CATEGORIES):
+            raise HTTPException(422, 'Choose categories from the feat category list.')
+        if 'categories_present' in form:
+            item['categories'] = [label for label in FEAT_CATEGORIES if label in categories]
+        elif 'categories' in catalog[kind].get(key, {}):
+            item['categories'] = catalog[kind][key]['categories']
         if item['mastery'] not in {'', 'armor', 'shield', 'weapon'}:
             raise HTTPException(422, 'Choose a valid mastery category.')
         choice=str(form.get('choice',''))
@@ -251,6 +262,8 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         item={**record.data[kind].get(key,{}),**{k:str(v) for k,v in form.items() if k not in {'csrf','version'}}}
         item.update(enabled=form.get('enabled')=='on',effects={target:form.get('effect.'+target,0) for target in [*EFFECTS,*('skill:'+s for s in record.data['skills'])]},classes=form.getlist('classes'))
         for flag in ('combat','monk','repeatable','finesse','pfs_marked','armor','trained','ranged','bow','two_handed','thrown','add_strength'): item[flag]=form.get(flag)=='on'
+        if kind == 'feats' and 'categories_present' in form:
+            item['categories'] = form.getlist('categories')
         return editor(ctx,record,kind,key,item,[error.detail],new)
     updated=deepcopy(record.data)
     updated[kind][key]=item

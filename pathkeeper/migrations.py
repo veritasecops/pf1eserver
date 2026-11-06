@@ -184,4 +184,11 @@ def migrate(admin_engine):
             record.data = {**record.data, "feats": merge_feat_index(record.data["feats"])}
             db.add(SchemaMigration(version=18, name="archives_of_nethys_feat_index"))
             db.commit()
-    print("Database migrations applied through 018 (Archives of Nethys feat index).")
+        if not db.get(SchemaMigration, 19):
+            from .feats import merge_feat_index
+
+            record = db.get(RuleCatalog, 1)
+            record.data = {**record.data, "feats": merge_feat_index(record.data["feats"])}
+            db.add(SchemaMigration(version=19, name="archives_of_nethys_feat_categories"))
+            db.commit()
+    print("Database migrations applied through 019 (Archives of Nethys feat categories).")

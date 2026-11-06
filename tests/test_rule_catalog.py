@@ -234,3 +234,21 @@ def test_full_feat_index_is_searchable_and_preserves_custom_rules(env):
     found = admin.get('/administration/catalog', params={'kind': 'feats', 'q': 'Ace Trip'})
     assert found.status_code == 200
     assert '>Ace Trip</a>' in found.text and published['Ace Trip']['url'] in found.text
+
+def test_feat_categories_match_aon_and_support_filtering_and_edits(env):
+    from pathkeeper.feats import FEAT_CATEGORIES, table_feats
+
+    source = table_feats()
+    assert len(FEAT_CATEGORIES) == 39
+    assert set(FEAT_CATEGORIES) - {"General"} == {label for feat in source.values() for label in feat.get("categories", [])}
+    assert {"Combat", "Combat Stamina"} <= set(source["Adder Strike"]["categories"])
+    assert "Weapon Mastery" in source["Ace Trip"]["categories"]
+    admin = env.login(env.admin)
+    page = admin.get("/administration/catalog", params={"kind": "feats", "feat_category": "Combat Stamina"})
+    assert page.status_code == 200 and "549 entries" in page.text and "Page 1 of 6" in page.text
+    assert "feat_category=Combat%20Stamina" in page.text
+    assert env.post(admin, "/administration/catalog/feats", feat_form(
+        categories_present="1", categories=["Teamwork"],
+    )).status_code == 303
+    page = admin.get("/administration/catalog", params={"kind": "feats", "feat_category": "Teamwork", "q": "Improved Initiative"})
+    assert "1 entries" in page.text and ">Improved Initiative</a>" in page.text

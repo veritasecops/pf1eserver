@@ -14,6 +14,10 @@
 {% if kind in ['feats','skills'] %}{{ text('url','Reference URL',item.get('url',''),'Link to the individual AoN entry, or another reference for a custom entry.','url') }}{% endif %}
 {% if kind in ['feats','skills','deities'] and weapon_url(item.get('url','')) %}<p><a class="text-button" href="{{ weapon_url(item.url) }}" target="_blank" rel="noopener noreferrer">Open reference ↗</a></p>{% endif %}
 {% if kind == 'feats' %}
+<input type="hidden" name="categories_present" value="1">
+<details><summary>Feat categories{% if item.categories %} · {{ item.categories|join(', ') }}{% endif %}</summary>
+<div class="form-grid">{% for label in feat_categories %}<label class="checkbox"><input type="checkbox" name="categories" value="{{ label }}"{% if label in item.get('categories', []) %} checked{% endif %}> {{ label }}</label>{% endfor %}</div>
+</details>
 {{ text('hint','Effect and conditional rules',item.get('hint',''),'Describe conditional effects here. This text is shown in the wizard; only the numerical modifiers below are calculated.') }}
 <div class="form-grid">{{ check('combat','Combat feat (eligible for fighter bonus slot)') }}{{ check('monk','Eligible for first-level monk bonus slot') }}{{ check('repeatable','Repeatable with different skill or weapon choices') }}{{ check('finesse','Use Dexterity to attack with eligible finesse weapons') }}</div>
 <label class="field"><span>Additional selection</span><select name="choice">{% for value,label in [('','None'),('skill','Skill'),('weapon','Weapon')] %}<option value="{{ value if value is not none else '' }}" {% if item.get('choice','') == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
