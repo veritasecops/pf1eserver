@@ -1,32 +1,14 @@
 {% extends 'base.html' %}
-{% macro role_choices(selected) %}
-<fieldset>
-  <legend>Access roles</legend>
-  {% for key, label in access_roles.items() %}
-  <label class="checkbox"><input type="checkbox" name="access_role" value="{{ key }}"{% if key in selected %} checked{% endif %}> {{ label }}</label>
-  {% endfor %}
-</fieldset>
-{% endmacro %}
-{% macro category_choice(selected, required=false) %}
-<label class="field"><span>Category</span><select name="category"{% if required %} required{% endif %}>
-  <option value="">{{ 'Choose a category' if required else 'Uncategorized' }}</option>
-  {% for key, label in categories.items() %}<option value="{{ key }}"{% if key == selected %} selected{% endif %}>{{ label }}</option>{% endfor %}
-</select></label>
-{% endmacro %}
+{% from 'rulebook_fields.html' import category_choice, role_choices with context %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=upload-dialog">{% endblock %}
+{% block page_scripts %}<script src="/static/rulebook-upload.js" defer></script>{% endblock %}
 {% block content %}
 <header class="page-header">
   <div><h1>Upload rulebook</h1><p>Upload a PDF and choose one or more roles that can see it in the library.</p></div>
   <a class="button" href="/rulebooks">Back to library</a>
 </header>
 {% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
-<form method="post" action="/rulebooks/upload" enctype="multipart/form-data" class="card form-card">
-  {{ csrf_input(csrf) }}
-  <label class="field"><span>Title</span><input name="title" value="{{ book_title }}" maxlength="150" required></label>
-  {{ category_choice(category, required=true) }}
-  {{ role_choices(selected_roles) }}
-  <label class="field"><span>PDF file</span><input type="file" name="pdf" accept=".pdf,application/pdf" required><span class="secondary-text">Up to 50 MB. The first page becomes the cover.</span></label>
-  <button class="button primary" type="submit">Upload PDF</button>
-</form>
+{% include 'rulebook_upload_form.html' %}
 {% if managed_books %}
 <section aria-labelledby="rulebook-access-heading">
   <h2 id="rulebook-access-heading">Manage rulebooks</h2>

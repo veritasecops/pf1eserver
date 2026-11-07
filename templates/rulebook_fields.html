@@ -1,0 +1,14 @@
+{% macro role_choices(selected) %}
+<fieldset>
+  <legend>Access roles</legend>
+  {% for key, label in access_roles.items() %}
+  <label class="checkbox"><input type="checkbox" name="access_role" value="{{ key }}"{% if key in selected %} checked{% endif %}> {{ label }}</label>
+  {% endfor %}
+</fieldset>
+{% endmacro %}
+{% macro category_choice(selected, required=false) %}
+<label class="field"><span>Category</span><select name="category"{% if required %} required{% endif %}>
+  <option value="">{{ 'Choose a category' if required else 'Uncategorized' }}</option>
+  {% for key, label in categories.items() %}<option value="{{ key }}"{% if key == selected %} selected{% endif %}>{{ label }}</option>{% endfor %}
+</select></label>
+{% endmacro %}

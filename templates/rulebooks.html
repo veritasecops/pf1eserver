@@ -1,9 +1,15 @@
 {% extends 'base.html' %}
-{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=upload-dialog">{% endblock %}
+{% block page_scripts %}{% if can_upload %}<script src="/static/rulebook-upload.js" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <header class="page-header">
   <div><h1>Rulebook library</h1><p>PDFs shared with the {{ role_label }} role.</p></div>
-  {% if can_upload %}<a class="button primary" href="/rulebooks/upload">Upload PDF</a>{% endif %}
+  {% if can_upload %}
+  <div class="row">
+    <button class="button primary" type="button" data-open-dialog="rulebook-upload-dialog" aria-haspopup="dialog">Upload PDF</button>
+    <a class="button" href="/rulebooks/upload">Manage rulebooks</a>
+  </div>
+  {% endif %}
 </header>
 <form method="get" class="filter-bar standalone" aria-label="Filter rulebooks">
   <select name="category" aria-label="Category">
@@ -26,5 +32,11 @@
 </ul>
 {% else %}
 <section class="card rulebook-empty"><p>{{ 'No rulebooks in this category have been shared with your role.' if category else 'No rulebooks have been shared with your role yet.' }}</p></section>
+{% endif %}
+{% if can_upload %}
+<dialog class="rulebook-upload-dialog" id="rulebook-upload-dialog" aria-labelledby="rulebook-upload-title">
+  <h2 id="rulebook-upload-title">Upload rulebook</h2>
+  {% with modal=true %}{% include 'rulebook_upload_form.html' %}{% endwith %}
+</dialog>
 {% endif %}
 {% endblock %}

@@ -19,10 +19,11 @@ def sample_pdf():
     return output.getvalue()
 
 
-def upload(env, client, title, role, data, filename="rulebook.pdf", csrf=True, category="core"):
+def upload(env, client, title, role, data, filename="rulebook.pdf", csrf=True, category="core", return_to=""):
     return client.post(
         "/rulebooks/upload",
-        data={"csrf": env.csrf(client) if csrf else "", "title": title, "access_role": role, "category": category},
+        data={"csrf": env.csrf(client) if csrf else "", "title": title, "access_role": role,
+              "category": category, "return_to": return_to},
         files={"pdf": (filename, data, "application/pdf")},
     )
 
@@ -38,14 +39,17 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
         assert "Upload PDF" not in clients[role].get("/rulebooks").text
 
     admin = clients["admin"]
-    assert "Upload PDF" in admin.get("/rulebooks").text
+    admin_library = admin.get("/rulebooks").text
+    assert 'data-open-dialog="rulebook-upload-dialog"' in admin_library
+    assert 'data-rulebook-drop' in admin_library and 'name="return_to" value="library"' in admin_library
     data = sample_pdf()
     assert len(data) > 256 * 1024
     for role in clients:
         result = upload(env, admin, f"Book for {role}", role, data)
         assert result.status_code == 303, result.text
     assert upload(env, admin, "Shared book", ["admin", "player"], data, category="expanded").status_code == 303
-    assert upload(env, admin, "All roles book", list(clients), data).status_code == 303
+    modal_upload = upload(env, admin, "All roles book", list(clients), data, return_to="library")
+    assert modal_upload.status_code == 303 and modal_upload.headers["location"] == "/rulebooks"
 
     with Session(engine()) as db:
         books = db.scalars(select(Rulebook)).all()
@@ -107,7 +111,9 @@ def test_invalid_rulebook_uploads_leave_no_files_or_records(env, monkeypatch, tm
     assert upload(env, admin, "No role", [], b"%PDF-").status_code == 422
     assert upload(env, admin, "Invalid role", "anyone", b"%PDF-").status_code == 422
     assert upload(env, admin, "Invalid type", "player", b"<html>").status_code == 422
-    assert upload(env, admin, "Broken PDF", "player", b"%PDF-1.7\ninvalid").status_code == 422
+    invalid_modal = upload(env, admin, "Broken PDF", "player", b"%PDF-1.7\ninvalid", return_to="library")
+    assert invalid_modal.status_code == 422 and 'name="return_to" value="library"' in invalid_modal.text
+    assert 'name="title" value="Broken PDF"' in invalid_modal.text
     assert upload(env, admin, "Invalid extension", "gm", b"%PDF-", filename="bad.html").status_code == 422
     assert upload(env, admin, "Invalid CSRF", "admin", b"%PDF-", csrf=False).status_code == 403
     monkeypatch.setattr(rulebooks, "MAX_PDF", 10)

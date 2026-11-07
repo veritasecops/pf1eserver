@@ -1,0 +1,19 @@
+{% from 'rulebook_fields.html' import category_choice, role_choices with context %}
+<form method="post" action="/rulebooks/upload" enctype="multipart/form-data" class="{% if modal %}rulebook-upload-form{% else %}card form-card{% endif %}" data-rulebook-upload>
+  {{ csrf_input(csrf) }}
+  {% if modal or return_to_library %}<input type="hidden" name="return_to" value="library">{% endif %}
+  <label class="field"><span>Title</span><input name="title" value="{{ book_title|default('') }}" maxlength="150" required{% if modal %} autofocus{% endif %}></label>
+  {{ category_choice(upload_category|default(none), required=true) }}
+  {{ role_choices(selected_roles|default([])) }}
+  <label class="field rulebook-drop-zone" data-rulebook-drop>
+    <span>PDF file</span>
+    <span>Drop a PDF here or browse for a file.</span>
+    <input type="file" name="pdf" accept=".pdf,application/pdf" required aria-describedby="rulebook-file-hint rulebook-file-status">
+    <span class="secondary-text" id="rulebook-file-hint">Up to 50 MB. The first page becomes the cover.</span>
+    <span id="rulebook-file-status" data-rulebook-file-status aria-live="polite"></span>
+  </label>
+  <div class="row">
+    <button class="button primary" type="submit">Upload PDF</button>
+    {% if modal %}<button class="button" type="button" data-rulebook-cancel>Cancel</button>{% endif %}
+  </div>
+</form>

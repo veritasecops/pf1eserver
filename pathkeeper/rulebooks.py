@@ -100,13 +100,14 @@ async def library(request: Request, db: Session = Depends(get_db)):
     books = db.scalars(query.order_by(Rulebook.title, Rulebook.id)).all()
     return render(ctx, "rulebooks.html", title="Rulebook library", books=books,
                   role_label=ROLES[user.role], can_upload=user.role == "admin",
-                  categories=CATEGORIES, category=category if category in CATEGORIES else "")
+                  categories=CATEGORIES, access_roles=ROLES, category=category if category in CATEGORIES else "")
 
 
-def upload_page(ctx, title="", roles=(), category=None, error="", status=200):
+def upload_page(ctx, title="", roles=(), category=None, error="", status=200, return_to_library=False):
     books = ctx.db.scalars(select(Rulebook).order_by(Rulebook.title, Rulebook.id))
     response = render(ctx, "rulebook_upload.html", title="Upload rulebook", book_title=title,
-                      selected_roles=roles, access_roles=ROLES, categories=CATEGORIES, category=category, error=error,
+                      selected_roles=roles, access_roles=ROLES, categories=CATEGORIES, upload_category=category,
+                      error=error, return_to_library=return_to_library,
                       managed_books=[(book, roles_for(book.access_mask)) for book in books])
     response.status_code = status
     return response
@@ -126,7 +127,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
     if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
         return upload_page(ctx, error="Choose a PDF file to upload.", status=422)
     try:
-        form = await MultiPartParser(request.headers, bounded_upload(request), max_files=1, max_fields=3 + len(ROLES),
+        form = await MultiPartParser(request.headers, bounded_upload(request), max_files=1, max_fields=4 + len(ROLES),
                                      max_part_size=4096).parse()
     except RequestTooLarge as error:
         return upload_page(ctx, error=error.message, status=413)
@@ -138,6 +139,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
     category = None
     try:
         verify_csrf(ctx, form)
+        return_to_library = form.get("return_to") == "library"
         try:
             title = field(form, "title")
             roles = set(form.getlist("access_role"))
@@ -161,7 +163,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
                     db.add(Rulebook(id=key, title=title, access_mask=access_mask, category=category))
                     labels = ", ".join(ROLES[role] for role in roles_for(access_mask))
                     audit(db, actor, "rulebook.uploaded", f"Uploaded rulebook {key} for {labels}.")
-                    return redirect(ctx, "/rulebooks/upload", "Rulebook uploaded.")
+                    return redirect(ctx, "/rulebooks" if return_to_library else "/rulebooks/upload", "Rulebook uploaded.")
                 except Exception:
                     try:
                         shutil.rmtree(destination)
@@ -169,7 +171,8 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
                         logging.getLogger(__name__).exception("Could not remove failed rulebook upload %s", key)
                     raise
         except HTTPException as error:
-            return upload_page(ctx, title=title, roles=roles, category=category, error=error.detail, status=error.status_code)
+            return upload_page(ctx, title=title, roles=roles, category=category, error=error.detail,
+                               status=error.status_code, return_to_library=return_to_library)
     finally:
         await form.close()
 
