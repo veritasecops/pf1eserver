@@ -64,19 +64,31 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
         for book in books:
             key = book.id
             pdf_path, cover_path = f"/rulebooks/{key}/pdf", f"/rulebooks/{key}/cover"
+            reader_path, image_path = f"/rulebooks/{key}/read", f"/rulebooks/{key}/pages/1"
             if not book.access_mask & RULEBOOK_ROLE_BITS[role]:
                 assert key not in page.text and book.title not in page.text
                 assert client.get(pdf_path, headers={"Range": "bytes=0-4"}).status_code == 404
                 assert client.head(cover_path).status_code == 404
+                assert client.get(reader_path).status_code == 404
+                assert client.get(image_path).status_code == 404
                 continue
-            assert pdf_path in page.text and cover_path in page.text and book.title in page.text
+            assert reader_path in page.text and cover_path in page.text and book.title in page.text
+            assert pdf_path not in page.text
             pdf = client.get(pdf_path)
-            assert pdf.status_code == 200 and pdf.content == data
-            assert pdf.headers["content-type"] == "application/pdf"
-            assert pdf.headers["content-disposition"].startswith("inline")
+            assert pdf.status_code == 303 and pdf.headers["location"] == reader_path
+            assert not pdf.content.startswith(b"%PDF-")
             assert pdf.headers["cache-control"] == "no-store"
             part = client.get(pdf_path, headers={"Range": "bytes=0-4"})
-            assert part.status_code == 206 and part.content == b"%PDF-"
+            assert part.status_code == 303 and not part.content.startswith(b"%PDF-")
+            reader = client.get(reader_path)
+            assert reader.status_code == 200 and image_path in reader.text
+            assert 'of 2' in reader.text and '?page=2' in reader.text
+            image_response = client.get(image_path)
+            assert image_response.status_code == 200 and image_response.headers["content-type"] == "image/png"
+            assert image_response.headers["cache-control"] == "no-store"
+            assert client.get(reader_path, params={"page": 3}).status_code == 404
+            assert client.get(f"/rulebooks/{key}/pages/0").status_code == 404
+            assert client.get(f"/rulebooks/{key}/pages/3").status_code == 404
             cover = client.get(cover_path)
             assert cover.status_code == 200 and cover.headers["content-type"] == "image/png"
             with Image.open(BytesIO(cover.content)) as image:
@@ -85,6 +97,8 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
                 assert red > green + 80 and red > blue + 80
 
     shared = next(book for book in books if book.title == "Shared book")
+    second_page = admin.get(f"/rulebooks/{shared.id}/pages/2")
+    assert second_page.status_code == 200 and second_page.content.startswith(b"\x89PNG")
     path = f"/rulebooks/{shared.id}/access"
     filters = {"category": "expanded"}
     assert "Shared book" in admin.get("/rulebooks", params=filters).text

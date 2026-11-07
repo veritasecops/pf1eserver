@@ -57,3 +57,15 @@
 }
 .rulebook-drop-zone.is-dragging { border-color: #783523; background: #fff2dd; }
 .rulebook-drop-zone [data-rulebook-file-status]:empty { display: none; }
+
+.rulebook-reader-controls { flex-wrap: wrap; margin-bottom: 18px; }
+.rulebook-reader-controls input { width: 5.5rem; }
+.rulebook-reader-page {
+  display: block;
+  width: 100%;
+  max-width: 60rem;
+  height: auto;
+  margin: 0 auto;
+  background: white;
+  border: 1px solid var(--line);
+}

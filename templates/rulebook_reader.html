@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=reader">{% endblock %}
+{% block content %}
+<header class="page-header">
+  <h1>{{ book.title }}</h1>
+  <a class="button" href="/rulebooks">Back to library</a>
+</header>
+<nav class="row rulebook-reader-controls" aria-label="Rulebook pages">
+  {% if page > 1 %}<a class="button" rel="prev" href="?page={{ page - 1 }}">Previous</a>{% endif %}
+  <form method="get" class="row">
+    <label for="rulebook-page">Page</label>
+    <input id="rulebook-page" type="number" name="page" min="1" max="{{ pages }}" value="{{ page }}" required>
+    <span>of {{ pages }}</span>
+    <button class="button" type="submit">Go</button>
+  </form>
+  {% if page < pages %}<a class="button" rel="next" href="?page={{ page + 1 }}">Next</a>{% endif %}
+</nav>
+<img class="rulebook-reader-page" src="/rulebooks/{{ book.id }}/pages/{{ page }}" alt="Page {{ page }} of {{ book.title }}" decoding="async">
+{% endblock %}

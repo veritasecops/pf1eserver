@@ -41,4 +41,12 @@ test('dropping a PDF anywhere in the upload dialog populates the form file input
   input.files = [{ name: 'Browsed.pdf', size: 500 }];
   events.change();
   assert.equal(status.textContent, 'Selected: Browsed.pdf');
+
+  event.dataTransfer.files = [{ name: 'Large.pdf', size: 200 * 1024 * 1024 }];
+  events.drop(event);
+  assert.equal(status.textContent, 'Selected: Large.pdf');
+  event.dataTransfer.files = [{ name: 'Too large.pdf', size: 250 * 1024 * 1024 + 1 }];
+  events.drop(event);
+  assert.equal(input.files.length, 0);
+  assert.equal(status.textContent, 'Choose a PDF of 250 MB or smaller.');
 });

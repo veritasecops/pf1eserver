@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=upload-dialog">{% endblock %}
-{% block page_scripts %}{% if can_upload %}<script src="/static/rulebook-upload.js" defer></script>{% endif %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=reader">{% endblock %}
+{% block page_scripts %}{% if can_upload %}<script src="/static/rulebook-upload.js?v=250mb" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <header class="page-header">
   <div><h1>Rulebook library</h1><p>PDFs shared with the {{ role_label }} role.</p></div>
@@ -19,7 +19,7 @@
 <ul class="rulebook-grid" aria-label="Rulebooks">
   {% for book in books %}
   <li>
-    <a class="rulebook-card" href="/rulebooks/{{ book.id }}/pdf" target="_blank" rel="noopener noreferrer">
+    <a class="rulebook-card" href="/rulebooks/{{ book.id }}/read">
       <span class="rulebook-cover"><img src="/rulebooks/{{ book.id }}/cover" alt="" loading="lazy" decoding="async"></span>
       <strong>{{ book.title }}</strong>
       <span class="secondary-text">{{ categories.get(book.category, 'Uncategorized') }} · PDF</span>

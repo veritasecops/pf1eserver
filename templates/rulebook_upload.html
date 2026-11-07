@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% from 'rulebook_fields.html' import category_choice, role_choices with context %}
 {% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=upload-dialog">{% endblock %}
-{% block page_scripts %}<script src="/static/rulebook-upload.js" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/rulebook-upload.js?v=250mb" defer></script>{% endblock %}
 {% block content %}
 <header class="page-header">
   <div><h1>Upload rulebook</h1><p>Upload a PDF and choose one or more roles that can see it in the library.</p></div>

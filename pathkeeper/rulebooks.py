@@ -1,15 +1,16 @@
 """Private PDF storage and role-scoped rulebook browsing."""
+from functools import lru_cache
 import logging
 from pathlib import Path
 import re
 import shutil
-from subprocess import DEVNULL, run, TimeoutExpired
+from subprocess import DEVNULL, PIPE, run, TimeoutExpired
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile
@@ -23,7 +24,7 @@ from .ui import redirect, render
 
 router = APIRouter(prefix="/rulebooks")
 UPLOAD_PATH = "/rulebooks/upload"
-MAX_PDF = 50 * 1024 * 1024
+MAX_PDF = 250 * 1024 * 1024
 MAX_REQUEST = MAX_PDF + 64 * 1024
 PDF_ERROR = "Choose a readable PDF with at least one page and no password protection."
 CATEGORIES = {"core": "Core", "expanded": "Expanded", "alternate": "Alternate", "third-party": "3rd Party"}
@@ -38,7 +39,7 @@ async def bounded_upload(request):
     async for chunk in request.stream():
         total += len(chunk)
         if total > MAX_REQUEST:
-            raise RequestTooLarge("Upload a PDF of 50 MB or smaller.")
+            raise RequestTooLarge("Upload a PDF of 250 MB or smaller.")
         yield chunk
 
 
@@ -56,7 +57,7 @@ def save_pdf(source, destination):
         while chunk := source.read(1024 * 1024):
             remaining -= len(chunk)
             if remaining < 0:
-                raise HTTPException(413, "Upload a PDF of 50 MB or smaller.")
+                raise HTTPException(413, "Upload a PDF of 250 MB or smaller.")
             output.write(chunk)
     try:
         rendered = run(
@@ -149,7 +150,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
             if not isinstance(upload, UploadFile) or not (upload.filename or "").lower().endswith(".pdf"):
                 raise HTTPException(422, "Choose a PDF file.")
             if upload.size is not None and upload.size > MAX_PDF:
-                raise HTTPException(413, "Upload a PDF of 50 MB or smaller.")
+                raise HTTPException(413, "Upload a PDF of 250 MB or smaller.")
 
             root = storage_root()
             root.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -224,7 +225,50 @@ async def cover(key: str, request: Request, db: Session = Depends(get_db)):
 
 
 @router.api_route("/{key}/pdf", methods=["GET", "HEAD"])
-async def pdf(key: str, request: Request, db: Session = Depends(get_db)):
+async def legacy_pdf_link(key: str, request: Request, db: Session = Depends(get_db)):
     book = visible_book(request, db, key)
-    return FileResponse(book_file(book.id, "book.pdf"), media_type="application/pdf",
-                        filename=f"{book.title}.pdf", content_disposition_type="inline")
+    return RedirectResponse(f"/rulebooks/{book.id}/read", status_code=303)
+
+
+def pdf_output(*args):
+    try:
+        result = run(args, stdin=DEVNULL, stdout=PIPE, stderr=DEVNULL, timeout=25)
+    except (FileNotFoundError, TimeoutExpired) as error:
+        raise HTTPException(503, "The rulebook reader could not render this document.") from error
+    if result.returncode:
+        raise HTTPException(422, "This rulebook could not be opened.")
+    return result.stdout
+
+
+@lru_cache(maxsize=128)
+def page_count(pdf):
+    match = re.search(rb"^Pages:\s*([1-9][0-9]*)\s*$", pdf_output("pdfinfo", str(pdf)), re.MULTILINE)
+    if not match:
+        raise HTTPException(422, "This rulebook has no readable pages.")
+    return int(match[1])
+
+
+async def reader_page(book, page):
+    pdf = book_file(book.id, "book.pdf")
+    pages = await run_in_threadpool(page_count, pdf)
+    if not 1 <= page <= pages:
+        raise HTTPException(404, "Rulebook page not found.")
+    return pdf, pages
+
+
+@router.get("/{key}/read")
+async def read_book(key: str, request: Request, page: int = 1, db: Session = Depends(get_db)):
+    book = visible_book(request, db, key)
+    _, pages = await reader_page(book, page)
+    return render(context(request, db), "rulebook_reader.html", title=book.title, book=book, page=page, pages=pages)
+
+
+@router.get("/{key}/pages/{page}")
+async def read_page(key: str, page: int, request: Request, db: Session = Depends(get_db)):
+    book = visible_book(request, db, key)
+    pdf, _ = await reader_page(book, page)
+    png = await run_in_threadpool(pdf_output, "pdftoppm", "-f", str(page), "-l", str(page),
+                                  "-singlefile", "-scale-to", "1800", "-png", str(pdf))
+    if not png.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise HTTPException(422, "This rulebook page could not be rendered.")
+    return Response(png, media_type="image/png")
