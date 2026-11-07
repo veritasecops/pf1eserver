@@ -1,0 +1,30 @@
+[Unit]
+Description=Pathkeeper rulebook search indexing and OCR
+After=mariadb.service
+Requires=mariadb.service
+
+[Service]
+Type=simple
+User=pf1eserver
+Group=pf1eserver
+WorkingDirectory=/opt/pf1eserver
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=OMP_THREAD_LIMIT=1
+ExecStart=/opt/pf1eserver/.venv/bin/python -m pathkeeper.rulebook_indexer
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=150
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateNetwork=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pf1eserver/storage
+CPUQuota=200%
+MemoryMax=4G
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

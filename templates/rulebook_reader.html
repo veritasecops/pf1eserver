@@ -1,10 +1,16 @@
 {% extends 'base.html' %}
-{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=reader">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=search">{% endblock %}
 {% block content %}
 <header class="page-header">
   <h1>{{ book.title }}</h1>
   <a class="button" href="/rulebooks">Back to library</a>
 </header>
+<form method="get" action="/rulebooks/search" class="filter-bar standalone">
+  <input type="hidden" name="book" value="{{ book.id }}">
+  <input type="search" name="q" maxlength="200" aria-label="Search this rulebook" placeholder="Search this rulebook" required>
+  <button class="button" type="submit">Search</button>
+</form>
+{% include 'rulebook_index_status.html' %}
 <nav class="row rulebook-reader-controls" aria-label="Rulebook pages">
   {% if page > 1 %}<a class="button" rel="prev" href="?page={{ page - 1 }}">Previous</a>{% endif %}
   <form method="get" class="row">

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'rulebook_fields.html' import category_choice, role_choices with context %}
-{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=upload-dialog">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=search">{% endblock %}
 {% block page_scripts %}<script src="/static/rulebook-upload.js?v=250mb" defer></script>{% endblock %}
 {% block content %}
 <header class="page-header">
@@ -15,6 +15,14 @@
   {% for book, roles in managed_books %}
   <details class="card form-card">
     <summary>{{ book.title }} <span class="secondary-text">· {{ categories.get(book.category, 'Uncategorized') }} · {% for role in roles %}{{ access_roles[role] }}{% if not loop.last %}, {% endif %}{% endfor %}</span></summary>
+    {% set index = indexes.get(book.id) %}
+    {% include 'rulebook_index_status.html' %}
+    {% if index and index.error %}<p>{{ index.error }}</p>{% endif %}
+    <form method="post" action="/rulebooks/{{ book.id }}/reindex">
+      {{ csrf_input(csrf) }}
+      <label class="checkbox"><input type="checkbox" name="force_ocr"> OCR every page</label>
+      <button class="button" type="submit"{% if index and index.status == 'indexing' %} disabled{% endif %}>{{ 'Retry indexing' if index and index.status in ['failed', 'partial'] else 'Reindex' }}</button>
+    </form>
     <form method="post" action="/rulebooks/{{ book.id }}/access">
       {{ csrf_input(csrf) }}
       <input type="hidden" name="previous_mask" value="{{ book.access_mask }}">

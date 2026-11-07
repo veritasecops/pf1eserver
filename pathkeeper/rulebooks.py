@@ -18,7 +18,9 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 
 from .config import settings
 from .database import get_db
-from .models import RULEBOOK_ROLE_BITS, Rulebook
+from .models import RULEBOOK_ROLE_BITS, Rulebook, RulebookIndex
+from .rulebook_indexer import enqueue, STATUS_LABELS
+from .rulebook_search import search_page
 from .security import ROLES, administrator, audit, authenticated, context, field, integer, read_form, verify_csrf
 from .ui import redirect, render
 
@@ -90,10 +92,17 @@ def selected_category(form, *, required):
     return category or None
 
 
+def indexes_for(db, books):
+    return {job.book_id: job for job in db.scalars(
+        select(RulebookIndex).where(RulebookIndex.book_id.in_([book.id for book in books])))}
+
+
 @router.get("")
 async def library(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     user = authenticated(ctx)
+    if request.query_params.get("q", "").strip():
+        return search_page(ctx, CATEGORIES)
     category = request.query_params.get("category", "")
     query = select(Rulebook).where(Rulebook.access_mask.bitwise_and(RULEBOOK_ROLE_BITS[user.role]) != 0)
     if category in CATEGORIES:
@@ -101,15 +110,26 @@ async def library(request: Request, db: Session = Depends(get_db)):
     books = db.scalars(query.order_by(Rulebook.title, Rulebook.id)).all()
     return render(ctx, "rulebooks.html", title="Rulebook library", books=books,
                   role_label=ROLES[user.role], can_upload=user.role == "admin",
-                  categories=CATEGORIES, access_roles=ROLES, category=category if category in CATEGORIES else "")
+                  categories=CATEGORIES, access_roles=ROLES, category=category if category in CATEGORIES else "",
+                  indexes=indexes_for(db, books), index_statuses=STATUS_LABELS)
+
+
+@router.get("/search")
+async def search(request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    authenticated(ctx)
+    key = request.query_params.get("book", "")
+    book = visible_book(request, db, key) if key else None
+    return search_page(ctx, CATEGORIES, book)
 
 
 def upload_page(ctx, title="", roles=(), category=None, error="", status=200, return_to_library=False):
-    books = ctx.db.scalars(select(Rulebook).order_by(Rulebook.title, Rulebook.id))
+    books = ctx.db.scalars(select(Rulebook).order_by(Rulebook.title, Rulebook.id)).all()
     response = render(ctx, "rulebook_upload.html", title="Upload rulebook", book_title=title,
                       selected_roles=roles, access_roles=ROLES, categories=CATEGORIES, upload_category=category,
                       error=error, return_to_library=return_to_library,
-                      managed_books=[(book, roles_for(book.access_mask)) for book in books])
+                      managed_books=[(book, roles_for(book.access_mask)) for book in books],
+                      indexes=indexes_for(ctx.db, books), index_statuses=STATUS_LABELS)
     response.status_code = status
     return response
 
@@ -162,6 +182,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
                 stage.rename(destination)
                 try:
                     db.add(Rulebook(id=key, title=title, access_mask=access_mask, category=category))
+                    enqueue(db, key)
                     labels = ", ".join(ROLES[role] for role in roles_for(access_mask))
                     audit(db, actor, "rulebook.uploaded", f"Uploaded rulebook {key} for {labels}.")
                     return redirect(ctx, "/rulebooks" if return_to_library else "/rulebooks/upload", "Rulebook uploaded.")
@@ -209,6 +230,20 @@ def visible_book(request, db, key):
     if not book.access_mask & RULEBOOK_ROLE_BITS[user.role]:
         raise HTTPException(404, "Rulebook not found.")
     return book
+
+
+@router.post("/{key}/reindex")
+async def reindex(key: str, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    actor = administrator(ctx)
+    form = await read_form(ctx, max_fields=2)
+    book = get_book(db, key, lock=True)
+    job = db.get(RulebookIndex, key, with_for_update=True)
+    if job and job.status == "indexing":
+        raise HTTPException(409, "This rulebook is being indexed. Wait for it to finish before reindexing.")
+    enqueue(db, book.id, force_ocr=form.get("force_ocr") == "on")
+    audit(db, actor, "rulebook.reindex_queued", f"Queued rulebook {key} for indexing.")
+    return redirect(ctx, "/rulebooks/upload", "Rulebook indexing queued.")
 
 
 def book_file(key, name):
@@ -260,7 +295,8 @@ async def reader_page(book, page):
 async def read_book(key: str, request: Request, page: int = 1, db: Session = Depends(get_db)):
     book = visible_book(request, db, key)
     _, pages = await reader_page(book, page)
-    return render(context(request, db), "rulebook_reader.html", title=book.title, book=book, page=page, pages=pages)
+    return render(context(request, db), "rulebook_reader.html", title=book.title, book=book, page=page, pages=pages,
+                  index=db.get(RulebookIndex, book.id), index_statuses=STATUS_LABELS)
 
 
 @router.get("/{key}/pages/{page}")

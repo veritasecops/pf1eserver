@@ -36,3 +36,34 @@ Source, `.venv`, and `.python` need read/execute access for the service user but
 Uvicorn access logging is disabled so personal invitation tokens do not enter a routine URL access log. Security-relevant application actions appear in the Admin activity log, while service errors go to the system journal.
 
 The application uses READ COMMITTED database transactions with explicit row locks for one-time factor consumption and administrative safeguards. This avoids stale-snapshot conflicts under MariaDB 11.8's snapshot checking while keeping code use and invitation acceptance atomic. It does not alter the server-wide database isolation setting.
+
+## Rulebook search worker
+
+Install English OCR with `sudo apt-get install tesseract-ocr tesseract-ocr-eng`.
+Install `deploy/mariadb-rulebook-search.cnf` under
+`/etc/mysql/mariadb.conf.d/` before creating the search tables. Restart MariaDB,
+then start its dependent Pathkeeper web and mail services. The configuration
+indexes two-character terms such as AC and DR and retains rules terms such as
+Will. Existing full-text indexes require rebuilding if their token settings change.
+
+Run the database migration, install `deploy/pf1eserver-indexer.service`, then run
+`sudo systemctl daemon-reload` and
+`sudo systemctl enable --now pf1eserver-indexer`. The service queues existing
+rulebooks and processes new uploads in the background. It uses two extraction
+slots, up to two CPUs, and a 4 GB memory limit. English OCR runs on pages with
+little embedded text. Admins can request OCR of every page when a text layer
+produces poor search results.
+
+Use Rulebooks search across accessible files, or the search field in a reader
+to search one file. Quoted phrases and two-character terms are supported.
+Results link to physical PDF pages. Role and category changes apply immediately.
+
+Admins can view indexing progress and retry or reindex under
+`/rulebooks/upload`. A partial index includes successfully extracted text and
+reports pages that need attention. Reindexing publishes a replacement only
+after the run finishes. Queue leases recover interrupted work, with three
+attempts before a failure requires an Admin retry.
+
+The database backup includes page text and indexing jobs. The existing storage
+backup includes the source PDFs. After restoration, the worker resumes pending
+jobs. Stop the indexer alongside the web service when deploying schema changes.

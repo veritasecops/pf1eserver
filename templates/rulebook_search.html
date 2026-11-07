@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=search">{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div><h1>{{ 'Search ' ~ book.title if book else 'Search rulebooks' }}</h1><p>Search words or put a phrase in quotes. Results use PDF page numbers.</p></div>
+  <a class="button" href="{{ '/rulebooks/' ~ book.id ~ '/read' if book else '/rulebooks' }}">Back</a>
+</header>
+<form method="get" action="/rulebooks/search" class="filter-bar standalone">
+  {% if book %}<input type="hidden" name="book" value="{{ book.id }}">{% endif %}
+  <input type="search" name="q" value="{{ query }}" maxlength="200" aria-label="Search rulebook text" placeholder="Search rulebook text" required>
+  {% if not book %}<select name="category" aria-label="Category"><option value="">All categories</option>{% for key, label in categories.items() %}<option value="{{ key }}"{% if key == category %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% endif %}
+  <button class="button" type="submit">Search</button>
+</form>
+{% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}
+{% if pending %}<p class="secondary-text">{{ pending }} accessible {{ 'rulebook has' if pending == 1 else 'rulebooks have' }} incomplete indexes. More matches may appear after indexing finishes.</p>{% endif %}
+{% if title_matches %}<section><h2>Matching titles</h2><ul>{% for match in title_matches %}<li><a href="/rulebooks/{{ match.id }}/read">{{ match.title }}</a></li>{% endfor %}</ul></section>{% endif %}
+{% if query and not error %}
+<p>{{ total }} matching {{ 'page' if total == 1 else 'pages' }}</p>
+<ol class="rulebook-search-results">
+  {% for result in results %}
+  <li class="card">
+    <h2><a href="/rulebooks/{{ result.book.id }}/read?page={{ result.page }}">{{ result.book.title }} · Page {{ result.page }}</a></h2>
+    <p class="secondary-text">{{ categories.get(result.book.category, 'Uncategorized') }}{% if result.ocr %} · OCR text{% endif %}</p>
+    <p>{{ result.snippet }}</p>
+  </li>
+  {% else %}<li>No matching pages.</li>{% endfor %}
+</ol>
+{% if pages > 1 %}<nav class="row" aria-label="Search result pages">{% if page > 1 %}<a class="button" href="?{{ pagination_query }}&amp;page={{ page - 1 }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a class="button" href="?{{ pagination_query }}&amp;page={{ page + 1 }}">Next</a>{% endif %}</nav>{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,3 @@
+{% if index %}
+<p class="secondary-text">Search index · {{ index_statuses.get(index.status, index.status) }}{% if index.total_pages %} · {{ index.completed_pages }} / {{ index.total_pages }} pages{% endif %}{% if index.failed_pages %} · {{ index.failed_pages }} incomplete{% endif %}</p>
+{% else %}<p class="secondary-text">Search index · Queued</p>{% endif %}

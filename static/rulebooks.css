@@ -69,3 +69,9 @@
   background: white;
   border: 1px solid var(--line);
 }
+
+.rulebook-search-results { list-style: none; padding: 0; display: grid; gap: 16px; }
+.rulebook-search-results > li { padding: 18px; overflow-wrap: anywhere; }
+.rulebook-search-results h2 { font-size: 1.125rem; margin: 0 0 8px; }
+.rulebook-search-results mark { background: #ffed9e; color: #251b10; }
+.rulebook-card > .secondary-text { margin: 0; }

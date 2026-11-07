@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, JSON, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, JSON, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.dialects.mysql import MEDIUMBLOB
@@ -262,3 +262,39 @@ class Rulebook(Base):
     title: Mapped[str] = mapped_column(String(150))
     access_mask: Mapped[int] = mapped_column(Integer)
     category: Mapped[str | None] = mapped_column(String(16))
+
+
+class RulebookIndex(Base):
+    __tablename__ = "rulebook_indexes"
+    book_id: Mapped[str] = mapped_column(ForeignKey("rulebooks.id", ondelete="CASCADE"), primary_key=True)
+    generation: Mapped[str] = mapped_column(String(32))
+    active_generation: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
+    completed_pages: Mapped[int] = mapped_column(Integer, default=0)
+    total_pages: Mapped[int] = mapped_column(Integer, default=0)
+    failed_pages: Mapped[int] = mapped_column(Integer, default=0)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    retry_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime)
+    lease_token: Mapped[str | None] = mapped_column(String(32))
+    force_ocr: Mapped[bool] = mapped_column(Boolean, default=False)
+    fingerprint: Mapped[str | None] = mapped_column(String(64))
+    pipeline_version: Mapped[int] = mapped_column(Integer, default=1)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    error: Mapped[str] = mapped_column(String(300), default="")
+
+
+class RulebookPage(Base):
+    __tablename__ = "rulebook_pages"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    book_id: Mapped[str] = mapped_column(ForeignKey("rulebooks.id", ondelete="CASCADE"), index=True)
+    generation: Mapped[str] = mapped_column(String(32))
+    page: Mapped[int] = mapped_column(Integer)
+    body: Mapped[str] = mapped_column(LONG_TEXT)
+    search_text: Mapped[str] = mapped_column(LONG_TEXT)
+    method: Mapped[str] = mapped_column(String(10))
+    error: Mapped[str] = mapped_column(String(200), default="")
+    __table_args__ = (
+        UniqueConstraint("book_id", "generation", "page", name="uq_rulebook_index_page"),
+        Index("ft_rulebook_page_text", "search_text", mysql_prefix="FULLTEXT", mariadb_prefix="FULLTEXT"),
+    )
