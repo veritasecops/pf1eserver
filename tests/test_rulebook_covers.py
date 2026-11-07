@@ -38,6 +38,20 @@ def test_portrait_cover_keeps_the_whole_page(tmp_path):
         assert right[2] > right[0] + 100
 
 
+def test_wraparound_cover_excludes_the_spine(tmp_path):
+    wrap = Image.new('RGB', (720, 440), 'red')
+    draw = ImageDraw.Draw(wrap)
+    draw.rectangle((340, 0, 379, 439), fill='green')
+    draw.rectangle((380, 0, 719, 439), fill='#2064dc')
+    wrap.save(tmp_path / 'book.pdf', format='PDF')
+    rulebooks.render_cover(tmp_path / 'book.pdf', tmp_path)
+    with Image.open(tmp_path / 'cover.png') as cover:
+        assert cover.height == 420
+        for x in (3, cover.width // 2, cover.width - 4):
+            r, g, b = cover.getpixel((x, 200))
+            assert b > r + 100 and b > g + 70
+
+
 def test_failed_cover_refresh_preserves_existing_thumbnail(monkeypatch, tmp_path):
     original = b'existing cover'
     (tmp_path / 'cover.png').write_bytes(original)

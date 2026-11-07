@@ -81,7 +81,10 @@ def render_cover(pdf, destination):
             with Image.open(image_path) as image:
                 cover = image.convert('RGB')
             if cover.width > cover.height:
-                cover = cover.crop((cover.width // 2, 0, cover.width, cover.height))
+                # Standard rulebook covers are 8.5 x 11 inches. A full wrap
+                # can include a spine between the two covers; exclude it too.
+                front_width = min(cover.width // 2, round(cover.height * 17 / 22))
+                cover = cover.crop((cover.width - front_width, 0, cover.width, cover.height))
             cover.thumbnail((420, 420), Image.Resampling.LANCZOS)
             cover.save(image_path, format='PNG')
             image_path.replace(destination / "cover.png")
