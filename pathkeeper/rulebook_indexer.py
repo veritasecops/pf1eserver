@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import shutil
 from subprocess import DEVNULL, PIPE, run, TimeoutExpired
 from tempfile import TemporaryDirectory
 import threading
@@ -18,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .database import engine
-from .models import Rulebook, RulebookIndex, RulebookPage, utcnow
+from .models import Rulebook, RulebookDeletion, RulebookIndex, RulebookPage, utcnow
 
 PIPELINE_VERSION = 1
 LEASE = timedelta(minutes=5)
@@ -112,11 +113,37 @@ def claim():
 
 
 def owned_job(db, claimed):
+    # Serialize page publication and deletion in parent-then-job lock order.
+    if db.get(Rulebook, claimed.book_id, with_for_update=True) is None:
+        raise InterruptedError("The rulebook was deleted.")
     job = db.get(RulebookIndex, claimed.book_id, with_for_update=True)
     if not job or job.generation != claimed.generation or job.lease_token != claimed.lease_token:
         raise InterruptedError("The indexing lease changed.")
     job.lease_until = utcnow() + LEASE
     return job
+
+
+def cleanup_one(book_id=None):
+    with Session(engine()) as db:
+        query = select(RulebookDeletion).where(RulebookDeletion.retry_at <= utcnow())
+        if book_id is not None:
+            query = query.where(RulebookDeletion.book_id == book_id)
+        deletion = db.scalar(query.order_by(RulebookDeletion.retry_at).limit(1).with_for_update(skip_locked=True))
+        if deletion is None:
+            return False
+        directory = settings().storage / "rulebooks" / deletion.book_id
+        try:
+            shutil.rmtree(directory)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            deletion.retry_at = utcnow() + timedelta(minutes=1)
+            db.commit()
+            logging.getLogger(__name__).exception("Rulebook file cleanup will be retried for %s", deletion.book_id)
+            return False
+        db.delete(deletion)
+        db.commit()
+        return True
 
 
 def process_one(stopped=None):
@@ -204,7 +231,8 @@ def main():
     backfill()
     while not stopped.is_set():
         try:
-            if not process_one(stopped):
+            cleaned = cleanup_one()
+            if not process_one(stopped) and not cleaned:
                 stopped.wait(2)
         except Exception:
             logging.getLogger(__name__).exception("Rulebook indexing worker failed.")

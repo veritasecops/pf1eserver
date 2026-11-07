@@ -298,3 +298,9 @@ class RulebookPage(Base):
         UniqueConstraint("book_id", "generation", "page", name="uq_rulebook_index_page"),
         Index("ft_rulebook_page_text", "search_text", mysql_prefix="FULLTEXT", mariadb_prefix="FULLTEXT"),
     )
+
+
+class RulebookDeletion(Base):
+    __tablename__ = "rulebook_deletions"
+    book_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    retry_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

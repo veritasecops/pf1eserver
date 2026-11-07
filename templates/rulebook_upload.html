@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'rulebook_fields.html' import category_choice, role_choices with context %}
-{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=search">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=delete">{% endblock %}
 {% block page_scripts %}<script src="/static/rulebook-upload.js?v=250mb" defer></script>{% endblock %}
 {% block content %}
 <header class="page-header">
@@ -30,6 +30,7 @@
       {{ category_choice(book.category) }}
       {{ role_choices(roles) }}
       <button class="button" type="submit">Save settings</button>
+      <a class="button danger" href="/rulebooks/{{ book.id }}/delete">Delete PDF</a>
     </form>
   </details>
   {% endfor %}

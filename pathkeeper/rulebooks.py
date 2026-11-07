@@ -17,9 +17,9 @@ from starlette.datastructures import UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
 
 from .config import settings
-from .database import get_db
-from .models import RULEBOOK_ROLE_BITS, Rulebook, RulebookIndex
-from .rulebook_indexer import enqueue, STATUS_LABELS
+from .database import commit, get_db
+from .models import RULEBOOK_ROLE_BITS, Rulebook, RulebookDeletion, RulebookIndex
+from .rulebook_indexer import cleanup_one, enqueue, STATUS_LABELS
 from .rulebook_search import search_page
 from .security import ROLES, administrator, audit, authenticated, context, field, integer, read_form, verify_csrf
 from .ui import redirect, render
@@ -244,6 +244,31 @@ async def reindex(key: str, request: Request, db: Session = Depends(get_db)):
     enqueue(db, book.id, force_ocr=form.get("force_ocr") == "on")
     audit(db, actor, "rulebook.reindex_queued", f"Queued rulebook {key} for indexing.")
     return redirect(ctx, "/rulebooks/upload", "Rulebook indexing queued.")
+
+
+@router.get("/{key}/delete")
+async def delete_confirmation(key: str, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    administrator(ctx)
+    return render(ctx, "rulebook_delete.html", title="Delete rulebook", book=get_book(db, key))
+
+
+@router.post("/{key}/delete")
+async def delete_book(key: str, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    actor = administrator(ctx)
+    form = await read_form(ctx, max_fields=2)
+    if form.get("confirm") != "delete":
+        raise HTTPException(422, "Confirm deletion before continuing.")
+    book = get_book(db, key, lock=True)
+    db.add(RulebookDeletion(book_id=book.id))
+    db.delete(book)
+    audit(db, actor, "rulebook.deleted", f"Deleted rulebook {key} and its search index.")
+    commit(db)
+    cleaned = await run_in_threadpool(cleanup_one, key)
+    page_count.cache_clear()
+    message = "Rulebook, files, and search index deleted." if cleaned else "Rulebook and search index deleted. Server file cleanup is queued."
+    return redirect(ctx, "/rulebooks", message)
 
 
 def book_file(key, name):

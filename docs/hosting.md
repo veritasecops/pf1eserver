@@ -59,7 +59,7 @@ to search one file. Quoted phrases and two-character terms are supported.
 Results link to physical PDF pages. Role and category changes apply immediately.
 
 Admins can view indexing progress and retry or reindex under
-`/rulebooks/upload`. A partial index includes successfully extracted text and
+`/rulebooks/upload`. Admins can delete a PDF from its library card or management entry after confirming deletion. The database removes its library record, indexing job, and searchable text together. File cleanup removes the PDF and cover immediately when possible and uses a durable worker queue for retry. A partial index includes successfully extracted text and
 reports pages that need attention. Reindexing publishes a replacement only
 after the run finishes. Queue leases recover interrupted work, with three
 attempts before a failure requires an Admin retry.

@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RULEBOOK_ROLE_BITS, Rulebook, RulebookIndex, RulebookPage, RuleCatalog, SchemaMigration, User
+from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RULEBOOK_ROLE_BITS, Rulebook, RulebookDeletion, RulebookIndex, RulebookPage, RuleCatalog, SchemaMigration, User
 
 
 def remove_manual_class_fields(db):
@@ -64,7 +64,7 @@ def migrate_rulebook_access(admin_engine):
 def migrate(admin_engine):
     # MariaDB DDL commits separately. Complete all DDL before opening a read
     # transaction, so snapshot isolation cannot retain pre-DDL table definitions.
-    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction, Rulebook, RulebookIndex, RulebookPage):
+    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction, Rulebook, RulebookIndex, RulebookPage, RulebookDeletion):
         model.__table__.create(admin_engine, checkfirst=True)
     additions = {
         "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'"},
@@ -266,4 +266,7 @@ def migrate(admin_engine):
                 enqueue(db, book.id)
             db.add(SchemaMigration(version=27, name="searchable_rulebook_pages"))
             db.commit()
-    print("Database migrations applied through 027 (searchable rulebook pages).")
+        if not db.get(SchemaMigration, 28):
+            db.add(SchemaMigration(version=28, name="rulebook_deletion_cleanup"))
+            db.commit()
+    print("Database migrations applied through 028 (rulebook deletion cleanup).")

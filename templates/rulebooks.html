@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=search">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=delete">{% endblock %}
 {% block page_scripts %}{% if can_upload %}<script src="/static/rulebook-upload.js?v=250mb" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <header class="page-header">
@@ -26,6 +26,7 @@
       <span class="secondary-text">{{ categories.get(book.category, 'Uncategorized') }} · PDF</span>
       {% with index=indexes.get(book.id) %}{% include 'rulebook_index_status.html' %}{% endwith %}
     </a>
+    {% if can_upload %}<a class="button danger" href="/rulebooks/{{ book.id }}/delete" aria-label="Delete {{ book.title }}">Delete PDF</a>{% endif %}
   </li>
   {% endfor %}
 </ul>

@@ -10,7 +10,7 @@
 .rulebook-card {
   display: grid;
   gap: 6px;
-  height: 100%;
+  flex: 1;
   padding: 12px;
   background: var(--paper);
   border: 1px solid var(--line);
@@ -75,3 +75,5 @@
 .rulebook-search-results h2 { font-size: 1.125rem; margin: 0 0 8px; }
 .rulebook-search-results mark { background: #ffed9e; color: #251b10; }
 .rulebook-card > .secondary-text { margin: 0; }
+
+.rulebook-grid > li { display: flex; flex-direction: column; gap: 8px; }
