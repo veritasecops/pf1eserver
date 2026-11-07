@@ -1,19 +1,28 @@
 .rulebook-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 164px), 1fr));
-  gap: 18px;
+  gap: 32px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .rulebook-card {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   flex: 1;
   color: var(--ink);
   text-decoration: none;
   overflow-wrap: anywhere;
+}
+
+.rulebook-card strong {
+  margin: 0;
+  font-size: .8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .rulebook-card:hover strong,
@@ -25,7 +34,7 @@
   aspect-ratio: 3 / 4;
 }
 
-.rulebook-cover img { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.rulebook-cover img { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: center bottom; }
 .rulebook-empty { padding: 16px; }
 
 .rulebook-upload-dialog {
