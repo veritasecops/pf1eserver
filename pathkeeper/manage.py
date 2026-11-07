@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import pwd
 import secrets
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -141,6 +142,29 @@ def backup(destination):
     print(f"Backup saved to {archive}")
 
 
+def refresh_rulebook_covers(backup_directory):
+    """Replace derived thumbnails only, retaining server-local rollback copies."""
+    require_root()
+    from .database import engine
+    from .models import Rulebook
+    from .rulebooks import render_cover, storage_root
+
+    backup = Path(backup_directory) / f"covers-{utcnow():%Y%m%d-%H%M%S}"
+    if backup.resolve().is_relative_to(storage_root().resolve()):
+        raise SystemExit("Store cover backups outside the rulebook storage directory.")
+    backup.mkdir(mode=0o700, parents=True)
+    completed = 0
+    with Session(engine()) as db:
+        books = db.scalars(select(Rulebook).order_by(Rulebook.id)).all()
+        for book in books:
+            directory = storage_root() / book.id
+            if (directory / 'cover.png').exists():
+                shutil.copy2(directory / 'cover.png', backup / f'{book.id}.png')
+            render_cover(directory / 'book.pdf', directory)
+            completed += 1
+    print(f"Refreshed {completed} rulebook covers. Previous thumbnails saved to {backup}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -154,6 +178,8 @@ def main():
             command.add_argument("--generate-password", action="store_true", help="Print a generated temporary password once; force replacement at sign-in.")
     backup_parser = commands.add_parser("backup")
     backup_parser.add_argument("--destination", default="/var/backups/pf1eserver")
+    covers_parser = commands.add_parser("refresh-rulebook-covers")
+    covers_parser.add_argument("--backup-directory", default="/var/backups/pf1eserver")
     args = parser.parse_args()
     if args.command == "init":
         initialize()
@@ -168,6 +194,8 @@ def main():
             admin_engine.dispose()
     elif args.command == "backup":
         backup(args.destination)
+    elif args.command == "refresh-rulebook-covers":
+        refresh_rulebook_covers(args.backup_directory)
     else:
         manage_user(args.command, args.email, getattr(args, "name", None), getattr(args, "generate_password", False))
 

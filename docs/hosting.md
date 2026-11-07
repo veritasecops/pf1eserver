@@ -27,6 +27,12 @@ After browser access uses HTTPS, set `PF_SECURE_COOKIES=true` in `.env` and rest
 
 Rulebook uploads accept PDFs up to 500 MB. Allow a 501 MB multipart request at `/rulebooks/upload` in the reverse proxy. The application keeps the normal request limit on other routes. Install `poppler-utils` on the application server to render first-page covers. PDFs and covers are kept under `PF_STORAGE/rulebooks`. The reader serves rendered page images through authenticated routes. Original PDF files stay in private server storage.
 
+Landscape first pages containing facing covers use the right-hand front cover
+for their thumbnail. Portrait covers keep the whole page. Original PDFs and
+reader pages remain unchanged. Run `sudo .venv/bin/python -m pathkeeper.manage
+refresh-rulebook-covers` to rebuild existing thumbnails; previous PNGs are saved
+under `/var/backups/pf1eserver/covers-<timestamp>` before replacement.
+
 Restart the service after changing configuration. Keep session-lifetime values positive. If changing the storage path, update systemd's ReadWritePaths and directory ownership too.
 
 ## Runtime and filesystem access

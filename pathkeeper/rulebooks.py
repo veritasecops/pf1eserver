@@ -8,6 +8,7 @@ from subprocess import DEVNULL, PIPE, run, TimeoutExpired
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
+from PIL import Image
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, RedirectResponse, Response
@@ -61,18 +62,33 @@ def save_pdf(source, destination):
             if remaining < 0:
                 raise HTTPException(413, "Upload a PDF of 500 MB or smaller.")
             output.write(chunk)
+    render_cover(pdf, destination)
+
+
+def render_cover(pdf, destination):
+    """Render a front-cover thumbnail, excluding the left facing page."""
     try:
-        rendered = run(
-            ["pdftoppm", "-f", "1", "-l", "1", "-singlefile", "-scale-to", "420", "-png",
-             str(pdf), str(destination / "cover")],
-            stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL, timeout=25,
-        )
+        with TemporaryDirectory(prefix=".cover-", dir=destination) as temporary:
+            stage = Path(temporary) / "cover"
+            rendered = run(
+                ["pdftoppm", "-f", "1", "-l", "1", "-singlefile", "-scale-to", "840", "-png",
+                 str(pdf), str(stage)],
+                stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL, timeout=25,
+            )
+            image_path = stage.with_suffix('.png')
+            if rendered.returncode or not image_path.is_file():
+                raise HTTPException(422, PDF_ERROR)
+            with Image.open(image_path) as image:
+                cover = image.convert('RGB')
+            if cover.width > cover.height:
+                cover = cover.crop((cover.width // 2, 0, cover.width, cover.height))
+            cover.thumbnail((420, 420), Image.Resampling.LANCZOS)
+            cover.save(image_path, format='PNG')
+            image_path.replace(destination / "cover.png")
     except FileNotFoundError as error:
         raise HTTPException(503, "PDF cover rendering is unavailable.") from error
     except TimeoutExpired as error:
         raise HTTPException(422, "The first PDF page took too long to render.") from error
-    if rendered.returncode or not (destination / "cover.png").is_file():
-        raise HTTPException(422, PDF_ERROR)
 
 
 def selected_access(roles):
