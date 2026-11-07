@@ -60,6 +60,7 @@ def replace_references(value, group=None, key=None):
             kind_group = {'weapon': 'weapons', 'armor': 'armor', 'shield': 'armor'}.get(value.get('kind'))
             candidates = [candidate for candidate in candidates if not (group or kind_group)
                           or candidate[0] == (group or kind_group)]
+            candidates = [(g, k) for g, k in candidates if k in links['legacy_item_urls'][g]]
             if (group in links.get('legacy_item_urls', {})
                     and links['legacy_item_urls'][group].get(key) == reference_key(value['url'])):
                 result['url'] = links[group][key]

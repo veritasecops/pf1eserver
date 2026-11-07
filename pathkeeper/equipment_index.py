@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from .armor import ARMOR_CATEGORIES, table_armor
-from .weapons import WEAPON_CATEGORIES, WEAPON_GROUPS, table_weapons
+from .weapons import WEAPON_CATEGORIES, table_weapons
 
 GROUPS = ("Weapons", "Armor", "Special Materials", "Miscellaneous")
 
@@ -34,6 +34,10 @@ def equipment_bindings():
 
 def live_equipment(entry, kind, key, item):
     cost, weight = item.get("cost"), item.get("weight")
+    if kind == "weapons":
+        category = WEAPON_CATEGORIES.get(item.get("category"))
+        entry = {**entry, "categories": [category] if category else [],
+                 "proficiencies": item.get("proficiencies", [item.get("group")])}
     return {
         **entry, "name": item["name"], "url": item.get("url", ""), "enabled": item.get("enabled", True),
         "cost_text": f"{cost / 100:g} gp" if cost is not None else item.get("cost_text") or entry["cost_text"],
@@ -68,9 +72,9 @@ def equipment_entries(catalog):
             if (kind, key) in represented:
                 continue
             labels = WEAPON_CATEGORIES if kind == "weapons" else ARMOR_CATEGORIES
-            categories = [WEAPON_GROUPS.get(item.get("group")), labels.get(item.get("category"))]
+            category = labels.get(item.get("category"))
             entry = {"group": "Weapons" if kind == "weapons" else "Armor",
-                     "categories": [label for label in categories if label], "cost_text": "",
+                     "categories": [category] if category else [], "cost_text": "",
                      "weight_text": "", "details": ""}
             entry_key = f"live-{kind}-{key}"
             while entry_key in result:

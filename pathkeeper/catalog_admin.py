@@ -19,7 +19,7 @@ from .class_editor import editor as class_editor, parse_class
 from .models import Guard, RuleCatalog, utcnow
 from .pf1_data import ABILITIES, CLASSES
 from .rule_catalog import EFFECTS, default_catalog
-from .weapons import safe_weapon_url, WEAPON_CATEGORIES, WEAPON_GROUPS
+from .weapons import safe_weapon_url, WEAPON_CATEGORIES, WEAPON_GEAR_CATEGORIES, WEAPON_GROUPS
 from .armor import ARMOR_CATEGORIES
 from .security import administrator, audit, context, field, integer, read_form
 from .ui import redirect, render
@@ -124,9 +124,10 @@ def render_catalog(ctx, request, kind):
     if kind == 'equipment':
         entries = equipment_entries(record.data)
     items=[(key,item) for key,item in entries.items() if search.casefold() in item.get('name',key).casefold()]
-    group=request.query_params.get('group','') if kind=='weapons' else ''
+    group=request.query_params.get('group','') if kind in {'weapons', 'equipment'} else ''
     category=request.query_params.get('category','') if kind=='weapons' else ''
-    if group in WEAPON_GROUPS: items=[(key,item) for key,item in items if item.get('group')==group]
+    if kind == 'weapons' and group in WEAPON_GROUPS:
+        items=[(key,item) for key,item in items if group in item.get('proficiencies', [item.get('group')])]
     feat_category = request.query_params.get('feat_category', '') if kind == 'feats' else ''
     if feat_category in FEAT_CATEGORIES:
         items = [(key, item) for key, item in items if feat_category in item.get('categories', ())]
@@ -149,6 +150,8 @@ def render_catalog(ctx, request, kind):
                                if equipment_category and equipment_category in item["categories"]}
             equipment_group = next(iter(matching_groups)) if len(matching_groups) == 1 else EQUIPMENT_GROUPS[0]
         items = [(key, item) for key, item in items if item["group"] == equipment_group]
+        if equipment_group == 'Weapons' and group in WEAPON_GROUPS:
+            items = [(key, item) for key, item in items if group in item.get('proficiencies', ())]
         equipment_categories = catalog_categories(entries, equipment_group)
         if equipment_category in equipment_categories:
             items = [(key, item) for key, item in items if equipment_category in item["categories"]]
@@ -301,11 +304,12 @@ def parse_entry(form,kind,key,catalog):
         existing=catalog['weapons'].get(key,{})
         category=str(form.get('category',existing.get('category','ranged' if form.get('ranged')=='on' else 'one-handed')))
         group=field(form,'group',100)
-        if category not in WEAPON_CATEGORIES or group not in WEAPON_GROUPS: raise HTTPException(422,'Choose a Simple, Martial, or Exotic weapon category.')
-        item.update(kind='gear' if category=='ammunition' else 'weapon',category=category,group=group,
+        if category not in WEAPON_CATEGORIES or group not in WEAPON_GROUPS: raise HTTPException(422,'Choose a weapon proficiency and category from the lists.')
+        item.update(kind='gear' if category in WEAPON_GEAR_CATEGORIES else 'weapon',category=category,group=group,
+                    proficiencies=existing.get('proficiencies', [group]) if group == existing.get('group') else [group],
                     cost=None if 'cost' in form and not str(form['cost']).strip() else number('cost',0,100000000),
                     weight=None if 'weight' in form and not str(form['weight']).strip() else number('weight',0,100000,True),
-                    damage=field(form,'damage',120),small_damage=field(form,'small_damage',120))
+                    damage=field(form,'damage',120,required=False),small_damage=field(form,'small_damage',120,required=False))
         for name,maximum in {'critical':120,'range':120,'damage_type':120,'special':1000,'source':300,
                              'cost_text':120,'weight_text':120,'notes':3000,'url':1000}.items():
             item[name]=field(form,name,maximum,required=False) if name in form else existing.get(name,'')
@@ -321,7 +325,10 @@ def parse_entry(form,kind,key,catalog):
         if item['strength_rating'] is not None and 'strength_rating' not in form: item['strength_rating']=existing.get('strength_rating')
         if item['bow'] and not item['ranged']: raise HTTPException(422,'A bow must be a ranged weapon.')
         if item['strength_rating'] is not None and not item['bow']: raise HTTPException(422,'A composite Strength rating requires a bow.')
-        if category=='ammunition' and any(item[flag] for flag in ('ranged','bow','two_handed','thrown','add_strength')): raise HTTPException(422,'Ammunition is carried as equipment, not equipped as an attack.')
+        for name in ('detail_proficiency', 'weapon_groups', 'detail_stats'):
+            if name in existing:
+                item[name] = existing[name]
+        if item['kind']=='gear' and any(item[flag] for flag in ('ranged','bow','two_handed','thrown','add_strength')): raise HTTPException(422,'Weapon accessories are carried as equipment and cannot be equipped as attacks.')
     return item
 
 
@@ -359,7 +366,7 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
     if key.casefold()=='new': raise HTTPException(422,'Choose an identifier other than new.')
     if kind=='feats' and any(char in key for char in '/\\?#'):
         raise HTTPException(422,'Feat names cannot contain slashes, question marks or hash signs.')
-    if kind!='feats' and (not re.fullmatch(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*',key) or key.endswith('-2')):
+    if new and kind!='feats' and (not re.fullmatch(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*',key) or key.endswith('-2')):
         raise HTTPException(422,'Use a stable lowercase identifier with letters, numbers and single hyphens, without a -2 ending.')
     entries = equipment_entries(record.data) if kind == 'equipment' else record.data[kind]
     if new and any(existing.casefold()==key.casefold() for existing in entries): raise HTTPException(409,'That catalog identifier already exists.')
@@ -374,7 +381,8 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
         item=parse_entry(form,kind,key,record.data)
     except HTTPException as error:
         if error.status_code!=422: raise
-        item={**entries.get(key,{}),**{k:str(v) for k,v in form.items() if k not in {'csrf','version'}}}
+        readonly = {'csrf', 'version', 'detail_proficiency', 'weapon_groups', 'detail_stats'}
+        item={**entries.get(key,{}),**{k:str(v) for k,v in form.items() if k not in readonly}}
         item.update(enabled=form.get('enabled')=='on',effects={target:form.get('effect.'+target,0) for target in [*EFFECTS,*('skill:'+s for s in record.data['skills'])]},classes=form.getlist('classes'))
         for flag in ('combat','monk','repeatable','finesse','pfs_marked','armor','trained','ranged','bow','two_handed','thrown','add_strength'): item[flag]=form.get(flag)=='on'
         if kind == 'feats' and 'categories_present' in form:

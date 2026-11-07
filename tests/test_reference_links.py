@@ -19,7 +19,7 @@ NEW = 'https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Longsword'
 def test_all_default_reference_links_use_aon():
     for group in ('weapons', 'armor'):
         entries = json.loads((Path(__file__).parents[1] / 'pathkeeper' / 'data' / f'{group}.json').read_text())
-        assert len(entries) == (279 if group == 'weapons' else 72)
+        assert len(entries) == (486 if group == 'weapons' else 72)
         assert all('.aonprd.com/' in item['url'] for item in entries.values())
     assert OUTLINE == 'https://www.aonprd.com/Rules.aspx?ID=83'
     assert {'omdura', 'vampire-hunter'}.isdisjoint(CLASSES)

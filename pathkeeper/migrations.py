@@ -227,4 +227,12 @@ def migrate(admin_engine):
                         draft.existing_version = character.version
             db.add(SchemaMigration(version=22, name="gear_inventory_in_backpack"))
             db.commit()
-    print("Database migrations applied through 022 (gear inventory in backpack).")
+        if not db.get(SchemaMigration, 23):
+            from .weapons import refresh_weapon_catalog
+
+            record = db.get(RuleCatalog, 1, with_for_update=True)
+            record.data = {**record.data, "weapons": refresh_weapon_catalog(record.data["weapons"])}
+            record.version += 1
+            db.add(SchemaMigration(version=23, name="archives_of_nethys_weapon_details"))
+            db.commit()
+    print("Database migrations applied through 023 (Archives of Nethys weapon details).")

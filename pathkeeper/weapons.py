@@ -7,9 +7,24 @@ from urllib.parse import urlsplit
 
 from .pf1_data import EQUIPMENT
 
-WEAPON_CATEGORIES = {'unarmed':'Unarmed','light':'Light melee','one-handed':'One-handed melee',
-                     'two-handed':'Two-handed melee','ranged':'Ranged','ammunition':'Ammunition'}
-WEAPON_GROUPS = {'simple':'Simple','martial':'Martial','exotic':'Exotic'}
+WEAPON_CATEGORIES = {
+    'unarmed': 'Unarmed', 'light': 'Light', 'one-handed': 'One-Handed',
+    'two-handed': 'Two-Handed', 'ranged': 'Ranged', 'ammunition': 'Ammunition',
+    'alchemical-weapons': 'Alchemical Weapons', 'modification': 'Modification',
+    'explosive': 'Explosive', 'siege': 'Siege', 'close-assault': 'Close Assault',
+    **{f'{mode.lower()}-fire-{size.lower()}': f'{mode}-Fire ({size})'
+       for mode in ('Direct', 'Indirect') for size in ('Large', 'Huge', 'Gargantuan')},
+}
+WEAPON_GROUPS = {
+    'simple': 'Simple', 'martial': 'Martial', 'exotic': 'Exotic', 'ammunition': 'Ammunition',
+    'firearms': 'Firearms', 'mods': 'Mods', 'siege-engines': 'Siege Engines', 'special': 'Special',
+}
+WEAPON_GEAR_CATEGORIES = {'ammunition', 'modification', 'alchemical-weapons'}
+PUBLISHED_WEAPON_FIELDS = {
+    'cost', 'cost_text', 'weight', 'weight_text', 'small_damage', 'damage',
+    'critical', 'range', 'damage_type', 'special', 'source', 'url',
+}
+WEAPON_CALCULATION_FLAGS = {'ranged', 'bow', 'thrown', 'two_handed', 'finesse', 'add_strength', 'strength_rating'}
 
 
 @lru_cache
@@ -42,6 +57,31 @@ def merge_weapon_tables(existing):
             merged['enabled']=old.get('enabled',True)
             merged['aliases']=list(dict.fromkeys([*entry.get('aliases',[]),*old.get('aliases',[]),old['name']]))
         result[key]=merged
+    return result
+
+
+def refresh_weapon_catalog(existing):
+    """Apply the source refresh while retaining local overrides of weapon statistics."""
+    baseline = json.loads((Path(__file__).parent / 'data' / 'weapon_refresh_baseline.json').read_text())
+    result = deepcopy(existing)
+    for key, published in table_weapons().items():
+        previous = existing.get(key, {})
+        item = {**previous, **deepcopy(published)}
+        for field in ('name', 'enabled', 'notes'):
+            if field in previous:
+                item[field] = previous[field]
+        old_defaults = baseline.get(key, {})
+        for field in PUBLISHED_WEAPON_FIELDS:
+            if field in previous and previous[field] != old_defaults.get(field, published[field]):
+                item[field] = previous[field]
+        if previous.get('kind') == published['kind']:
+            for field in WEAPON_CALCULATION_FLAGS & previous.keys():
+                item[field] = previous[field]
+        item['aliases'] = list(dict.fromkeys([
+            *published['aliases'], *previous.get('aliases', ()), published['name'],
+        ]))
+        item['aliases'] = [alias for alias in item['aliases'] if alias != item['name']]
+        result[key] = item
     return result
 
 

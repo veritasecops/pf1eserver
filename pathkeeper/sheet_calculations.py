@@ -168,4 +168,4 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
         write(f'spell.{level}.known',len([line for line in values.get(f'spell.{level}.list','').splitlines() if line.strip()]))
     write('load.total', carried_weight(character, values))
     from .character_weapons import apply_inventory
-    return apply_inventory(character,values)
+    return apply_inventory(character, values, progression_catalog)

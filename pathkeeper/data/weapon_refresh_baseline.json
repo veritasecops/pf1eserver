@@ -1,0 +1,1300 @@
+{
+  "gauntlet": {
+    "source": "PZO1110"
+  },
+  "unarmed-strike": {
+    "source": "PZO1110",
+    "url": "https://legacy.aonprd.com/coreRulebook/equipment.html#weapon-descriptions"
+  },
+  "battle-aspergillum": {
+    "weight_text": "4 lb.",
+    "source": "PZO1115"
+  },
+  "brass-knife": {
+    "source": "PPC:Pirates"
+  },
+  "brass-knuckles": {
+    "special": "monk",
+    "source": "PPZO9410 / PZO1115"
+  },
+  "cestus": {
+    "special": "monk",
+    "source": "PZO1115"
+  },
+  "dagger": {
+    "source": "PZO1110"
+  },
+  "dagger-punching": {
+    "source": "PZO1110"
+  },
+  "gauntlet-spiked": {
+    "special": "attached",
+    "source": "PZO1110"
+  },
+  "handwraps": {
+    "source": "PPC:MAH"
+  },
+  "traveling-kettle": {
+    "critical": "×2",
+    "special": "monk , see text",
+    "source": "PPC:MAH"
+  },
+  "hook-hand": {
+    "special": "disarm , attached, see text",
+    "source": "PPC:Pirates"
+  },
+  "kunai": {
+    "special": "tool",
+    "source": "PPC:RTT"
+  },
+  "mace-light": {
+    "source": "PZO1110"
+  },
+  "sickle": {
+    "source": "PZO1110"
+  },
+  "spring-blade": {
+    "special": "see text",
+    "source": "PZO1134"
+  },
+  "wooden-stake": {
+    "source": "PZO1115"
+  },
+  "club": {
+    "source": "PZO1110"
+  },
+  "club-mere": {
+    "source": "PPZO9410"
+  },
+  "mace-heavy": {
+    "source": "PZO1110"
+  },
+  "morningstar": {
+    "source": "PZO1110"
+  },
+  "shortspear": {
+    "source": "PZO1110"
+  },
+  "bayonet": {
+    "source": "PZO1115"
+  },
+  "boarding-pike": {
+    "special": "brace , reach",
+    "source": "PPC:Pirates"
+  },
+  "kumade": {
+    "source": "PZO9468"
+  },
+  "kumade-collapsible": {
+    "source": "PZO9468",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Kumade,%20collapsible"
+  },
+  "lantern-staff": {
+    "critical": "×2",
+    "source": "PPZO94102"
+  },
+  "longspear": {
+    "special": "brace , reach",
+    "source": "PZO1110"
+  },
+  "quarterstaff": {
+    "special": "double , monk",
+    "source": "PZO1110"
+  },
+  "spear": {
+    "source": "PZO1110"
+  },
+  "spear-boar": {
+    "weight_text": "8 lb.",
+    "special": "brace , see text",
+    "source": "PZO1115"
+  },
+  "spear-weighted": {
+    "special": "brace , double",
+    "source": "PZO9468"
+  },
+  "blowgun": {
+    "source": "PZO1110"
+  },
+  "crossbow-heavy": {
+    "source": "PZO1110"
+  },
+  "crossbow-heavy-underwater": {
+    "source": "PZO1121"
+  },
+  "light-crossbow": {
+    "source": "PZO1110"
+  },
+  "crossbow-light-underwater": {
+    "source": "PZO1121"
+  },
+  "dart": {
+    "source": "PZO1110"
+  },
+  "javelin": {
+    "source": "PZO1110"
+  },
+  "sling": {
+    "source": "PZO1110"
+  },
+  "stingchuck": {
+    "source": "PPZO9410"
+  },
+  "stonebow": {
+    "source": "PPC:RTT"
+  },
+  "bolts": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PZO1110",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Crossbow%20bolts%20(10)"
+  },
+  "bolt-s-acid-1": {
+    "weight": 0.1,
+    "weight_text": "0.1 lb.",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "see text",
+    "source": "PAP15",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Bolt,%20acid"
+  },
+  "bolt-s-drow-poison-1": {
+    "weight": 0.1,
+    "weight_text": "0.1 lb.",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "see text",
+    "source": "PAP15",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Bolt,%20Drow%20poison"
+  },
+  "bolt-s-fire-1": {
+    "weight": 0.1,
+    "weight_text": "0.1 lb.",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "see text",
+    "source": "PAP15",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Bolt,%20fire"
+  },
+  "bullet-s-groaning-10": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "see text",
+    "source": "PPZO9410",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Bullets,%20groaning%20(10)"
+  },
+  "bullet-s-sling-10": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PZO1110",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Sling%20bullets%20(10)"
+  },
+  "bullet-s-smoke-10": {
+    "weight": 5.0,
+    "weight_text": "5 lbs.",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "see text",
+    "source": "PCS"
+  },
+  "dart-s-blowgun-10": {
+    "weight": 1.0,
+    "weight_text": "1 lb.",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PZO1110",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Blowgun%20darts%20(10)"
+  },
+  "axe-boarding": {
+    "source": "PPZO94102"
+  },
+  "axe-throwing": {
+    "source": "PZO1110"
+  },
+  "blade-boot": {
+    "source": "PPZO9410"
+  },
+  "cat-o-nine-tails": {
+    "special": "disarm , nonlethal",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Cat-o'-nine-tails"
+  },
+  "claw-blades": {
+    "small_damage": "1d3",
+    "damage": "1d4",
+    "critical": "x2",
+    "damage_type": "B or S",
+    "special": "see text",
+    "source": "PZO1121"
+  },
+  "dagger-dueling": {
+    "critical": "19–20/×2",
+    "source": "PPZO94102"
+  },
+  "dogslicer": {
+    "source": "PZO1121"
+  },
+  "hammer-light": {
+    "source": "PZO1110"
+  },
+  "gladius": {
+    "source": "PZO1118"
+  },
+  "handaxe": {
+    "source": "PZO1110"
+  },
+  "katar-tri-bladed": {
+    "critical": "×4",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Katar,%20tri-bladed"
+  },
+  "knife-switchblade": {
+    "source": "PPZO9410"
+  },
+  "kobold-tail-attachment-long-lash": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Kobold%20tail,%20long%20lash"
+  },
+  "kobold-tail-attachment-pounder": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Kobold%20tail,%20pounder"
+  },
+  "kobold-tail-attachment-razored": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Kobold%20tail,%20razored"
+  },
+  "kobold-tail-attachment-spiked": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Kobold%20tail,%20spiked"
+  },
+  "kobold-tail-attachment-sweeper": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Kobold%20tail,%20sweeper"
+  },
+  "kukri": {
+    "critical": "18–20/x2",
+    "source": "PZO1110"
+  },
+  "machete": {
+    "source": "PZO9468"
+  },
+  "pick-light": {
+    "source": "PZO1110"
+  },
+  "ratfolk-tailblade": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Tailblade,%20ratfolk"
+  },
+  "sap": {
+    "source": "PZO1110"
+  },
+  "sea-knife": {
+    "source": "PZO1121"
+  },
+  "shield-light": {
+    "source": "PZO1110"
+  },
+  "spiked-armor": {
+    "cost_text": "special",
+    "source": "PZO1110"
+  },
+  "spiked-shield-light": {
+    "source": "PZO1110"
+  },
+  "starknife": {
+    "source": "PZO1110"
+  },
+  "sword-butterfly-2": {
+    "special": "Monk",
+    "source": "PZO1110"
+  },
+  "shortsword": {
+    "source": "PZO1110"
+  },
+  "war-razor": {
+    "source": "PZO9226-Revised"
+  },
+  "ankus": {
+    "special": "disarm , trip",
+    "source": "PZO9468"
+  },
+  "battleaxe": {
+    "source": "PZO1110"
+  },
+  "combat-scabbard": {
+    "special": "improvised , see text",
+    "source": "PPZO9410"
+  },
+  "cutlass": {
+    "source": "PPZO94102"
+  },
+  "flail-light": {
+    "special": "disarm , trip",
+    "source": "PZO1110"
+  },
+  "gandasa": {
+    "source": "PZO9468"
+  },
+  "klar": {
+    "special": "—",
+    "source": "PZO9226-Revised"
+  },
+  "longsword": {
+    "source": "PZO1110"
+  },
+  "manople": {
+    "special": "blocking , disarm",
+    "source": "PZO9468"
+  },
+  "pick-heavy": {
+    "source": "PZO1110"
+  },
+  "rapier": {
+    "critical": "18–20/x2",
+    "special": "finesse",
+    "source": "PZO1110"
+  },
+  "scabbard-combat-sharpened": {
+    "source": "PPZO9410",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Combat%20scabbard,%20sharpened"
+  },
+  "scimitar": {
+    "critical": "18–20/x2",
+    "source": "PZO1110"
+  },
+  "scizore": {
+    "special": "—",
+    "source": "PZO1118"
+  },
+  "shield-heavy": {
+    "cost_text": "special",
+    "source": "PZO1110"
+  },
+  "spiked-shield-heavy": {
+    "source": "PZO1110"
+  },
+  "sword-cane": {
+    "special": "see text",
+    "source": "PZO1115"
+  },
+  "terbutje": {
+    "source": "PPZO9410"
+  },
+  "terbutje-steel": {
+    "source": "PPZO9410",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Terbutje,%20steel"
+  },
+  "trident": {
+    "source": "PZO1110"
+  },
+  "warhammer": {
+    "source": "PZO1110"
+  },
+  "bardiche": {
+    "special": "brace , reach , see text",
+    "source": "PZO1115"
+  },
+  "bec-de-corbin": {
+    "special": "brace , reach , see text",
+    "source": "PZO1115"
+  },
+  "bill": {
+    "special": "brace , disarm , reach , see text",
+    "source": "PZO1115"
+  },
+  "earth-breaker": {
+    "source": "PZO9226-Revised"
+  },
+  "falchion": {
+    "critical": "18–20/x2",
+    "source": "PZO1110"
+  },
+  "flail-heavy": {
+    "special": "disarm , trip",
+    "source": "PZO1110"
+  },
+  "glaive": {
+    "source": "PZO1110"
+  },
+  "glaive-guisarme": {
+    "special": "brace , reach , see text",
+    "source": "PZO1115"
+  },
+  "greataxe": {
+    "source": "PZO1110"
+  },
+  "greatclub": {
+    "source": "PZO1110"
+  },
+  "greatsword": {
+    "source": "PZO1110"
+  },
+  "guisarme": {
+    "special": "reach , trip",
+    "source": "PZO1110"
+  },
+  "halberd": {
+    "special": "brace , trip",
+    "source": "PZO1110"
+  },
+  "hammer-lucerne": {
+    "special": "brace , reach , see text",
+    "source": "PZO1115"
+  },
+  "horsechopper": {
+    "special": "reach , trip",
+    "source": "PZO1121"
+  },
+  "lance": {
+    "source": "PZO1110"
+  },
+  "ogre-hook": {
+    "source": "PZO9226-Revised"
+  },
+  "pickaxe": {
+    "source": "PAP14"
+  },
+  "planson": {
+    "source": "PZO9468"
+  },
+  "ranseur": {
+    "special": "disarm , reach",
+    "source": "PZO1110"
+  },
+  "scythe": {
+    "source": "PZO1110"
+  },
+  "spear-syringe": {
+    "special": "brace , see text",
+    "source": "PPZO9410"
+  },
+  "ammentum": {
+    "source": "PZO1118"
+  },
+  "chakram": {
+    "source": "PZO1115"
+  },
+  "dart-jolting": {
+    "source": "PZO1121"
+  },
+  "hunga-munga": {
+    "source": "PPZO9410"
+  },
+  "hurlbat": {
+    "source": "PPC:RTT"
+  },
+  "longbow": {
+    "source": "PZO1110"
+  },
+  "longbow-composite-plus-0": {
+    "special": "Strength (-)",
+    "source": "PZO1110"
+  },
+  "longbow-composite-plus-1": {
+    "special": "Strength (12)",
+    "source": "PZO1110"
+  },
+  "longbow-composite-plus-2": {
+    "special": "Strength (14)",
+    "source": "PZO1110"
+  },
+  "longbow-composite-plus-3": {
+    "special": "Strength (16)",
+    "source": "PZO1110"
+  },
+  "longbow-composite-plus-4": {
+    "special": "Strength (18)",
+    "source": "PZO1110"
+  },
+  "longbow-composite-plus-5": {
+    "special": "Strength (20)",
+    "source": "PZO1110"
+  },
+  "pilum": {
+    "source": "PZO1115"
+  },
+  "shortbow": {
+    "source": "PZO1110"
+  },
+  "shortbow-composite": {
+    "source": "PZO1110"
+  },
+  "spear-sling": {
+    "source": "PPC:RTT"
+  },
+  "throwing-arrow-cord": {
+    "source": "PPC:RTT"
+  },
+  "arrows": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "P",
+    "special": "—",
+    "source": "PZO1110",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Arrows%20(20)"
+  },
+  "arrows-bolts-barbed-20": {
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "P",
+    "special": "grapple",
+    "source": "PPC:RTT",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Barbed%20arrow%20(20)"
+  },
+  "arrow-bleeding-1": {
+    "cost": 36000,
+    "cost_text": "360 gp",
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrows-blunt-20": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "B",
+    "special": "see text",
+    "source": "PZO1115",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Blunt%20arrows%20(20)"
+  },
+  "arrow-distance-iron-tipped-20": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PRG:UC",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Arrow,%20iron-tipped%20distance%20(20)"
+  },
+  "arrow-durable-1": {
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrow-dye-1": {
+    "weight": 4.0,
+    "weight_text": "4 lbs.",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "—",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrows-flight-20": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "see text",
+    "damage_type": "P",
+    "special": "see text",
+    "source": "PZO1115",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Flight%20arrows%20(20)"
+  },
+  "arrows-bolts-incendiary-20": {
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:RTT",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Incendiary%20arrow%20(20)"
+  },
+  "arrow-lodestone-1": {
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrow-pheromone-1": {
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrows-bolts-pronged-20": {
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:RTT",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Pronged%20arrow%20(20)"
+  },
+  "arrow-raining-1": {
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrow-slow-burn-1": {
+    "cost": 15000,
+    "cost_text": "150 gp",
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrow-smoke-1": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "P",
+    "special": "see text",
+    "source": "PZO1115"
+  },
+  "arrow-splintercloud-1": {
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrow-tanglefoot-1": {
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrow-thistle-1": {
+    "weight": 0.15,
+    "weight_text": "0.15 lbs",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "P",
+    "special": "see text",
+    "source": "PPZO9410"
+  },
+  "arrow-throwing-1": {
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:RTT"
+  },
+  "arrow-trip-1": {
+    "cost": 2500,
+    "cost_text": "25 gp",
+    "weight": null,
+    "weight_text": "see text",
+    "small_damage": "see text",
+    "damage": "see text",
+    "critical": "see text",
+    "range": "see text",
+    "damage_type": "see text",
+    "special": "see text",
+    "source": "PPC:Elves"
+  },
+  "arrows-whistling-20": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PZO1118",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Whistling%20arrows%20(20)"
+  },
+  "aklys": {
+    "special": "performance , trip",
+    "source": "PZO1118"
+  },
+  "axe-gauntlet-dwarven-light": {
+    "special": "blocking , disarm",
+    "source": "PPC:HftF",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Axe-gauntlet,%20dwarven%20light"
+  },
+  "axe-knuckle": {
+    "special": "monk , performance",
+    "source": "PZO1118"
+  },
+  "barbazu-beard": {
+    "weight_text": "5 lbs",
+    "special": "see text",
+    "source": "PPC:Devils"
+  },
+  "battle-poi": {
+    "small_damage": "1d3 (fire)",
+    "damage": "1d4 (fire)",
+    "source": "PPZO9410"
+  },
+  "dagger-swordbreaker": {
+    "special": "disarm , sunder",
+    "source": "PZO1115"
+  },
+  "flying-talon": {
+    "range": "10 ft.",
+    "damage_type": "P",
+    "special": "disarm , trip",
+    "source": "PPZO94102"
+  },
+  "gnome-pincher": {
+    "special": "disarm , see text",
+    "source": "PZO9468"
+  },
+  "halfling-rope-shot": {
+    "source": "PZO9468"
+  },
+  "helmet-dwarven-boulder": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Helmet,%20dwarven%20boulder"
+  },
+  "kama": {
+    "special": "monk , trip",
+    "source": "PZO1110"
+  },
+  "knife-butterfly": {
+    "source": "PPZO9410"
+  },
+  "knife-deer-horn": {
+    "special": "blocking , monk",
+    "source": "PZO9468"
+  },
+  "maulaxe-dwarven": {
+    "source": "PPZO9410"
+  },
+  "nunchaku": {
+    "special": "disarm , monk",
+    "source": "PZO1110"
+  },
+  "quadrens": {
+    "source": "PZO1118"
+  },
+  "razor-drow": {
+    "critical": "18–20/×2",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Razor,%20drow"
+  },
+  "rope-gauntlet": {
+    "source": "PPZO9410"
+  },
+  "sabre-sawtooth-aa1": {
+    "weight_text": "2 lbs.",
+    "source": "PPZO9410"
+  },
+  "sai": {
+    "special": "disarm , monk",
+    "source": "PZO1110"
+  },
+  "sanpkhang": {
+    "critical": "19–20/×2",
+    "special": "monk , see text",
+    "source": "PPZO94102"
+  },
+  "siangham": {
+    "source": "PZO1110"
+  },
+  "sica": {
+    "source": "PZO1118"
+  },
+  "thorn-bracer": {
+    "source": "PCS"
+  },
+  "war-shield-dwarven": {
+    "critical": "×2",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=War-shield,%20dwarven"
+  },
+  "waveblade": {
+    "critical": "18–20/×2",
+    "special": "monk , see text",
+    "source": "PPZO94102"
+  },
+  "whip-scorpion": {
+    "special": "disarm , performance , reach , trip",
+    "source": "PZO1118"
+  },
+  "axe-gauntlet-dwarven-heavy": {
+    "special": "blocking , disarm",
+    "source": "PPC:HftF",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Axe-gauntlet,%20dwarven%20heavy"
+  },
+  "axe-hooked": {
+    "special": "disarm , performance , trip",
+    "source": "PZO1118"
+  },
+  "broken-back-seax": {
+    "weight_text": "4 lbs.",
+    "critical": "19–20/×2",
+    "special": "see text",
+    "source": "PPC:MAH"
+  },
+  "estoc": {
+    "critical": "18–20/x2",
+    "source": "PZO9468"
+  },
+  "falcata": {
+    "source": "PZO1115"
+  },
+  "flickmace": {
+    "weight_text": "10 lb",
+    "special": "reach , trip",
+    "source": "PC:GoG"
+  },
+  "flindbar": {
+    "special": "disarm , trip",
+    "source": "MC"
+  },
+  "khopesh": {
+    "source": "PZO1115"
+  },
+  "knobkerrie": {
+    "source": "PPC:RTT"
+  },
+  "ram-hammer-dwarven": {
+    "source": "PPC:HftF",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Ram%20hammer,%20dwarven"
+  },
+  "rapier-spiral": {
+    "critical": "18–20/×2",
+    "special": "blocking , disarm , see text",
+    "source": "PPZO94102"
+  },
+  "rhoka": {
+    "cost": 500,
+    "cost_text": "5 gp",
+    "source": "PPZO9410"
+  },
+  "sabre-sawtooth-ag": {
+    "weight_text": "2 lbs.",
+    "source": "PZO9226-Revised"
+  },
+  "shotel": {
+    "source": "PZO1118"
+  },
+  "sickle-sword": {
+    "critical": "19–20/×2",
+    "special": "distracting , see text",
+    "source": "PPZO94102"
+  },
+  "split-blade-sword": {
+    "weight_text": "8 lbs.",
+    "critical": "×2",
+    "special": "disarm , trip , see text",
+    "source": "PPC:MAH"
+  },
+  "sword-dueling": {
+    "weight_text": "3 lbs",
+    "source": "PZO9226-Revised"
+  },
+  "sword-bastard": {
+    "source": "PZO1110"
+  },
+  "tongi": {
+    "source": "PZO9468"
+  },
+  "waraxe-dwarven": {
+    "source": "PZO1110"
+  },
+  "waraxe-dwarven-double": {
+    "source": "PZO1121"
+  },
+  "whip": {
+    "special": "disarm , nonlethal , reach , trip",
+    "source": "PZO1110"
+  },
+  "axe-orc-double": {
+    "source": "PZO1110"
+  },
+  "axe-butchering": {
+    "critical": "×3",
+    "source": "PPZO94102"
+  },
+  "battle-ladder-gnome": {
+    "special": "trip",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Battle%20ladder,%20gnome"
+  },
+  "boarding-gaff": {
+    "damage_type": "S",
+    "special": "double , reach , trip",
+    "source": "PPZO94102"
+  },
+  "chain-hammer": {
+    "cost": 3500,
+    "cost_text": "35 gp",
+    "critical": "×2",
+    "special": "double , see text",
+    "source": "PPZO94102"
+  },
+  "chain-spiked": {
+    "special": "disarm , trip",
+    "source": "PZO1110"
+  },
+  "crook": {
+    "special": "reach , trip",
+    "source": "PZO9468"
+  },
+  "curve-blade-elven": {
+    "critical": "18–20/x2",
+    "source": "PZO1110"
+  },
+  "dorn-dergar-dwarven": {
+    "special": "reach , see text",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Dorn-dergar,%20dwarven"
+  },
+  "double-spear": {
+    "critical": "×3",
+    "special": "double",
+    "source": "PPC:MAH"
+  },
+  "elven-branched-spear": {
+    "special": "brace , reach",
+    "source": "PZO9468"
+  },
+  "fauchard": {
+    "special": "reach , trip",
+    "source": "PPZO94102"
+  },
+  "flail-dire": {
+    "special": "disarm , double , trip",
+    "source": "PZO1110"
+  },
+  "flailpole": {
+    "special": "disarm , reach , trip",
+    "source": "PC:GoG"
+  },
+  "flambard": {
+    "source": "PPZO9410"
+  },
+  "flying-blade": {
+    "special": "performance , reach",
+    "source": "PZO1118"
+  },
+  "garrote": {
+    "special": "grapple , see text",
+    "source": "PPZO9410"
+  },
+  "giant-sticker-dwarven": {
+    "source": "PPC:HftF",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Giant-sticker,%20dwarven"
+  },
+  "hammer-gnome-hooked": {
+    "special": "double , trip",
+    "source": "PZO1110"
+  },
+  "harpoon": {
+    "special": "grapple",
+    "source": "PPC:Pirates"
+  },
+  "longaxe-dwarven": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Longaxe,%20dwarven"
+  },
+  "longhammer-dwarven": {
+    "source": "PZO1121",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Longhammer,%20dwarven"
+  },
+  "mancatcher": {
+    "critical": "x2",
+    "special": "grapple , reach , see text",
+    "source": "PZO1115"
+  },
+  "orc-skull-ram": {
+    "source": "PZO9468"
+  },
+  "piston-maul-gnome": {
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Piston%20maul,%20gnome"
+  },
+  "ripsaw-glaive-gnome": {
+    "special": "reach , see text",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Ripsaw%20glaive,%20gnome"
+  },
+  "scarf-bladed": {
+    "special": "disarm , trip",
+    "source": "PZO9226-Revised"
+  },
+  "spear-totem": {
+    "damage_type": "P or S",
+    "special": "see text",
+    "source": "PZO1110"
+  },
+  "sphinx-hammer-dwarven": {
+    "source": "PPC:HftF",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Sphinx%20hammer,%20dwarven"
+  },
+  "switchscythe": {
+    "critical": "×4",
+    "source": "PPZO94102"
+  },
+  "sword-two-bladed": {
+    "source": "PZO1110"
+  },
+  "urgrosh-dwarven": {
+    "special": "brace , double",
+    "source": "PZO1110"
+  },
+  "darts-featherweight-10": {
+    "cost_text": "1 gp",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PZO1134"
+  },
+  "bola": {
+    "special": "nonlethal , trip",
+    "source": "PZO1110"
+  },
+  "bola-brutal": {
+    "source": "PZO9226-Revised"
+  },
+  "boomerang": {
+    "special": "—",
+    "source": "PZO1115"
+  },
+  "bow-thorn": {
+    "source": "PPZO9410"
+  },
+  "crossbow-crank-heavy": {
+    "source": "PPC:RTT"
+  },
+  "crossbow-crank-light": {
+    "source": "PPC:RTT"
+  },
+  "crossbow-double": {
+    "special": "—",
+    "source": "PZO1115"
+  },
+  "crossbow-hand": {
+    "source": "PZO1110"
+  },
+  "crossbow-launching": {
+    "special": "see text",
+    "source": "PPZO9410"
+  },
+  "crossbow-repeating-heavy": {
+    "source": "PZO1110"
+  },
+  "crossbow-repeating-light": {
+    "source": "PZO1110"
+  },
+  "flask-thrower": {
+    "source": "PPZO94102"
+  },
+  "grappling-hook": {
+    "source": "PPC:Pirates"
+  },
+  "hornbow-orc": {
+    "critical": "×3",
+    "source": "PPZO94102",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Hornbow,%20orc"
+  },
+  "javelin-stormshaft": {
+    "critical": "×2",
+    "source": "PPZO94102"
+  },
+  "lasso": {
+    "source": "PZO1115"
+  },
+  "net": {
+    "special": "—",
+    "source": "PZO1110"
+  },
+  "net-snag": {
+    "small_damage": "see text",
+    "damage": "see text",
+    "special": "trip , see text",
+    "source": "PZO1121"
+  },
+  "pelletbow-dwarven-heavy": {
+    "source": "PPC:HftF",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Pelletbow,%20dwarven%20heavy"
+  },
+  "pelletbow-dwarven-light": {
+    "source": "PPC:HftF",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Pelletbow,%20dwarven%20light"
+  },
+  "shield-throwing": {
+    "special": "performance , trip",
+    "source": "PZO1118"
+  },
+  "shrillshaft-javelin": {
+    "source": "PPC:Goblins"
+  },
+  "shuriken-5": {
+    "weight_text": "1/2 lbs.",
+    "source": "CRB",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Shuriken%20(5)"
+  },
+  "sling-double": {
+    "special": "double , see text",
+    "source": "PPC:Halflings"
+  },
+  "sling-glove": {
+    "source": "PPZO9410"
+  },
+  "sling-staff-halfling": {
+    "source": "PZO1110"
+  },
+  "sling-stitched": {
+    "special": "disarm , trip",
+    "source": "PPC:Halflings"
+  },
+  "wrist-launcher": {
+    "source": "PZO1134"
+  },
+  "wrist-launcher-heavy": {
+    "critical": "19–20/x2",
+    "source": "PZO1134"
+  },
+  "crossbow-bolt-s-heavy-light-hand-10": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PZO1110",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Crossbow%20bolts%20(10)"
+  },
+  "crossbow-bolt-s-repeating-heavy-light-5": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "PZO1110",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Repeating%20crossbow%20bolts%20(5)"
+  },
+  "little-starstones-10": {
+    "small_damage": "1",
+    "damage": "1",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "B",
+    "special": "nonlethal",
+    "source": "PPC:Halflings",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Halfling%20little%20starstones%20(10)"
+  },
+  "sharpstones-10": {
+    "small_damage": "1d3",
+    "damage": "1d4",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "P or S",
+    "special": "—",
+    "source": "PPC:Halflings",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Halfling%20sharpstones%20(10)"
+  },
+  "softstones-10": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "B",
+    "special": "nonlethal",
+    "source": "PPC:Halflings",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Halfling%20softstones%20(10)"
+  },
+  "spongestones-10": {
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "P",
+    "special": "—",
+    "source": "PPC:Halflings",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Halfling%20spongestones%20(10)"
+  },
+  "thorn-20": {
+    "weight": 1.0,
+    "weight_text": "1 lb.",
+    "small_damage": "—",
+    "damage": "—",
+    "critical": "—",
+    "range": "—",
+    "damage_type": "—",
+    "special": "—",
+    "source": "ModuleW1",
+    "url": "https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Thorns%20(20)"
+  }
+}

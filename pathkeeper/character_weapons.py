@@ -14,7 +14,7 @@ from .database import commit, get_db
 from .models import Campaign, Character, RuleCatalog, User
 from .rule_catalog import character_catalog, effect_total, load_catalog, equipment
 from .armor import armor_fields, purchasable, table_armor
-from .weapons import table_weapons
+from .weapons import WEAPON_GROUPS, table_weapons
 from .equipment_index import sheet_equipment
 from .gear_backpack import GEAR_SLOTS, available_slot
 from .security import audit, context, digest, get_character, integer, read_form
@@ -54,9 +54,9 @@ def inventory(character, values, catalog):
         agreed=snapshot.get('input',{}).get('equipment_prices',{}).get(key)
         entries.append({'id':key,'row':row,'quantity':quantity,'item':item,'agreed_unit_price':agreed,
                         'fields':{part:values.get(f'weapon.{row}.{part}','') for part in PARTS if part!='quantity'}})
-    # Ammunition recorded by the wizard is carried in the gear table.
+    # Weapon accessories recorded by the wizard are carried in the gear table.
     for key,item in ({} if (character.play_data or {}).get('backpack_gear_version') else sources).items():
-        if (item.get('category') in {'ammunition','extra'}) and not any(entry.get('id')==key for entry in entries):
+        if purchasable(item) and item.get('kind') == 'gear' and not any(entry.get('id')==key for entry in entries):
             entries.append({'id':key,'row':None,'quantity':item['quantity'],'item':deepcopy(item),'agreed_unit_price':snapshot.get('input',{}).get('equipment_prices',{}).get(key)})
     armors=catalog.get('armor',{})
     armor_names={name.casefold():key for key,item in armors.items() for name in [item['name'],*item.get('aliases',[])]}
@@ -82,12 +82,13 @@ def inventory(character, values, catalog):
     return entries
 
 
-def apply_inventory(character, values):
+def apply_inventory(character, values, progression_catalog=None):
     """Refresh managed weapon statistics while preserving editable row notes."""
     from .sheet_calculations import SIZE_MODIFIERS
     from .class_catalog import class_key
     from .trait_rules import fighter_weapon_bonus, trained_weapon_groups
     catalog=character_catalog(character)
+    live_weapons = progression_catalog['weapons'] if progression_catalog is not None else table_weapons()
     snapshot=character.sheet_data or {}
     class_id = class_key(character, catalog)
     level = int(values.get('level') or getattr(character, 'level', 1))
@@ -117,7 +118,11 @@ def apply_inventory(character, values):
         stats = {**table_weapons().get(entry.get('id'), {}), **entry['item']}
         damage_dice = [stats.get('small_damage'), stats.get('damage')]
         values[prefix+'base_damage'] = ' / '.join(dice or '—' for dice in damage_dice) if any(damage_dice) else ''
-        values[prefix+'proficiency'] = stats.get('group', '').capitalize()
+        classification = live_weapons.get(entry.get('id'), stats)
+        values[prefix+'proficiency'] = ' / '.join(
+            WEAPON_GROUPS.get(group, group.capitalize())
+            for group in classification.get('proficiencies', [classification.get('group', '')])
+        )
         weight = stats.get('weight')
         scale = .5 if str(values.get('size', '')).casefold() == 'small' else 1
         values[prefix+'weight'] = f'{weight * scale:g} lb.' if weight is not None else stats.get('weight_text', '')

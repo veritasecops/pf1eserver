@@ -10,7 +10,7 @@ from pathkeeper.database import engine
 from pathkeeper.deluxe_sheet import baseline
 from pathkeeper.models import Character, RuleCatalog, SchemaMigration, User
 from pathkeeper.rule_catalog import default_catalog
-from pathkeeper.weapons import table_weapons, merge_weapon_tables, safe_weapon_url
+from pathkeeper.weapons import WEAPON_CATEGORIES, WEAPON_GROUPS, refresh_weapon_catalog, table_weapons, safe_weapon_url
 from .test_character_wizard import fighter, start, save, finish
 from .test_deluxe_sheet import SheetForm
 from .test_workspace import seed_character
@@ -26,9 +26,9 @@ def weapon_form(key='longsword',version=1,**changes):
 
 def test_import_contains_all_requested_tables_and_exact_reference_values():
     weapons=table_weapons()
-    assert len(weapons)==279
-    assert sum(w['kind']=='weapon' for w in weapons.values())==243
-    assert {group:sum(w['group']==group for w in weapons.values()) for group in ('simple','martial','exotic')}=={'simple':50,'martial':111,'exotic':118}
+    assert len(weapons)==486
+    assert {group for weapon in weapons.values() for group in weapon['proficiencies']} == WEAPON_GROUPS.keys()
+    assert {weapon['category'] for weapon in weapons.values()} == WEAPON_CATEGORIES.keys()
     assert all(safe_weapon_url(w['url'])==w['url'] for w in weapons.values())
     assert weapons['longsword']['critical']=='19-20/x2'
     assert weapons['quarterstaff']['damage']=='1d6/1d6'
@@ -39,8 +39,26 @@ def test_import_contains_all_requested_tables_and_exact_reference_values():
     assert weapons['longbow-composite-plus-3']['strength_rating']==3
     assert weapons['dagger']['url']=='https://www.aonprd.com/EquipmentWeaponsDisplay.aspx?ItemName=Dagger'
     assert 'arrows' in weapons and 'bolts' in weapons and weapons['arrows']['kind']=='gear'
-    for key in weapons:
-        assert 'firearm' not in key and 'musket' not in key and 'pistol' not in key
+    assert weapons['gauntlet']['category'] == 'light'
+    assert weapons['arrows']['group'] == 'ammunition'
+    pistol = weapons['pistol']
+    assert (pistol['group'], pistol['category'], pistol['detail_proficiency']) == ('firearms', 'one-handed', 'Exotic')
+    assert pistol['detail_stats']['Misfire'] == '1 (5 ft.)'
+    assert pistol['detail_stats']['Capacity'] == '1'
+    assert weapons['ballista-light']['category'] == 'direct-fire-large'
+    assert weapons['brutally-weighted']['kind'] == 'gear'
+    assert weapons['katar-tri-bladed']['proficiencies'] == ['martial', 'exotic']
+
+
+def test_refresh_corrects_classification_and_keeps_local_overrides():
+    gauntlet = {**table_weapons()['gauntlet'], 'category': 'unarmed', 'cost': 900,
+                'enabled': False, 'notes': 'House rule', 'aliases': ['Old gauntlet']}
+    refreshed = refresh_weapon_catalog({'gauntlet': gauntlet, 'custom-sabre': {'name': 'Custom sabre'}})
+    assert refreshed['gauntlet']['category'] == 'light'
+    for field in ('cost', 'enabled', 'notes', 'aliases'):
+        assert refreshed['gauntlet'][field] == gauntlet[field]
+    assert refreshed['custom-sabre'] == {'name': 'Custom sabre'}
+    assert refreshed['pistol']['group'] == 'firearms'
 
 
 @pytest.mark.parametrize('url',['javascript:alert(1)','data:text/html,test','//evil.example/x','https://user:password@example.com','https://example.com/\nx','https://example.com:bad/x'])
@@ -62,6 +80,12 @@ def test_every_imported_weapon_survives_validation_and_calculation():
 def test_weapon_admin_round_trip_all_aspects_and_safe_links(env):
     admin=env.login(env.admin)
     assert admin.get('/administration/catalog?kind=weapons').status_code==200
+    for url in ('/administration/catalog?kind=weapons&group=firearms&category=one-handed',
+                '/administration/equipment?equipment_group=Weapons&group=firearms&equipment_category=One-Handed'):
+        filtered = admin.get(url)
+        assert filtered.status_code == 200
+        assert 'aria-label="Edit Pistol"' in filtered.text and 'aria-label="Edit Dagger"' not in filtered.text
+        assert 'Misfire 1 (5 ft.)' in filtered.text
     form=weapon_form(damage='1d8/1d6',small_damage='1d6/1d4',critical='19–20/×3',range='15 ft.',
                      damage_type='B or P',special='trip, reach',source='House rules',cost='3200',cost_text='32 gp',
                      weight='6.5',weight_text='6.5 lbs.',category='two-handed',two_handed='on',notes='Custom rules',
@@ -80,7 +104,7 @@ def test_weapon_admin_round_trip_all_aspects_and_safe_links(env):
     assert env.post(admin,'/administration/catalog/weapons',weapon_form(version=2,group='firearm')).status_code==422
     # Double damage, flat damage, non-damaging attacks and variable prices all round-trip.
     version=2
-    for key in ('quarterstaff','blowgun','net','shield-light','arrows'):
+    for key in ('quarterstaff','blowgun','net','shield-light','arrows','brutally-weighted','ballista-light'):
         assert env.post(admin,'/administration/catalog/weapons',weapon_form(key,version=version)).status_code==303
         version+=1
 
@@ -142,11 +166,12 @@ def test_migration_enriches_catalog_without_rewriting_characters_or_admin_overri
     migrate(isolated_database)
     with Session(engine()) as db:
         record=db.get(RuleCatalog,1)
-        assert len(record.data['weapons'])==280
+        assert len(record.data['weapons'])==len(table_weapons())+1
         assert record.data['weapons']['longsword']['cost']==1900
         assert not record.data['weapons']['longsword']['enabled']
         assert record.data['weapons']['longsword']['critical']=='19-20/x2'
         assert db.get(SchemaMigration,10)
+        assert db.get(SchemaMigration,23)
         character=db.get(Character,character.id)
         assert character.sheet_data==snapshot and character.version==version
     page=env.login(env.player).get(f'/characters/{character.id}')

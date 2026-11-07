@@ -181,8 +181,10 @@ def test_special_materials_and_miscellaneous_share_the_equipment_cart(env):
     state = client.get(path).json()
     catalog = state['equipment']
     categories = state['equipment_categories']
-    assert 'Martial' in categories['Weapons'] and 'Heavy' in categories['Armor']
-    assert 'Martial' in catalog['longsword']['categories']
+    assert 'One-Handed' in categories['Weapons'] and 'Heavy' in categories['Armor']
+    assert state['equipment']['pistol']['proficiencies'] == ['firearms']
+    assert catalog['longsword']['proficiencies'] == ['martial']
+    assert catalog['longsword']['categories'] == ['One-Handed']
     assert 'Light' in catalog['leather']['categories']
     material = 'special-materials-adamantine'
     abacus = 'miscellaneous-abacus'

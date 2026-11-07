@@ -4,7 +4,7 @@ from functools import lru_cache
 import json
 from pathlib import Path
 
-from .weapons import safe_weapon_url
+from .weapons import WEAPON_GEAR_CATEGORIES, safe_weapon_url
 
 ARMOR_CATEGORIES={'light':'Light armor','medium':'Medium armor','heavy':'Heavy armor','shield':'Shields','extra':'Armor extras'}
 
@@ -19,7 +19,7 @@ def merge_armor_tables(existing):
 
 
 def purchasable(item):
-    return item.get('kind') in {'weapon','armor','shield'} or item.get('category') in {'ammunition','extra'}
+    return item.get('kind') in {'weapon','armor','shield'} or item.get('category') in WEAPON_GEAR_CATEGORIES | {'extra'}
 
 
 def armor_fields(item,quantity,size):
