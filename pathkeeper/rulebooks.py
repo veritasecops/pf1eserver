@@ -236,14 +236,16 @@ def visible_book(request, db, key):
 async def reindex(key: str, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     actor = administrator(ctx)
-    form = await read_form(ctx, max_fields=2)
+    form = await read_form(ctx, max_fields=3)
+    reader_return_page = integer(form, "reader_page", 1, 2**31 - 1) if "reader_page" in form else None
     book = get_book(db, key, lock=True)
     job = db.get(RulebookIndex, key, with_for_update=True)
     if job and job.status == "indexing":
         raise HTTPException(409, "This rulebook is being indexed. Wait for it to finish before reindexing.")
     enqueue(db, book.id, force_ocr=form.get("force_ocr") == "on")
     audit(db, actor, "rulebook.reindex_queued", f"Queued rulebook {key} for indexing.")
-    return redirect(ctx, "/rulebooks/upload", "Rulebook indexing queued.")
+    destination = f"/rulebooks/{book.id}/read?page={reader_return_page}" if reader_return_page else "/rulebooks/upload"
+    return redirect(ctx, destination, "Rulebook indexing queued.")
 
 
 @router.get("/{key}/delete")

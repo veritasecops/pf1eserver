@@ -1,0 +1,6 @@
+<form method="post" action="/rulebooks/{{ book.id }}/reindex" class="row">
+  {{ csrf_input(csrf) }}
+  {% if reader_return_page is defined %}<input type="hidden" name="reader_page" value="{{ reader_return_page }}">{% endif %}
+  <label class="checkbox"><input type="checkbox" name="force_ocr"> OCR every page</label>
+  <button class="button" type="submit"{% if index and index.status == 'indexing' %} disabled{% endif %}>{{ 'Retry indexing' if index and index.status in ['failed', 'partial'] else 'Reindex' }}</button>
+</form>

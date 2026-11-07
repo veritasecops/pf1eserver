@@ -18,11 +18,7 @@
     {% set index = indexes.get(book.id) %}
     {% include 'rulebook_index_status.html' %}
     {% if index and index.error %}<p>{{ index.error }}</p>{% endif %}
-    <form method="post" action="/rulebooks/{{ book.id }}/reindex">
-      {{ csrf_input(csrf) }}
-      <label class="checkbox"><input type="checkbox" name="force_ocr"> OCR every page</label>
-      <button class="button" type="submit"{% if index and index.status == 'indexing' %} disabled{% endif %}>{{ 'Retry indexing' if index and index.status in ['failed', 'partial'] else 'Reindex' }}</button>
-    </form>
+    {% include 'rulebook_reindex_form.html' %}
     <form method="post" action="/rulebooks/{{ book.id }}/access">
       {{ csrf_input(csrf) }}
       <input type="hidden" name="previous_mask" value="{{ book.access_mask }}">

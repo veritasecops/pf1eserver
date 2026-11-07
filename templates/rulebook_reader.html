@@ -11,6 +11,10 @@
   <button class="button" type="submit">Search</button>
 </form>
 {% include 'rulebook_index_status.html' %}
+{% if user.role == 'admin' %}
+{% set reader_return_page = page %}
+{% include 'rulebook_reindex_form.html' %}
+{% endif %}
 <nav class="row rulebook-reader-controls" aria-label="Rulebook pages">
   {% if page > 1 %}<a class="button" rel="prev" href="?page={{ page - 1 }}">Previous</a>{% endif %}
   <form method="get" class="row">
