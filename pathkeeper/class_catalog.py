@@ -16,9 +16,10 @@ SPELL_SWAPS = {
 }
 
 def class_profile(catalog, key):
+    from .aon_sources import source_for
     base = CLASSES[key]
     progression = CLASS_PROGRESSIONS[key]
-    return {
+    result = {
         **base,
         "casting_ability": progression["caster"],
         "caster_delay": progression["caster_delay"],
@@ -28,6 +29,9 @@ def class_profile(catalog, key):
         "levels": progression["levels"],
         **catalog.get("classes", {}).get(key, {}),
     }
+    if 'source' not in result:
+        result['source'] = source_for(result.get('url', ''))
+    return result
 
 
 def creation_class(catalog, key):

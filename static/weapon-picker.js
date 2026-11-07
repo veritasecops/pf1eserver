@@ -28,7 +28,6 @@
       ['Detail proficiency', item.detail_proficiency && item.detail_proficiency !== proficiencies[item.group] ? item.detail_proficiency : ''],
       ['Weapon groups', item.weapon_groups?.join('; ')],
       ...Object.entries(item.detail_stats || {}),
-      ['Source', item.source],
     ].filter(([, value]) => value && value !== '—')
       .map(([label, value]) => `${label} ${value}`).join(' · ');
   }

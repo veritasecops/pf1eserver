@@ -11,7 +11,8 @@
       "Tian Xia",
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 12"
   },
   "achaekek": {
     "name": "Achaekek",
@@ -21,7 +22,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 5"
   },
   "adanye": {
     "name": "Adanye",
@@ -45,7 +47,8 @@
     "regions": [
       "Arcadia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #143: Borne by the Sun's Grace pg. 72"
   },
   "alseta": {
     "name": "Alseta",
@@ -55,7 +58,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 11"
   },
   "angazhan": {
     "name": "Angazhan",
@@ -67,7 +71,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 320"
   },
   "anubis": {
     "name": "Anubis",
@@ -79,7 +84,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "apep": {
     "name": "Apep",
@@ -91,7 +97,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "arazni": {
     "name": "Arazni",
@@ -102,7 +109,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 316"
   },
   "aroden": {
     "name": "Aroden",
@@ -112,7 +120,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #100: A Song of Silver pg. 70"
   },
   "arundhat": {
     "name": "Arundhat",
@@ -136,7 +145,8 @@
     "regions": [
       "Vudra"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Distant Shores pg. 42"
   },
   "asmodeus": {
     "name": "Asmodeus",
@@ -146,7 +156,8 @@
       "In the Inner Sea Region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 20"
   },
   "atheism": {
     "name": "Atheism",
@@ -192,7 +203,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "bes": {
     "name": "Bes",
@@ -204,7 +216,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "besmara": {
     "name": "Besmara",
@@ -214,7 +227,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 23"
   },
   "brigh": {
     "name": "Brigh",
@@ -224,7 +238,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 29"
   },
   "calistria": {
     "name": "Calistria",
@@ -237,7 +252,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 28"
   },
   "camazotz": {
     "name": "Camazotz",
@@ -249,7 +265,8 @@
     "regions": [
       "Arcadia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 316"
   },
   "casandalee": {
     "name": "Casandalee",
@@ -270,7 +287,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 36"
   },
   "chaldira-zuzaristan": {
     "name": "Chaldira Zuzaristan",
@@ -280,7 +298,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 324"
   },
   "chamidu": {
     "name": "Chamidu",
@@ -340,7 +359,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "desna": {
     "name": "Desna",
@@ -354,7 +374,8 @@
       "Thassilon",
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 44"
   },
   "dhalavei": {
     "name": "Dhalavei",
@@ -366,7 +387,8 @@
     "regions": [
       "Vudra"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Cult of the Ebon Destroyers pg. 6"
   },
   "dhavala": {
     "name": "Dhavala",
@@ -436,7 +458,8 @@
       "In the Inner Sea Region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 52"
   },
   "fumeiyoshi": {
     "name": "Fumeiyoshi",
@@ -448,7 +471,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "gaelata": {
     "name": "Gaelata",
@@ -472,7 +496,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "genzaeri": {
     "name": "Genzaeri",
@@ -494,7 +519,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 41"
   },
   "gozreh": {
     "name": "Gozreh",
@@ -507,7 +533,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 68"
   },
   "grandmother-spider": {
     "name": "Grandmother Spider",
@@ -519,7 +546,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Faiths of Golarion pg. 11"
   },
   "grask-uldeth": {
     "name": "Grask Uldeth",
@@ -539,7 +567,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 47"
   },
   "gruhastha": {
     "name": "Gruhastha",
@@ -552,7 +581,8 @@
     "regions": [
       "Vudra"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Faiths of Golarion pg. 17"
   },
   "hanspur": {
     "name": "Hanspur",
@@ -563,7 +593,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 59"
   },
   "hathor": {
     "name": "Hathor",
@@ -575,7 +606,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "hei-feng": {
     "name": "Hei Feng",
@@ -587,7 +619,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "horus": {
     "name": "Horus",
@@ -599,7 +632,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "iggeret": {
     "name": "Iggeret",
@@ -609,7 +643,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Book of the Damned pg. 132"
   },
   "iomedae": {
     "name": "Iomedae",
@@ -620,7 +655,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 76"
   },
   "irori": {
     "name": "Irori",
@@ -635,7 +671,8 @@
       "Tian Xia",
       "Vudra"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 84"
   },
   "isis": {
     "name": "Isis",
@@ -647,7 +684,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "izuyaku": {
     "name": "Izuyaku",
@@ -715,7 +753,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Book of the Damned pg. 130"
   },
   "kaikyton": {
     "name": "Kaikyton",
@@ -725,7 +764,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Book of the Damned pg. 120"
   },
   "kaldemash": {
     "name": "Kaldemash",
@@ -761,7 +801,8 @@
     "regions": [
       "Arcadia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Faiths of Golarion pg. 29"
   },
   "khepri": {
     "name": "Khepri",
@@ -773,7 +814,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "kitumu": {
     "name": "Kitumu",
@@ -785,7 +827,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 316"
   },
   "kofusachi": {
     "name": "Kofusachi",
@@ -797,7 +840,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "kurgess": {
     "name": "Kurgess",
@@ -807,7 +851,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 65"
   },
   "lady-jingxi": {
     "name": "Lady Jingxi",
@@ -831,7 +876,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "lady-of-the-north-star": {
     "name": "Lady of the North Star",
@@ -868,7 +914,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 92"
   },
   "lao-shu-po": {
     "name": "Lao Shu Po",
@@ -880,7 +927,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "lauta": {
     "name": "Lauta",
@@ -916,7 +964,8 @@
     "regions": [
       "Thassilon"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 316"
   },
   "lubaiko": {
     "name": "Lubaiko",
@@ -952,7 +1001,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "mahja-firehair": {
     "name": "Mahja Firehair",
@@ -974,7 +1024,8 @@
     "regions": [
       "Vudra"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Distant Shores pg. 43"
   },
   "mazludeh": {
     "name": "Mazludeh",
@@ -986,7 +1037,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Distant Shores pg. 23"
   },
   "milani": {
     "name": "Milani",
@@ -996,7 +1048,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 71"
   },
   "moorya": {
     "name": "Moorya",
@@ -1018,7 +1071,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Concordance of Rivals pg. 12"
   },
   "mugura-and-nrithu": {
     "name": "Mugura and Nrithu",
@@ -1043,7 +1097,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "neith": {
     "name": "Neith",
@@ -1055,7 +1110,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "nephthys": {
     "name": "Nephthys",
@@ -1067,7 +1123,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "nethys": {
     "name": "Nethys",
@@ -1078,7 +1135,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 100"
   },
   "nightripper": {
     "name": "Nightripper",
@@ -1088,7 +1146,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 328"
   },
   "nivi-rhombodazzle": {
     "name": "Nivi Rhombodazzle",
@@ -1099,7 +1158,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 184"
   },
   "nocticula": {
     "name": "Nocticula",
@@ -1109,7 +1169,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 320"
   },
   "norgorber": {
     "name": "Norgorber",
@@ -1123,7 +1184,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 108"
   },
   "obari": {
     "name": "Obari",
@@ -1147,7 +1209,8 @@
     "regions": [
       "Vudra"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Distant Shores pg. 43"
   },
   "osiris": {
     "name": "Osiris",
@@ -1159,7 +1222,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "paambudevi": {
     "name": "Paambudevi",
@@ -1209,7 +1273,8 @@
       "Thassilon",
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 116"
   },
   "phi-deva": {
     "name": "Phi Deva",
@@ -1233,7 +1298,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "purnallo": {
     "name": "Purnállo",
@@ -1269,7 +1335,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "quldari": {
     "name": "Quldari",
@@ -1293,7 +1360,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "ragdya": {
     "name": "Ragdya",
@@ -1339,7 +1407,8 @@
       "In the Inner Sea Region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 124"
   },
   "sardevi": {
     "name": "Sardevi",
@@ -1364,7 +1433,8 @@
     "regions": [
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 132"
   },
   "sekhmet": {
     "name": "Sekhmet",
@@ -1376,7 +1446,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "selket": {
     "name": "Selket",
@@ -1388,7 +1459,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "set": {
     "name": "Set",
@@ -1400,7 +1472,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "shelyn": {
     "name": "Shelyn",
@@ -1414,7 +1487,8 @@
       "Tian Xia",
       "Mwangi Expanse"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 140"
   },
   "shimye-magalla": {
     "name": "Shimye-Magalla",
@@ -1438,7 +1512,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "sivanah": {
     "name": "Sivanah",
@@ -1448,7 +1523,8 @@
       "Other deities of the Inner Sea region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 83"
   },
   "sobek": {
     "name": "Sobek",
@@ -1460,7 +1536,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "srikalis-sritaming-and-sribaril": {
     "name": "Srikalis, Sritaming, and Sribaril",
@@ -1484,7 +1561,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "surpa": {
     "name": "Surpa",
@@ -1494,7 +1572,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Book of the Damned pg. 130"
   },
   "suyuddha": {
     "name": "Suyuddha",
@@ -1518,7 +1597,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "three-sisters": {
     "name": "Three Sisters",
@@ -1576,7 +1656,8 @@
       "In the Inner Sea Region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 148"
   },
   "tsukiyo": {
     "name": "Tsukiyo",
@@ -1588,7 +1669,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "uirch": {
     "name": "Uirch",
@@ -1621,7 +1703,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 156"
   },
   "uvuko": {
     "name": "Uvuko",
@@ -1655,7 +1738,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Book of the Damned pg. 120"
   },
   "vibhishah": {
     "name": "Vibhishah",
@@ -1665,7 +1749,8 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Book of the Damned pg. 130"
   },
   "vineshvakhi": {
     "name": "Vineshvakhi",
@@ -1737,7 +1822,8 @@
     "regions": [
       "Osirion"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Pathfinder #80: Empty Graves pg. 65"
   },
   "walkena": {
     "name": "Walkena",
@@ -1781,7 +1867,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "yahuima": {
     "name": "Yahuima",
@@ -1805,7 +1892,8 @@
     "regions": [
       "Tian Xia"
     ],
-    "aliases": []
+    "aliases": [],
+    "source": "Dragon Empires Gazetteer pg. 58"
   },
   "zon-kuthon": {
     "name": "Zon-Kuthon",
@@ -1815,7 +1903,8 @@
       "In the Inner Sea Region"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Gods pg. 164"
   },
   "zyphus": {
     "name": "Zyphus",
@@ -1826,6 +1915,7 @@
       "Ascended deities"
     ],
     "regions": [],
-    "aliases": []
+    "aliases": [],
+    "source": "Inner Sea Faiths pg. 89"
   }
 }

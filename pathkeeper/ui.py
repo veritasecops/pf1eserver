@@ -4,6 +4,8 @@ from fastapi.responses import RedirectResponse
 from .config import ROOT
 from .database import commit
 from .security import ROLES, flash
+from .aon_sources import catalog_sources, source_note
+from .models import RuleCatalog
 
 templates = Jinja2Templates(directory=str(ROOT / "templates"))
 templates.env.globals.update(roles=ROLES)
@@ -17,8 +19,11 @@ def render(ctx, template, **values):
         ctx.session.flash = None
         commit(ctx.db)
     user = ctx.user if ctx.session.phase == "authenticated" else None
+    record = ctx.db.get(RuleCatalog, 1) if user else None
+    sources = catalog_sources(record.data) if record else {}
     return templates.TemplateResponse(request=ctx.request, name=template, context={
         "user": user, "csrf": ctx.session.csrf, "flash": message,
+        "source_note": lambda url: source_note(url, sources),
         "limited": bool(user and (user.must_change_password or (user.totp_required and not user.totp_enabled)
                                   or user.email_verification_required and not user.email_verified_at)),
         "path": ctx.request.url.path, "next_path": ctx.session.next_path, **values})

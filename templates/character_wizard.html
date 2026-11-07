@@ -13,7 +13,7 @@
         <form id="pw-form"><div id="pw-stage" class="pw-stage"></div></form>
         <footer class="pw-footer"><button class="button" type="button" id="pw-previous">{{ icon('back') }}Back</button><button class="text-button" type="button" id="pw-save-exit">Save & exit</button><button class="button primary" type="button" id="pw-next">Continue {{ icon('arrow') }}</button></footer>
       </section>
-      <div class="pw-source"><a href="{{ outline }}" target="_blank" rel="noopener noreferrer">Character creation outline {{ icon('book') }}</a><span>Core, base, and alternate class choices. Third-party class links are excluded.</span></div>
+      <div class="pw-source"><a href="{{ outline }}" target="_blank" rel="noopener noreferrer">Character creation outline {{ icon('book') }}</a>{{ source_note(outline) }}<span>Core, base, and alternate class choices. Third-party class links are excluded.</span></div>
       <details class="pw-discard"><summary>Discard this draft</summary><p>The unfinished sheet and its draft dice history will be removed. An existing saved character is preserved.</p><button class="button danger small" type="button" id="pw-discard">Discard draft</button></details>
     </div>
     <aside class="pw-aside">

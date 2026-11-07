@@ -5,7 +5,7 @@
 </label>
 {% elif key == 'class_name' and class_url and not hidden %}
 <div class="ds-field"><span>{{ meta.label }}</span>
-  <a class="ds-class-link" href="{{ class_url }}" target="_blank" rel="noopener noreferrer">{{ deluxe.get(key, '') }}</a>
+  <a class="ds-class-link" href="{{ class_url }}" target="_blank" rel="noopener noreferrer">{{ deluxe.get(key, '') }}</a>{{ source_note(class_url) }}
   {{ control(key, bare=true, hidden=true) }}
 </div>
 {% else %}
@@ -28,7 +28,7 @@
 {%- endmacro %}
 {% macro table(prefix,columns,count) -%}
 {% set short_headers = {'ammunition': 'Ammo', 'proficiency': 'Prof.'} if prefix == 'weapon' else {} %}
-<div class="ds-table-scroll" tabindex="0" role="region" aria-label="{{ prefix|capitalize }} entries"><table class="ds-table ds-{{ prefix }}"><thead><tr>{% for key,label in columns %}<th scope="col"{% if key == 'notes' and prefix in ['weapon','armor'] %} class="ds-inventory-notes"{% endif %}>{{ short_headers.get(key, label) }}</th>{% endfor %}{% if prefix in ['weapon','armor'] %}<th scope="col" class="ds-inventory-actions">Actions</th>{% endif %}</tr></thead><tbody>{% for row in range(count) %}<tr>{% for key,label in columns %}<td{% if key == 'notes' and prefix in ['weapon','armor'] %} class="ds-inventory-notes"{% endif %}>{% if prefix in ['weapon','armor'] and key=='name' %}{% set reference=(weapon_links if prefix=='weapon' else armor_links).get(row|string) %}{{ control(prefix ~ '.' ~ row ~ '.name',bare=true,hidden=reference is not none) }}<a class="ds-equipment-name" data-{{ prefix }}-reference="{{ row }}" {% if reference %}href="{{ reference.url }}"{% else %}hidden{% endif %} target="_blank" rel="noopener noreferrer">{{ reference.name if reference else '' }}</a>{% else %}{{ control(prefix ~ '.' ~ row ~ '.' ~ key,bare=true) }}{% endif %}</td>{% endfor %}{% if prefix in ['weapon','armor'] %}<td class="ds-inventory-actions"><div class="ds-item-actions">{% for action,symbol,label in [('remove','−','Remove'),('sell','$','Sell')] %}<button type="button" class="button ds-item-action" data-dispose-equipment="{{ action }}" data-kind="{{ prefix }}" data-row="{{ row }}" aria-label="{{ label }} {{ deluxe.get(prefix ~ '.' ~ row ~ '.name','') or prefix }}" title="{{ label }}"{% if not deluxe.get(prefix ~ '.' ~ row ~ '.name','') %} hidden{% endif %}>{{ symbol }}</button>{% endfor %}</div></td>{% endif %}</tr>{% endfor %}</tbody></table></div>
+<div class="ds-table-scroll" tabindex="0" role="region" aria-label="{{ prefix|capitalize }} entries"><table class="ds-table ds-{{ prefix }}"><thead><tr>{% for key,label in columns %}<th scope="col"{% if key == 'notes' and prefix in ['weapon','armor'] %} class="ds-inventory-notes"{% endif %}>{{ short_headers.get(key, label) }}</th>{% endfor %}{% if prefix in ['weapon','armor'] %}<th scope="col" class="ds-inventory-actions">Actions</th>{% endif %}</tr></thead><tbody>{% for row in range(count) %}<tr>{% for key,label in columns %}<td{% if key == 'notes' and prefix in ['weapon','armor'] %} class="ds-inventory-notes"{% endif %}>{% if prefix in ['weapon','armor'] and key=='name' %}{% set reference=(weapon_links if prefix=='weapon' else armor_links).get(row|string) %}{{ control(prefix ~ '.' ~ row ~ '.name',bare=true,hidden=reference is not none) }}<a class="ds-equipment-name" data-{{ prefix }}-reference="{{ row }}" {% if reference %}href="{{ reference.url }}"{% else %}hidden{% endif %} target="_blank" rel="noopener noreferrer">{{ reference.name if reference else '' }}</a>{{ source_note(reference.url) }}{% else %}{{ control(prefix ~ '.' ~ row ~ '.' ~ key,bare=true) }}{% endif %}</td>{% endfor %}{% if prefix in ['weapon','armor'] %}<td class="ds-inventory-actions"><div class="ds-item-actions">{% for action,symbol,label in [('remove','−','Remove'),('sell','$','Sell')] %}<button type="button" class="button ds-item-action" data-dispose-equipment="{{ action }}" data-kind="{{ prefix }}" data-row="{{ row }}" aria-label="{{ label }} {{ deluxe.get(prefix ~ '.' ~ row ~ '.name','') or prefix }}" title="{{ label }}"{% if not deluxe.get(prefix ~ '.' ~ row ~ '.name','') %} hidden{% endif %}>{{ symbol }}</button>{% endfor %}</div></td>{% endif %}</tr>{% endfor %}</tbody></table></div>
 {%- endmacro %}
 <div class="deluxe-sheet">
 <section class="ds-page" id="combat" aria-label="Combat and identity">
@@ -42,7 +42,7 @@
 <div class="ds-fields ds-two ds-xp-fields">{{ control('experience', 'Total XP') }}
 {{ control('next_level', 'Next level XP') }}
 </div>
-<p class="ds-record-note">{{ xp_speed|capitalize }} track{% if not character.campaign_id %} (no campaign){% endif %} · <a href="{{ xp_source }}" target="_blank" rel="noopener noreferrer">Thresholds ↗</a></p><a class="button primary" id="character-level-up" href="/characters/{{ character.id }}/level-up"{% if not can_level_up %} hidden{% endif %}>Level up</a>
+<p class="ds-record-note">{{ xp_speed|capitalize }} track{% if not character.campaign_id %} (no campaign){% endif %} · <a href="{{ xp_source }}" target="_blank" rel="noopener noreferrer">Thresholds ↗</a>{{ source_note(xp_source) }}</p><a class="button primary" id="character-level-up" href="/characters/{{ character.id }}/level-up"{% if not can_level_up %} hidden{% endif %}>Level up</a>
 {% if advancement_history %}<details><summary>Advancement history</summary>{% for entry in advancement_history|reverse %}<section><h4>Level {{ entry.level }} · {{ entry.class }}</h4><p>+{{ entry.hp }} HP{% if entry.ability %} · +1 {{ abilities[entry.ability] }}{% endif %}</p>{% if entry.features %}<p>{{ entry.features|join(' · ') }}</p>{% endif %}{% for choice in entry.choices %}<p>{{ choice.feature }} · {{ choice.choice }}</p>{% endfor %}{% if entry.spell_swap %}<p>Replaced {{ entry.spell_swap.old }} with {{ entry.spell_swap.new }}.</p>{% endif %}</section>{% endfor %}</details>{% endif %}</div>
 </section>
 <div class="ds-fields ds-four ds-block">{{ control('bab') }}{{ control('initiative.total','Initiative') }}{{ control('initiative.dex','Dex modifier') }}{{ control('initiative.misc','Misc modifier') }}</div>
@@ -82,7 +82,7 @@
       <tbody id="sheet-trait-defense-rows">
         {% for row in trait_defenses %}
         <tr><th scope="row">{{ row.situation }}</th><td>{{ row.check }}</td><td{% if row.formula %} title="{{ row.formula }}"{% endif %}>{{ row.result }}</td>
-          <td>{% for source in row.sources %}{% if not loop.first %}, {% endif %}{% if source.url %}<a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>{% else %}{{ source.name }}{% endif %}{% endfor %}</td></tr>
+          <td>{% for source in row.sources %}{% if not loop.first %}, {% endif %}{% if source.url %}<a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>{{ source_note(source.url) }}{% else %}{{ source.name }}{% endif %}{% endfor %}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -101,7 +101,7 @@
     {% if ability_blocks[kind] %}
     <ul>
     {% for name, url in ability_blocks[kind] %}
-      <li>{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }}</a>{% else %}{{ name }}{% endif %}</li>
+      <li>{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ name }}</a>{{ source_note(url) }}{% else %}{{ name }}{% endif %}</li>
     {% endfor %}
     </ul>
     {% else %}<p class="ds-record-note">No {{ label|lower }} recorded.</p>{% endif %}
@@ -115,14 +115,14 @@
   {{ control('feature.' ~ i,bare=true,hidden=true) }}
   {% if i not in ability_blocks.slots %}
   <span class="ds-feature-name"{% if reference %} hidden{% endif %}>{{ deluxe.get('feature.' ~ i, '') }}</span>
-  <a class="ds-feature-link" target="_blank" rel="noopener noreferrer"{% if reference %} href="{{ reference.url }}"{% else %} hidden{% endif %}>{{ reference.name if reference else '' }}</a>
+  <a class="ds-feature-link" target="_blank" rel="noopener noreferrer"{% if reference %} href="{{ reference.url }}"{% else %} hidden{% endif %}>{{ reference.name if reference else '' }}</a>{{ source_note(reference.url) }}
   {% if i in removable_feats %}
   <button class="button small" type="button" data-remove-feat="{{ i }}" aria-label="Remove {{ deluxe.get('feature.' ~ i) }}">Remove</button>
   {% endif %}
   {% endif %}
 </div>{% endfor %}</div>
 <h3>Skills</h3><div class="ds-fields ds-four">{{ control('skill_points.total','Skill points / level') }}{{ control('skill_points.base','Base') }}{{ control('skill_points.int','INT modifier') }}{{ control('skill_points.misc','Misc') }}</div><p class="ds-equation">◆ Class skill · * Trained only · Any class can invest ranks in any skill. Class skills with ranks receive +3.</p>
-<div class="ds-skill-columns">{% for half in skill_rows|batch((skill_rows|length + 1)//2) %}<div class="ds-table-scroll"><table class="ds-table ds-skills"><thead><tr><th scope="col">Skill</th>{% for label in ['Total','Ability','Ranks','Misc'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for key,meta in half %}{% set base=key.removesuffix('-2') %}<tr><th scope="row"><span class="ds-skill-name">{% if base in class_skills %}<span class="ds-class-skill" title="Class skill" aria-label="Class skill">◆</span>{% endif %}{% set skill_url = skill_links.get(base) %}{% if skill_url %}<a href="{{ skill_url }}" target="_blank" rel="noopener noreferrer">{{ meta.name }}</a>{% else %}{{ meta.name }}{% endif %}{{ '*' if base in trained_only }} <span class="ds-skill-ability">{{ meta.ability|upper }}</span></span>{% if base in ['craft','perform','profession'] %}{{ control('skill.' ~ key ~ '.specialty',bare=true) }}{% endif %}</th>{% for part in ['total','ability','ranks','misc'] %}<td>{{ control('skill.' ~ key ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endfor %}</div>{{ control('skill_specialties',rows=2) }}<footer class="ds-footer">PATHKEEPER <span>Abilities & skills · 2 / 4</span></footer>
+<div class="ds-skill-columns">{% for half in skill_rows|batch((skill_rows|length + 1)//2) %}<div class="ds-table-scroll"><table class="ds-table ds-skills"><thead><tr><th scope="col">Skill</th>{% for label in ['Total','Ability','Ranks','Misc'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for key,meta in half %}{% set base=key.removesuffix('-2') %}<tr><th scope="row"><span class="ds-skill-name">{% if base in class_skills %}<span class="ds-class-skill" title="Class skill" aria-label="Class skill">◆</span>{% endif %}{% set skill_url = skill_links.get(base) %}{% if skill_url %}<a href="{{ skill_url }}" target="_blank" rel="noopener noreferrer">{{ meta.name }}</a>{% else %}{{ meta.name }}{% endif %}{{ '*' if base in trained_only }} <span class="ds-skill-ability">{{ meta.ability|upper }}</span></span>{{ source_note(skill_url) }}{% if base in ['craft','perform','profession'] %}{{ control('skill.' ~ key ~ '.specialty',bare=true) }}{% endif %}</th>{% for part in ['total','ability','ranks','misc'] %}<td>{{ control('skill.' ~ key ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endfor %}</div>{{ control('skill_specialties',rows=2) }}<footer class="ds-footer">PATHKEEPER <span>Abilities & skills · 2 / 4</span></footer>
 </section>
 <section class="ds-page" id="spells" aria-labelledby="spells-title"><h2 id="spells-title" class="ds-bar">Spells and special abilities</h2>
 <div class="ds-spell-layout"><div class="ds-spell-summary"><div class="ds-fields ds-two">{{ control('concentration') }}{{ control('caster_level') }}</div><div class="ds-table-scroll"><table class="ds-table"><thead><tr>{% for label in ['Level','Known','Save DC','Per day','Bonus'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for level in range(10) %}<tr><th scope="row">{{ '0' if level == 0 else level }}</th>{% for part in ['known','dc','daily','bonus'] %}<td>{{ control('spell.' ~ level ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div><h3>Domain / school / special</h3>{{ control('domain',bare=true,rows=5) }}{{ control('spell_notes',rows=8) }}</div>

@@ -28,7 +28,7 @@
   {{ csrf_input(csrf) }}
   <input type="hidden" name="version" value="{{ character.version }}">
   <input type="hidden" name="target" value="{{ target }}">
-  <header class="pw-stage-heading"><div><span class="overline" data-level-position aria-live="polite"></span><a href="{{ profile.url }}" target="_blank" rel="noopener noreferrer">{{ profile.name }} class rules ↗</a></div><span class="pw-level">LEVEL {{ target }}</span></header>
+  <header class="pw-stage-heading"><div><span class="overline" data-level-position aria-live="polite"></span><a href="{{ profile.url }}" target="_blank" rel="noopener noreferrer">{{ profile.name }} class rules ↗</a>{{ source_note(profile.url) }}</div><span class="pw-level">LEVEL {{ target }}</span></header>
   <div class="pw-stage stack">
   <section data-level-step>
     <h2>1. Hit points and abilities</h2>
@@ -53,7 +53,7 @@
     <p>Any skill can receive ranks, up to {{ target }} ranks per skill. Class skills receive +3 once trained.</p>
     <div class="pw-skill-table"><table><thead><tr><th scope="col">Skill</th><th scope="col">Class skill</th><th scope="col">Current ranks</th><th scope="col">Add ranks</th><th scope="col">New total</th></tr></thead>
     <tbody>{% for key, label, trained, ranks, url, enabled in advancement.rows %}
-      <tr><th scope="row">{% if url %}<a class="level-reference" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }}</a>{% else %}{{ label }}{% endif %}</th>
+      <tr><th scope="row">{% if url %}<a class="level-reference" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }}</a>{{ source_note(url) }}{% else %}{{ label }}{% endif %}</th>
       <td>{{ 'Yes' if trained else '—' }}</td><td data-current-ranks>{{ ranks }}</td>
       <td>{% if not enabled %}Archived{% elif ranks >= target %}At limit{% else %}<input type="number" name="rank_{{ key }}" min="0" max="{{ target - ranks }}" data-rank-limit="{{ target - ranks }}" value="{{ submitted.get('rank_' ~ key, '') }}" aria-label="Ranks to add to {{ label }}">{% endif %}</td>
       <td data-new-ranks>{{ ranks }}</td></tr>

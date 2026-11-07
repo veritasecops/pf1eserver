@@ -71,6 +71,7 @@ def parse_class(form, key, catalog):
     item = {
         "name": field(form, "name", 100),
         "url": field(form, "url", 1000, required=False),
+        "source": field({'source': form.get('source', old.get('source', ''))}, 'source', 2000, required=False),
         "choices": field(form, "choices", 1000, required=False),
         "group": field(form, "group", 20),
         "hd": integer(form, "hd", 1, 20),

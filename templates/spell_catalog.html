@@ -31,7 +31,7 @@
       <tbody>
         {% for key, spell in items %}
         <tr>
-          <th scope="row"><a class="catalog-source-link" href="{{ spell.url }}" target="_blank" rel="noopener noreferrer">{{ spell.name }}</a></th>
+          <th scope="row"><a class="catalog-source-link" href="{{ spell.url }}" target="_blank" rel="noopener noreferrer">{{ spell.name }}</a>{{ source_note(spell.url) }}</th>
           <td>{{ spell.schools|join(' · ') }}</td>
           <td>{% for label, levels in spell.levels.items() %}{{ label }} {{ levels|join('/') }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</td>
           <td>{% set markers = namespace(labels=[]) %}

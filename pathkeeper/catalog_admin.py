@@ -157,7 +157,7 @@ def spell_editor(ctx, record, key, form=None, errors=()):
     schools, classes = spell_choices()
     values = {**spell, 'class_levels': {name: ', '.join(map(str, levels)) for name, levels in spell['levels'].items()}}
     if form is not None:
-        values.update(name=form.get('name', ''), url=form.get('url', ''),
+        values.update(name=form.get('name', ''), url=form.get('url', ''), source=form.get('source', values.get('source', '')),
                       schools=form.getlist('schools'), markers=form.getlist('markers'),
                       mythic=form.get('mythic') == 'on', pfs_marked=form.get('pfs_marked') == 'on',
                       class_levels={name: form.get(f'level.{name}', '') for name in classes})
@@ -189,6 +189,7 @@ def parse_spell(form):
             levels[name] = sorted({int(value) for value in raw.split(',')})
     mythic = form.get('mythic') == 'on'
     return {'name': field(form, 'name'), 'url': url, 'schools': sorted(selected_schools),
+            'source': field(form, 'source', 2000, required=False),
             'levels': levels, 'mythic': mythic, 'pfs_marked': form.get('pfs_marked') == 'on',
             'markers': sorted(markers | ({'Y'} if mythic else set()))}
 
@@ -310,6 +311,8 @@ async def edit_entry(kind: str, key: str, request: Request, db: Session = Depend
 
 def parse_entry(form,kind,key,catalog):
     item={'enabled':form.get('enabled')=='on'}
+    existing = equipment_entries(catalog).get(key, {}) if kind == 'equipment' else catalog.get(kind, {}).get(key, {})
+    item['source'] = field({'source': form.get('source', existing.get('source', ''))}, 'source', 2000, required=False)
     item['name']=key if kind=='feats' else field(form,'name',100)
     if kind == 'equipment':
         item.update(group=field(form, 'group', 30), url=field(form, 'url', 1000, required=False),
@@ -400,7 +403,7 @@ def parse_entry(form,kind,key,catalog):
         for name in ('spell_failure','speed_30','speed_20'):
             item[name]=number(name,0,100) if str(form.get(name,'')).strip() else None
         for name in ('url','cost_text','weight_text','bonus_text','max_dex_text','acp_text','spell_failure_text','speed_30_text','speed_20_text','source','notes'):
-            item[name]=field(form,name,3000 if name=='notes' else 1000 if name=='url' else 300,required=False)
+            item[name]=existing.get('source', '') if name == 'source' and name not in form else field(form,name,3000 if name=='notes' else 2000 if name=='source' else 1000 if name=='url' else 300,required=False)
         if item['url'] and not safe_weapon_url(item['url']): raise HTTPException(422,'Armor link must be a safe HTTP or HTTPS URL.')
         aliases=field(form,'aliases',2000,required=False)
         item['aliases']=list(dict.fromkeys(name.strip() for name in aliases.splitlines() if name.strip()))
@@ -419,7 +422,7 @@ def parse_entry(form,kind,key,catalog):
                     damage=field(form,'damage',120,required=False),small_damage=field(form,'small_damage',120,required=False))
         for name,maximum in {'critical':120,'range':120,'damage_type':120,'special':1000,'source':300,
                              'cost_text':120,'weight_text':120,'notes':3000,'url':1000}.items():
-            item[name]=field(form,name,maximum,required=False) if name in form else existing.get(name,'')
+            item[name]=field(form,name,2000 if name == 'source' else maximum,required=False) if name in form else existing.get(name,'')
         if item['url'] and not safe_weapon_url(item['url']): raise HTTPException(422,'Weapon link must be an HTTP or HTTPS URL without credentials or spaces.')
         aliases=field(form,'aliases',2000,required=False) if 'aliases' in form else '\n'.join(existing.get('aliases',[]))
         item['aliases']=list(dict.fromkeys(name.strip() for name in aliases.splitlines() if name.strip()))
@@ -456,6 +459,8 @@ async def save_entry(kind: str, request: Request, db: Session = Depends(get_db))
             raise HTTPException(404, 'Spell not found.')
         try:
             spell = parse_spell(form)
+            if 'source' not in form:
+                spell['source'] = record.data.get('spell_overrides', {}).get(key, original).get('source', '')
         except HTTPException as error:
             return spell_editor(ctx, record, key, form, [error.detail])
         overrides = dict(record.data.get('spell_overrides', {}))

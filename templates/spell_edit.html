@@ -15,6 +15,7 @@
   <div class="form-grid">
     <label class="field"><span>Spell name</span><input name="name" value="{{ spell.name }}" required maxlength="150"></label>
     <label class="field"><span>Reference URL</span><input type="url" name="url" value="{{ spell.url }}" required maxlength="1000"></label>
+    <label class="field"><span>Publication source</span><input name="source" value="{{ spell.get('source','') }}" maxlength="2000"><span class="secondary-text">Book title and page, as listed under Source on AoN.</span></label>
   </div>
   <fieldset>
     <legend>Schools</legend>

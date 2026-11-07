@@ -39,7 +39,7 @@ def live_equipment(entry, kind, key, item):
         entry = {**entry, "categories": [category] if category else [],
                  "proficiencies": item.get("proficiencies", [item.get("group")])}
     return {
-        **entry, "name": item["name"], "url": item.get("url", ""), "enabled": item.get("enabled", True),
+        **entry, "name": item["name"], "url": item.get("url", ""), "source": item.get("source", ""), "enabled": item.get("enabled", True),
         "cost_text": f"{cost / 100:g} gp" if cost is not None else item.get("cost_text") or entry["cost_text"],
         "weight_text": f"{weight:g} lb." if weight is not None else item.get("weight_text") or entry["weight_text"],
         "editor_kind": kind, "editor_key": key,

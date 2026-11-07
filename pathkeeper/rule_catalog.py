@@ -39,7 +39,8 @@ def default_catalog(legacy=False):
     for key,item in armor.items():
         if key in EQUIPMENT: item['aliases']=list(dict.fromkeys([*item.get('aliases',[]),EQUIPMENT[key]['name']]))
     from .deities import table_deities
-    return {'feats':feats, 'skills':skills, 'weapons':weapons, 'armor':armor,'deities':deepcopy(table_deities())}
+    from .aon_sources import enrich_sources
+    return enrich_sources({'feats':feats, 'skills':skills, 'weapons':weapons, 'armor':armor,'deities':deepcopy(table_deities())})
 
 
 def load_catalog(db):

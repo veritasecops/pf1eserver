@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from . import backpack, equipment_disposal, character_weapons, character_dice
 from . import account_email, administration, catalog_admin, auth, character_wizard, email_admin, portraits, workspace
-from . import rulebooks
+from . import rulebooks, aon_sources
 from .config import ROOT, settings
 from .database import engine
 from .security import COOKIE, RedirectTo, context
@@ -89,6 +89,7 @@ app.include_router(character_dice.router)
 app.include_router(workspace.router)
 app.include_router(portraits.router)
 app.include_router(rulebooks.router)
+app.include_router(aon_sources.router)
 
 # Public documentation never queries the user store.
 from .help import router as help_router

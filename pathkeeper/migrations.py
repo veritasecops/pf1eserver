@@ -269,4 +269,9 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 28):
             db.add(SchemaMigration(version=28, name="rulebook_deletion_cleanup"))
             db.commit()
-    print("Database migrations applied through 028 (rulebook deletion cleanup).")
+        if not db.get(SchemaMigration, 29):
+            from .aon_sources import migrate_sources
+            migrate_sources(db)
+            db.add(SchemaMigration(version=29, name="aon_publication_sources"))
+            db.commit()
+    print("Database migrations applied through 029 (AoN publication sources).")

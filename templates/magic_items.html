@@ -2,7 +2,7 @@
 {% block extra_head %}<link rel="stylesheet" href="/static/catalog.css?v=contextual-equipment-actions">{% endblock %}
 {% block content %}
 <header class="page-header">
-  <div><h1>Magic Items</h1><p>Browse the Pathfinder magic item index from <a href="https://www.aonprd.com/MagicItems.aspx" target="_blank" rel="noopener noreferrer">Archives of Nethys</a>.</p></div>
+  <div><h1>Magic Items</h1><p>Browse the Pathfinder magic item index from <a href="https://www.aonprd.com/MagicItems.aspx" target="_blank" rel="noopener noreferrer">Archives of Nethys</a>{{ source_note('https://www.aonprd.com/MagicItems.aspx') }}.</p></div>
 </header>
 {% include 'admin_tabs.html' %}
 <section class="card">
@@ -24,7 +24,7 @@
       <tbody>
         {% for item in items %}
         <tr>
-          <th scope="row"><a class="catalog-source-link" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.name }}</a></th>
+          <th scope="row"><a class="catalog-source-link" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.name }}</a>{{ source_note(item.url) }}</th>
           <td>{{ item.group }}{% if item.categories %}<span class="secondary-text">{{ item.categories|join(' · ') }}</span>{% endif %}</td>
           <td>{% for label, value in item.fields.items() %}<span class="secondary-text">{{ label }} {{ value }}</span>{% else %}—{% endfor %}</td>
         </tr>

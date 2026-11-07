@@ -21,6 +21,7 @@
       {{ input('Class name', 'name') }}
       <label class="field"><span>Class group</span><select name="group">{% for group in groups %}<option{% if group == values.group %} selected{% endif %}>{{ group }}</option>{% endfor %}</select></label>
       {{ input('Reference URL', 'url', 'url', required=false) }}
+      {{ input('Publication source', 'source', required=false) }}
       {{ input('Hit Die sides', 'hd', 'number', 1, 20) }}
       {{ input('Base skill ranks per level', 'ranks', 'number', 1, 20) }}
       {{ input('Starting wealth dice (d6 × 10 gp)', 'wealth_dice', 'number', 0, 20) }}

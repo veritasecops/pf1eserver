@@ -1,5 +1,5 @@
 {
-  "alchemist": {"name": "Alchemist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Alchemist", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["appraise", "craft", "disable-device", "fly", "heal", "knowledge-arcana", "knowledge-nature", "perception", "profession", "sleight-of-hand", "spellcraft", "survival", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 1, "levels": [
+  "alchemist": {"name": "Alchemist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Alchemist", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["appraise", "craft", "disable-device", "fly", "heal", "knowledge-arcana", "knowledge-nature", "perception", "profession", "sleight-of-hand", "spellcraft", "survival", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 1, "source": "Advanced Player's Guide pg. 26", "levels": [
     {"bab": 0, "saves": [2, 2, 0], "features": "Alchemy, bomb 1d6, Brew Potion, mutagen, Throw Anything", "slots": {"1": 1}},
     {"bab": 1, "saves": [3, 3, 0], "features": "Discovery, poison resistance +2, poison use", "slots": {"1": 2}},
     {"bab": 2, "saves": [3, 3, 1], "features": "Bomb 2d6, swift alchemy", "slots": {"1": 3}},
@@ -21,7 +21,7 @@
     {"bab": 14, "saves": [11, 11, 6], "features": "Bomb 10d6", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [12, 12, 6], "features": "Grand discovery", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}}
   ]},
-  "antipaladin": {"name": "Antipaladin", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Antipaladin", "hd": 10, "ranks": 2, "wealth_dice": 5, "skills": ["bluff", "craft", "disguise", "handle-animal", "intimidate", "knowledge-religion", "profession", "ride", "sense-motive", "spellcraft", "stealth"], "caster": "cha", "group": "Base", "caster_delay": 3, "book": 0, "levels": [
+  "antipaladin": {"name": "Antipaladin", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Antipaladin", "hd": 10, "ranks": 2, "wealth_dice": 5, "skills": ["bluff", "craft", "disguise", "handle-animal", "intimidate", "knowledge-religion", "profession", "ride", "sense-motive", "spellcraft", "stealth"], "caster": "cha", "group": "Base", "caster_delay": 3, "book": 0, "source": "Advanced Player's Guide pg. 118", "levels": [
     {"bab": 1, "saves": [2, 0, 2], "features": "Aura of evil, detect good, smite good 1/day"},
     {"bab": 2, "saves": [3, 0, 3], "features": "Touch of corruption, unholy resilience"},
     {"bab": 3, "saves": [3, 1, 3], "features": "Aura of cowardice, cruelty, plague bringer"},
@@ -43,7 +43,7 @@
     {"bab": 19, "saves": [11, 6, 11], "features": "Smite good 7/day", "slots": {"1": 4, "2": 3, "3": 3, "4": 2}},
     {"bab": 20, "saves": [12, 6, 12], "features": "Unholy champion", "slots": {"1": 4, "2": 4, "3": 3, "4": 3}}
   ]},
-  "arcanist": {"name": "Arcanist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Arcanist", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["appraise", "craft", "fly", "knowledge-all", "linguistics", "profession", "spellcraft", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "levels": [
+  "arcanist": {"name": "Arcanist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Arcanist", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["appraise", "craft", "fly", "knowledge-all", "linguistics", "profession", "spellcraft", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "source": "Advanced Class Guide pg. 8", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Arcane reservoir, arcanist exploit, cantrips, consume spells", "slots": {"1": 2}, "prepared": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 0, 3], "features": "", "slots": {"1": 3}, "prepared": {"0": 5, "1": 2}},
     {"bab": 1, "saves": [1, 1, 3], "features": "Arcanist exploit", "slots": {"1": 4}, "prepared": {"0": 5, "1": 3}},
@@ -65,7 +65,7 @@
     {"bab": 9, "saves": [6, 6, 11], "features": "Arcanist exploit", "slots": {"1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 3}, "prepared": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 2}},
     {"bab": 10, "saves": [6, 6, 12], "features": "Magical supremacy", "slots": {"1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4}, "prepared": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 3}}
   ]},
-  "barbarian": {"name": "Barbarian", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Barbarian", "hd": 12, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "handle-animal", "intimidate", "knowledge-nature", "perception", "ride", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "barbarian": {"name": "Barbarian", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Barbarian", "hd": 12, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "handle-animal", "intimidate", "knowledge-nature", "perception", "ride", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 31", "levels": [
     {"bab": 1, "saves": [2, 0, 0], "features": "Fast movement, rage"},
     {"bab": 2, "saves": [3, 0, 0], "features": "Rage power, uncanny dodge"},
     {"bab": 3, "saves": [3, 1, 1], "features": "Trap sense +1"},
@@ -87,7 +87,7 @@
     {"bab": 19, "saves": [11, 6, 6], "features": "Damage reduction 5/-"},
     {"bab": 20, "saves": [12, 6, 6], "features": "Mighty rage, Rage power"}
   ]},
-  "barbarian-unchained": {"name": "Barbarian (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Barbarian+%28Unchained%29", "hd": 12, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "handle-animal", "intimidate", "knowledge-nature", "perception", "ride", "survival", "swim"], "caster": "", "group": "Unchained", "caster_delay": 0, "book": 0, "levels": [
+  "barbarian-unchained": {"name": "Barbarian (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Barbarian+%28Unchained%29", "hd": 12, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "handle-animal", "intimidate", "knowledge-nature", "perception", "ride", "survival", "swim"], "caster": "", "group": "Unchained", "caster_delay": 0, "book": 0, "source": "Pathfinder Unchained pg. 8", "levels": [
     {"bab": 1, "saves": [2, 0, 0], "features": "Fast movement, rage"},
     {"bab": 2, "saves": [3, 0, 0], "features": "Rage power, uncanny dodge"},
     {"bab": 3, "saves": [3, 1, 1], "features": "Danger sense +1"},
@@ -109,7 +109,7 @@
     {"bab": 19, "saves": [11, 6, 6], "features": "Damage reduction 5/-"},
     {"bab": 20, "saves": [12, 6, 6], "features": "Mighty rage, rage power"}
   ]},
-  "bard": {"name": "Bard", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Bard", "hd": 8, "ranks": 6, "wealth_dice": 3, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disguise", "escape-artist", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "stealth", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "bard": {"name": "Bard", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Bard", "hd": 8, "ranks": 6, "wealth_dice": 3, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disguise", "escape-artist", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "stealth", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 34", "levels": [
     {"bab": 0, "saves": [0, 2, 2], "features": "Bardic knowledge, bardic performance, cantrips, countersong, distraction, fascinate, inspire courage +1", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 3, 3], "features": "Versatile performance, well-versed", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [1, 3, 3], "features": "Inspire competence +2", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -131,7 +131,7 @@
     {"bab": 14, "saves": [6, 11, 11], "features": "Inspire competence +6", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [6, 12, 12], "features": "Deadly performance", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "bloodrager": {"name": "Bloodrager", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Bloodrager", "hd": 10, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "handle-animal", "intimidate", "knowledge-arcana", "perception", "ride", "spellcraft", "survival", "swim"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "bloodrager": {"name": "Bloodrager", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Bloodrager", "hd": 10, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "handle-animal", "intimidate", "knowledge-arcana", "perception", "ride", "spellcraft", "survival", "swim"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 15", "levels": [
     {"bab": 1, "saves": [2, 0, 0], "features": "Bloodline, bloodline power, bloodrage, fast movement"},
     {"bab": 2, "saves": [3, 0, 0], "features": "Uncanny dodge"},
     {"bab": 3, "saves": [3, 1, 1], "features": "Blood sanctuary"},
@@ -153,7 +153,7 @@
     {"bab": 19, "saves": [11, 6, 6], "features": "Damage reduction 5/-", "slots": {"1": 4, "2": 3, "3": 3, "4": 2}, "known": {"1": 6, "2": 6, "3": 6, "4": 5}},
     {"bab": 20, "saves": [12, 6, 6], "features": "Bloodline power, mighty bloodrage", "slots": {"1": 4, "2": 4, "3": 3, "4": 2}, "known": {"1": 6, "2": 6, "3": 6, "4": 5}}
   ]},
-  "brawler": {"name": "Brawler", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Brawler", "hd": 10, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "escape-artist", "handle-animal", "intimidate", "knowledge-dungeoneering", "knowledge-local", "perception", "profession", "ride", "sense-motive", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "brawler": {"name": "Brawler", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Brawler", "hd": 10, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "escape-artist", "handle-animal", "intimidate", "knowledge-dungeoneering", "knowledge-local", "perception", "profession", "ride", "sense-motive", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 23", "levels": [
     {"bab": 1, "saves": [2, 2, 0], "features": "Brawler's cunning, martial flexibility, martial training, unarmed strike", "statistics": {"Unarmed Damage": "1d6"}},
     {"bab": 2, "saves": [3, 3, 0], "features": "Bonus combat feat, brawler's flurry (Two-Weapon Fighting)", "statistics": {"Unarmed Damage": "1d6"}},
     {"bab": 3, "saves": [3, 3, 1], "features": "Maneuver training 1", "statistics": {"Unarmed Damage": "1d6"}},
@@ -175,7 +175,7 @@
     {"bab": 19, "saves": [11, 11, 6], "features": "Maneuver training 5", "statistics": {"Unarmed Damage": "2d8"}},
     {"bab": 20, "saves": [12, 12, 6], "features": "Bonus combat feat, improved awesome blow, martial flexibility (any number)", "statistics": {"Unarmed Damage": "2d10"}}
   ]},
-  "cavalier": {"name": "Cavalier", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Cavalier", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["bluff", "climb", "craft", "diplomacy", "handle-animal", "intimidate", "profession", "ride", "sense-motive", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "cavalier": {"name": "Cavalier", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Cavalier", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["bluff", "climb", "craft", "diplomacy", "handle-animal", "intimidate", "profession", "ride", "sense-motive", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Player's Guide pg. 32", "levels": [
     {"bab": 1, "saves": [2, 0, 0], "features": "Challenge 1/day, mount, order, tactician"},
     {"bab": 2, "saves": [3, 0, 0], "features": "Order ability"},
     {"bab": 3, "saves": [3, 1, 1], "features": "Cavalier’s charge"},
@@ -197,7 +197,7 @@
     {"bab": 19, "saves": [11, 6, 6], "features": "Challenge 7/day"},
     {"bab": 20, "saves": [12, 6, 6], "features": "Supreme charge"}
   ]},
-  "cleric": {"name": "Cleric", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Cleric", "hd": 8, "ranks": 2, "wealth_dice": 4, "skills": ["appraise", "craft", "diplomacy", "heal", "knowledge-arcana", "knowledge-history", "knowledge-nobility", "knowledge-planes", "knowledge-religion", "linguistics", "profession", "sense-motive", "spellcraft"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "cleric": {"name": "Cleric", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Cleric", "hd": 8, "ranks": 2, "wealth_dice": 4, "skills": ["appraise", "craft", "diplomacy", "heal", "knowledge-arcana", "knowledge-history", "knowledge-nobility", "knowledge-planes", "knowledge-religion", "linguistics", "profession", "sense-motive", "spellcraft"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 38", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Aura, channel energy 1d6, domains, orisons", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [3, 0, 3], "features": "", "slots": {"0": 4, "1": 2}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Channel energy 2d6", "slots": {"0": 4, "1": 2, "2": 1}},
@@ -219,7 +219,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "Channel energy 10d6", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 3, "9": 3}},
     {"bab": 15, "saves": [12, 6, 12], "features": "", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4}}
   ]},
-  "druid": {"name": "Druid", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Druid", "hd": 8, "ranks": 4, "wealth_dice": 2, "skills": ["climb", "craft", "fly", "handle-animal", "heal", "knowledge-geography", "knowledge-nature", "perception", "profession", "ride", "spellcraft", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "druid": {"name": "Druid", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Druid", "hd": 8, "ranks": 4, "wealth_dice": 2, "skills": ["climb", "craft", "fly", "handle-animal", "heal", "knowledge-geography", "knowledge-nature", "perception", "profession", "ride", "spellcraft", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 48", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Nature bond, nature sense, orisons, wild empathy", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [3, 0, 3], "features": "Woodland stride", "slots": {"0": 4, "1": 2}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Trackless step", "slots": {"0": 4, "1": 2, "2": 1}},
@@ -241,7 +241,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 3, "9": 3}},
     {"bab": 15, "saves": [12, 6, 12], "features": "Wild shape (at will)", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4}}
   ]},
-  "fighter": {"name": "Fighter", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Fighter", "hd": 10, "ranks": 2, "wealth_dice": 5, "skills": ["climb", "craft", "handle-animal", "intimidate", "knowledge-dungeoneering", "knowledge-engineering", "profession", "ride", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "fighter": {"name": "Fighter", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Fighter", "hd": 10, "ranks": 2, "wealth_dice": 5, "skills": ["climb", "craft", "handle-animal", "intimidate", "knowledge-dungeoneering", "knowledge-engineering", "profession", "ride", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 55", "levels": [
     {"bab": 1, "saves": [2, 0, 0], "features": "Bonus feat"},
     {"bab": 2, "saves": [3, 0, 0], "features": "Bonus feat, bravery +1"},
     {"bab": 3, "saves": [3, 1, 1], "features": "Armor training 1"},
@@ -263,7 +263,7 @@
     {"bab": 19, "saves": [11, 6, 6], "features": "Armor mastery"},
     {"bab": 20, "saves": [12, 6, 6], "features": "Bonus feat, weapon mastery"}
   ]},
-  "gunslinger": {"name": "Gunslinger", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Gunslinger", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["acrobatics", "bluff", "climb", "craft", "handle-animal", "heal", "intimidate", "knowledge-engineering", "knowledge-local", "perception", "profession", "ride", "sleight-of-hand", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "gunslinger": {"name": "Gunslinger", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Gunslinger", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["acrobatics", "bluff", "climb", "craft", "handle-animal", "heal", "intimidate", "knowledge-engineering", "knowledge-local", "perception", "profession", "ride", "sleight-of-hand", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Ultimate Combat pg. 9", "levels": [
     {"bab": 1, "saves": [2, 2, 0], "features": "Deeds, grit, gunsmith"},
     {"bab": 2, "saves": [3, 3, 0], "features": "Nimble +1"},
     {"bab": 3, "saves": [3, 3, 1], "features": "Deeds"},
@@ -285,7 +285,7 @@
     {"bab": 19, "saves": [11, 11, 6], "features": "Deeds"},
     {"bab": 20, "saves": [12, 12, 6], "features": "Bonus feat, true grit"}
   ]},
-  "hunter": {"name": "Hunter", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Hunter", "hd": 8, "ranks": 6, "wealth_dice": 4, "skills": ["climb", "craft", "handle-animal", "heal", "intimidate", "knowledge-dungeoneering", "knowledge-geography", "knowledge-nature", "perception", "profession", "ride", "spellcraft", "stealth", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "hunter": {"name": "Hunter", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Hunter", "hd": 8, "ranks": 6, "wealth_dice": 4, "skills": ["climb", "craft", "handle-animal", "heal", "intimidate", "knowledge-dungeoneering", "knowledge-geography", "knowledge-nature", "perception", "profession", "ride", "spellcraft", "stealth", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 26", "levels": [
     {"bab": 0, "saves": [2, 2, 0], "features": "Animal companion, animal focus, nature training, orisons, wild empathy", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [3, 3, 0], "features": "Precise companion, track", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [3, 3, 1], "features": "Hunter tactics, teamwork feat", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -307,7 +307,7 @@
     {"bab": 14, "saves": [11, 11, 6], "features": "Bonus trick", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [12, 12, 6], "features": "Master hunter", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "inquisitor": {"name": "Inquisitor", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Inquisitor", "hd": 8, "ranks": 6, "wealth_dice": 4, "skills": ["bluff", "climb", "craft", "diplomacy", "disguise", "heal", "intimidate", "knowledge-arcana", "knowledge-dungeoneering", "knowledge-nature", "knowledge-planes", "knowledge-religion", "perception", "profession", "ride", "sense-motive", "spellcraft", "stealth", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "inquisitor": {"name": "Inquisitor", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Inquisitor", "hd": 8, "ranks": 6, "wealth_dice": 4, "skills": ["bluff", "climb", "craft", "diplomacy", "disguise", "heal", "intimidate", "knowledge-arcana", "knowledge-dungeoneering", "knowledge-nature", "knowledge-planes", "knowledge-religion", "perception", "profession", "ride", "sense-motive", "spellcraft", "stealth", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Player's Guide pg. 38", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Domain, judgment 1/day, monster lore, orisons, stern gaze", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [3, 0, 3], "features": "Cunning initiative, detect alignment, track", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Solo tactics, teamwork feat", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -329,7 +329,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "Judgment 7/day", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [12, 6, 12], "features": "True judgment", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "investigator": {"name": "Investigator", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Investigator", "hd": 8, "ranks": 6, "wealth_dice": 3, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "heal", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "stealth", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 1, "levels": [
+  "investigator": {"name": "Investigator", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Investigator", "hd": 8, "ranks": 6, "wealth_dice": 3, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "heal", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "stealth", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 1, "source": "Advanced Class Guide pg. 30", "levels": [
     {"bab": 0, "saves": [0, 2, 2], "features": "Alchemy, inspiration, trapfinding", "slots": {"1": 1}},
     {"bab": 1, "saves": [0, 3, 3], "features": "Poison lore, poison resistance +2", "slots": {"1": 2}},
     {"bab": 2, "saves": [1, 3, 3], "features": "Investigator talent, keen recollection, trap sense +1", "slots": {"1": 3}},
@@ -351,7 +351,7 @@
     {"bab": 14, "saves": [6, 11, 11], "features": "Investigator talent", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [6, 12, 12], "features": "Studied strike +9d6, true inspiration", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}}
   ]},
-  "kineticist": {"name": "Kineticist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Kineticist", "hd": 8, "ranks": 4, "wealth_dice": 1, "skills": ["acrobatics", "craft", "heal", "intimidate", "perception", "profession", "stealth", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "kineticist": {"name": "Kineticist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Kineticist", "hd": 8, "ranks": 4, "wealth_dice": 1, "skills": ["acrobatics", "craft", "heal", "intimidate", "perception", "profession", "stealth", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Occult Adventures pg. 10", "levels": [
     {"bab": 0, "saves": [2, 2, 0], "features": "Burn, elemental focus, gather power, infusion, kinetic blast"},
     {"bab": 1, "saves": [3, 3, 0], "features": "Elemental defense, utility wild talent"},
     {"bab": 2, "saves": [3, 3, 1], "features": "Elemental overflow +1, infusion"},
@@ -373,7 +373,7 @@
     {"bab": 14, "saves": [11, 11, 6], "features": "Infusion, metakinetic master"},
     {"bab": 15, "saves": [12, 12, 6], "features": "Infusion specialization 6, omnikinesis, utility wild talent"}
   ]},
-  "magus": {"name": "Magus", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Magus", "hd": 8, "ranks": 2, "wealth_dice": 4, "skills": ["climb", "craft", "fly", "intimidate", "knowledge-arcana", "knowledge-dungeoneering", "knowledge-planes", "profession", "ride", "spellcraft", "swim", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "levels": [
+  "magus": {"name": "Magus", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Magus", "hd": 8, "ranks": 2, "wealth_dice": 4, "skills": ["climb", "craft", "fly", "intimidate", "knowledge-arcana", "knowledge-dungeoneering", "knowledge-planes", "profession", "ride", "spellcraft", "swim", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "source": "Ultimate Magic pg. 9", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Arcane pool, cantrips, spell combat", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [3, 0, 3], "features": "Spellstrike", "slots": {"0": 4, "1": 2}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Magus arcana", "slots": {"0": 4, "1": 3}},
@@ -395,7 +395,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "Greater spell access", "slots": {"0": 5, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [12, 6, 12], "features": "True magus", "slots": {"0": 5, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}}
   ]},
-  "medium": {"name": "Medium", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Medium", "hd": 8, "ranks": 4, "wealth_dice": 4, "skills": ["bluff", "craft", "diplomacy", "fly", "heal", "intimidate", "knowledge-arcana", "knowledge-planes", "knowledge-religion", "linguistics", "perception", "perform", "profession", "sense-motive", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "medium": {"name": "Medium", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Medium", "hd": 8, "ranks": 4, "wealth_dice": 4, "skills": ["bluff", "craft", "diplomacy", "fly", "heal", "intimidate", "knowledge-arcana", "knowledge-planes", "knowledge-religion", "linguistics", "perception", "perform", "profession", "sense-motive", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "Occult Adventures pg. 30", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Knacks, spirit, spirit bonus +1, spirit power (lesser), spirit surge 1d6", "known": {"0": 2}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Shared seance, taboo", "known": {"0": 3}},
     {"bab": 2, "saves": [1, 1, 3], "features": "Haunt channeler", "known": {"0": 4}},
@@ -417,7 +417,7 @@
     {"bab": 14, "saves": [6, 6, 11], "features": "Spirit mastery", "slots": {"1": 4, "2": 3, "3": 3, "4": 2}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5}},
     {"bab": 15, "saves": [6, 6, 12], "features": "Astral beacon, spirit bonus +6, spirit surge 1d10", "slots": {"1": 4, "2": 4, "3": 3, "4": 2}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5}}
   ]},
-  "mesmerist": {"name": "Mesmerist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Mesmerist", "hd": 8, "ranks": 6, "wealth_dice": 3, "skills": ["appraise", "bluff", "craft", "diplomacy", "disguise", "escape-artist", "intimidate", "knowledge-arcana", "knowledge-dungeoneering", "knowledge-history", "knowledge-local", "knowledge-nobility", "knowledge-religion", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "stealth", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "mesmerist": {"name": "Mesmerist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Mesmerist", "hd": 8, "ranks": 6, "wealth_dice": 3, "skills": ["appraise", "bluff", "craft", "diplomacy", "disguise", "escape-artist", "intimidate", "knowledge-arcana", "knowledge-dungeoneering", "knowledge-history", "knowledge-local", "knowledge-nobility", "knowledge-religion", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "stealth", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "Occult Adventures pg. 38", "levels": [
     {"bab": 0, "saves": [0, 2, 2], "features": "Consummate liar, hypnotic stare, knacks, mesmerist trick, painful stare", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 3, 3], "features": "Mesmerist trick, towering ego", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [1, 3, 3], "features": "Bold stare, touch treatment (minor)", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -439,7 +439,7 @@
     {"bab": 14, "saves": [6, 11, 11], "features": "Bold stare", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [6, 12, 12], "features": "Mesmerist trick, rule minds", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "monk": {"name": "Monk", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Monk", "hd": 8, "ranks": 4, "wealth_dice": 1, "skills": ["acrobatics", "climb", "craft", "escape-artist", "intimidate", "knowledge-history", "knowledge-religion", "perception", "perform", "profession", "ride", "sense-motive", "stealth", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "monk": {"name": "Monk", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Monk", "hd": 8, "ranks": 4, "wealth_dice": 1, "skills": ["acrobatics", "climb", "craft", "escape-artist", "intimidate", "knowledge-history", "knowledge-religion", "perception", "perform", "profession", "ride", "sense-motive", "stealth", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 56", "levels": [
     {"bab": 0, "saves": [2, 2, 2], "features": "Bonus feat, flurry of blows, stunning fist, unarmed strike", "statistics": {"Flurry of Blows Attack Bonus": "-1/-1", "Unarmed Damage": "1d6", "AC Bonus": "+0", "Fast Movement": "+0 ft."}},
     {"bab": 1, "saves": [3, 3, 3], "features": "Bonus feat, evasion", "statistics": {"Flurry of Blows Attack Bonus": "+0/+0", "Unarmed Damage": "1d6", "AC Bonus": "+0", "Fast Movement": "+0 ft."}},
     {"bab": 2, "saves": [3, 3, 3], "features": "Fast movement, maneuver training, still mind", "statistics": {"Flurry of Blows Attack Bonus": "+1/+1", "Unarmed Damage": "1d6", "AC Bonus": "+0", "Fast Movement": "+10 ft."}},
@@ -461,7 +461,7 @@
     {"bab": 14, "saves": [11, 11, 11], "features": "Empty body", "statistics": {"Flurry of Blows Attack Bonus": "+17/+17/+12/+12/+7/+7/+2", "Unarmed Damage": "2d8", "AC Bonus": "+4", "Fast Movement": "+60 ft."}},
     {"bab": 15, "saves": [12, 12, 12], "features": "Perfect self, slow fall any distance", "statistics": {"Flurry of Blows Attack Bonus": "+18/+18/+13/+13/+8/+8/+3", "Unarmed Damage": "2d10", "AC Bonus": "+5", "Fast Movement": "+60 ft."}}
   ]},
-  "monk-unchained": {"name": "Monk (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Monk+%28Unchained%29", "hd": 10, "ranks": 4, "wealth_dice": 1, "skills": ["acrobatics", "climb", "craft", "escape-artist", "intimidate", "knowledge-history", "knowledge-religion", "perception", "perform", "profession", "ride", "sense-motive", "stealth", "swim"], "caster": "", "group": "Unchained", "caster_delay": 0, "book": 0, "levels": [
+  "monk-unchained": {"name": "Monk (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Monk+%28Unchained%29", "hd": 10, "ranks": 4, "wealth_dice": 1, "skills": ["acrobatics", "climb", "craft", "escape-artist", "intimidate", "knowledge-history", "knowledge-religion", "perception", "perform", "profession", "ride", "sense-motive", "stealth", "swim"], "caster": "", "group": "Unchained", "caster_delay": 0, "book": 0, "source": "Pathfinder Unchained pg. 14", "levels": [
     {"bab": 1, "saves": [2, 2, 0], "features": "Bonus feat, flurry of blows (bonus attack), stunning fist, unarmed strike", "statistics": {"Unarmed Damage": "1d6", "AC Bonus": "+0", "Fast Movement": "+0 ft."}},
     {"bab": 2, "saves": [3, 3, 0], "features": "Bonus feat, evasion", "statistics": {"Unarmed Damage": "1d6", "AC Bonus": "+0", "Fast Movement": "+0 ft."}},
     {"bab": 3, "saves": [3, 3, 1], "features": "Fast movement, ki pool, ki strike (magic)", "statistics": {"Unarmed Damage": "1d6", "AC Bonus": "+0", "Fast Movement": "+10 ft."}},
@@ -483,7 +483,7 @@
     {"bab": 19, "saves": [11, 11, 6], "features": "Flawless mind", "statistics": {"Unarmed Damage": "2d8", "AC Bonus": "+4", "Fast Movement": "+60 ft."}},
     {"bab": 20, "saves": [12, 12, 6], "features": "Ki power, perfect self", "statistics": {"Unarmed Damage": "2d10", "AC Bonus": "+5", "Fast Movement": "+60 ft."}}
   ]},
-  "ninja": {"name": "Ninja", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Ninja", "hd": 8, "ranks": 8, "wealth_dice": 4, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-local", "knowledge-nobility", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "stealth", "swim", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "ninja": {"name": "Ninja", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Ninja", "hd": 8, "ranks": 8, "wealth_dice": 4, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-local", "knowledge-nobility", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "stealth", "swim", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Ultimate Combat pg. 13", "levels": [
     {"bab": 0, "saves": [0, 2, 0], "features": "Poison use, sneak attack +1d6"},
     {"bab": 1, "saves": [0, 3, 0], "features": "Ki pool, ninja trick"},
     {"bab": 2, "saves": [1, 3, 1], "features": "No trace +1, sneak attack +2d6"},
@@ -505,7 +505,7 @@
     {"bab": 14, "saves": [6, 11, 6], "features": "Sneak attack +10d6"},
     {"bab": 15, "saves": [6, 12, 6], "features": "Hidden master, ninja trick"}
   ]},
-  "occultist": {"name": "Occultist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Occultist", "hd": 8, "ranks": 4, "wealth_dice": 4, "skills": ["appraise", "craft", "diplomacy", "disable-device", "disguise", "fly", "knowledge-arcana", "knowledge-engineering", "knowledge-history", "knowledge-planes", "knowledge-religion", "linguistics", "perception", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "occultist": {"name": "Occultist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Occultist", "hd": 8, "ranks": 4, "wealth_dice": 4, "skills": ["appraise", "craft", "diplomacy", "disable-device", "disguise", "fly", "knowledge-arcana", "knowledge-engineering", "knowledge-history", "knowledge-planes", "knowledge-religion", "linguistics", "perception", "profession", "sense-motive", "sleight-of-hand", "spellcraft", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 0, "source": "Occult Adventures pg. 46", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Focus powers, implements 2, knacks, mental focus", "slots": {"1": 1}},
     {"bab": 1, "saves": [3, 0, 3], "features": "Implements 3, magic item skill, object reading", "slots": {"1": 2}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Focus power", "slots": {"1": 3}},
@@ -527,7 +527,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "Focus power", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [12, 6, 12], "features": "Implement mastery, outside contact 4", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}}
   ]},
-  "oracle": {"name": "Oracle", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Oracle", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["craft", "diplomacy", "heal", "knowledge-history", "knowledge-planes", "knowledge-religion", "profession", "sense-motive", "spellcraft"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "oracle": {"name": "Oracle", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Oracle", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["craft", "diplomacy", "heal", "knowledge-history", "knowledge-planes", "knowledge-religion", "profession", "sense-motive", "spellcraft"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Player's Guide pg. 42", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Mystery, oracle’s curse, orisons, revelation", "slots": {"1": 3}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Mystery spell", "slots": {"1": 4}, "known": {"0": 5, "1": 2}},
     {"bab": 2, "saves": [1, 1, 3], "features": "Revelation", "slots": {"1": 5}, "known": {"0": 5, "1": 3}},
@@ -549,7 +549,7 @@
     {"bab": 14, "saves": [6, 6, 11], "features": "Revelation", "slots": {"1": 6, "2": 6, "3": 6, "4": 6, "5": 6, "6": 6, "7": 6, "8": 6, "9": 4}, "known": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 2}},
     {"bab": 15, "saves": [6, 6, 12], "features": "Final revelation", "slots": {"1": 6, "2": 6, "3": 6, "4": 6, "5": 6, "6": 6, "7": 6, "8": 6, "9": 6}, "known": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 3}}
   ]},
-  "paladin": {"name": "Paladin", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Paladin", "hd": 10, "ranks": 2, "wealth_dice": 5, "skills": ["craft", "diplomacy", "handle-animal", "heal", "knowledge-nobility", "knowledge-religion", "profession", "ride", "sense-motive", "spellcraft"], "caster": "cha", "group": "Base", "caster_delay": 3, "book": 0, "levels": [
+  "paladin": {"name": "Paladin", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Paladin", "hd": 10, "ranks": 2, "wealth_dice": 5, "skills": ["craft", "diplomacy", "handle-animal", "heal", "knowledge-nobility", "knowledge-religion", "profession", "ride", "sense-motive", "spellcraft"], "caster": "cha", "group": "Base", "caster_delay": 3, "book": 0, "source": "PRPG Core Rulebook pg. 60", "levels": [
     {"bab": 1, "saves": [2, 0, 2], "features": "Aura of good, detect evil, smite evil 1/day"},
     {"bab": 2, "saves": [3, 0, 3], "features": "Divine grace, lay on hands"},
     {"bab": 3, "saves": [3, 1, 3], "features": "Aura of courage, divine health, mercy"},
@@ -571,7 +571,7 @@
     {"bab": 19, "saves": [11, 6, 11], "features": "Smite evil 7/day", "slots": {"1": 4, "2": 3, "3": 3, "4": 2}},
     {"bab": 20, "saves": [12, 6, 12], "features": "Holy champion", "slots": {"1": 4, "2": 4, "3": 3, "4": 3}}
   ]},
-  "psychic": {"name": "Psychic", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Psychic", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["bluff", "craft", "diplomacy", "fly", "intimidate", "knowledge-all", "linguistics", "perception", "profession", "sense-motive", "spellcraft"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "psychic": {"name": "Psychic", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Psychic", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["bluff", "craft", "diplomacy", "fly", "intimidate", "knowledge-all", "linguistics", "perception", "profession", "sense-motive", "spellcraft"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 0, "source": "Occult Adventures pg. 60", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Discipline power, discipline spell, knacks, phrenic amplification, phrenic pool, psychic discipline", "slots": {"1": 3}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Detect thoughts", "slots": {"1": 4}, "known": {"0": 5, "1": 2}},
     {"bab": 1, "saves": [1, 1, 3], "features": "Phrenic amplification", "slots": {"1": 5}, "known": {"0": 5, "1": 3}},
@@ -593,7 +593,7 @@
     {"bab": 9, "saves": [6, 6, 11], "features": "Phrenic amplification", "slots": {"1": 6, "2": 6, "3": 6, "4": 6, "5": 6, "6": 6, "7": 6, "8": 6, "9": 4}, "known": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 2}},
     {"bab": 10, "saves": [6, 6, 12], "features": "Remade self", "slots": {"1": 6, "2": 6, "3": 6, "4": 6, "5": 6, "6": 6, "7": 6, "8": 6, "9": 6}, "known": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 3}}
   ]},
-  "ranger": {"name": "Ranger", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Ranger", "hd": 10, "ranks": 6, "wealth_dice": 5, "skills": ["climb", "craft", "handle-animal", "heal", "intimidate", "knowledge-dungeoneering", "knowledge-geography", "knowledge-nature", "perception", "profession", "ride", "spellcraft", "stealth", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 3, "book": 0, "levels": [
+  "ranger": {"name": "Ranger", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Ranger", "hd": 10, "ranks": 6, "wealth_dice": 5, "skills": ["climb", "craft", "handle-animal", "heal", "intimidate", "knowledge-dungeoneering", "knowledge-geography", "knowledge-nature", "perception", "profession", "ride", "spellcraft", "stealth", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 3, "book": 0, "source": "PRPG Core Rulebook pg. 64", "levels": [
     {"bab": 1, "saves": [2, 2, 0], "features": "1st favored enemy, track, wild empathy"},
     {"bab": 2, "saves": [3, 3, 0], "features": "Combat style feat"},
     {"bab": 3, "saves": [3, 3, 1], "features": "Endurance, 1st favored terrain"},
@@ -615,7 +615,7 @@
     {"bab": 19, "saves": [11, 11, 6], "features": "Improved quarry", "slots": {"1": 4, "2": 3, "3": 3, "4": 2}},
     {"bab": 20, "saves": [12, 12, 6], "features": "5th favored enemy, master hunter", "slots": {"1": 4, "2": 4, "3": 3, "4": 3}}
   ]},
-  "rogue": {"name": "Rogue", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Rogue", "hd": 8, "ranks": 8, "wealth_dice": 4, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-dungeoneering", "knowledge-local", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "stealth", "swim", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "rogue": {"name": "Rogue", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Rogue", "hd": 8, "ranks": 8, "wealth_dice": 4, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-dungeoneering", "knowledge-local", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "stealth", "swim", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 67", "levels": [
     {"bab": 0, "saves": [0, 2, 0], "features": "Sneak attack +1d6, trapfinding"},
     {"bab": 1, "saves": [0, 3, 0], "features": "Evasion, rogue talent"},
     {"bab": 2, "saves": [1, 3, 1], "features": "Sneak attack +2d6, trap sense +1"},
@@ -637,7 +637,7 @@
     {"bab": 14, "saves": [6, 11, 6], "features": "Sneak attack +10d6"},
     {"bab": 15, "saves": [6, 12, 6], "features": "Master strike, rogue talent"}
   ]},
-  "rogue-unchained": {"name": "Rogue (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Rogue+%28Unchained%29", "hd": 8, "ranks": 8, "wealth_dice": 4, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-dungeoneering", "knowledge-local", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "stealth", "swim", "use-magic-device"], "caster": "", "group": "Unchained", "caster_delay": 0, "book": 0, "levels": [
+  "rogue-unchained": {"name": "Rogue (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Rogue+%28Unchained%29", "hd": 8, "ranks": 8, "wealth_dice": 4, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-dungeoneering", "knowledge-local", "linguistics", "perception", "perform", "profession", "sense-motive", "sleight-of-hand", "stealth", "swim", "use-magic-device"], "caster": "", "group": "Unchained", "caster_delay": 0, "book": 0, "source": "Pathfinder Unchained pg. 20", "levels": [
     {"bab": 0, "saves": [0, 2, 0], "features": "Finesse training, sneak attack +1d6, trapfinding"},
     {"bab": 1, "saves": [0, 3, 0], "features": "Evasion, rogue talent"},
     {"bab": 2, "saves": [1, 3, 1], "features": "Danger sense +1, finesse training, sneak attack +2d6"},
@@ -659,7 +659,7 @@
     {"bab": 14, "saves": [6, 11, 6], "features": "Finesse training, sneak attack +10d6"},
     {"bab": 15, "saves": [6, 12, 6], "features": "Master strike, rogue talent, rogue's edge"}
   ]},
-  "samurai": {"name": "Samurai", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Samurai", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["bluff", "climb", "craft", "diplomacy", "handle-animal", "intimidate", "profession", "ride", "sense-motive", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "samurai": {"name": "Samurai", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Samurai", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["bluff", "climb", "craft", "diplomacy", "handle-animal", "intimidate", "profession", "ride", "sense-motive", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Ultimate Combat pg. 18", "levels": [
     {"bab": 1, "saves": [2, 0, 0], "features": "Challenge 1/day, mount, order, resolve"},
     {"bab": 2, "saves": [3, 0, 0], "features": "Order ability"},
     {"bab": 3, "saves": [3, 1, 1], "features": "Weapon expertise"},
@@ -681,7 +681,7 @@
     {"bab": 19, "saves": [11, 6, 6], "features": "Challenge 7/day"},
     {"bab": 20, "saves": [12, 6, 6], "features": "Last stand"}
   ]},
-  "shaman": {"name": "Shaman", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Shaman", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["craft", "diplomacy", "fly", "handle-animal", "heal", "knowledge-nature", "knowledge-planes", "knowledge-religion", "profession", "ride", "spellcraft", "survival"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "shaman": {"name": "Shaman", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Shaman", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["craft", "diplomacy", "fly", "handle-animal", "heal", "knowledge-nature", "knowledge-planes", "knowledge-religion", "profession", "ride", "spellcraft", "survival"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 35", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Orisons, spirit, spirit animal, spirit magic", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Hex", "slots": {"0": 4, "1": 2}},
     {"bab": 2, "saves": [1, 1, 3], "features": "", "slots": {"0": 4, "1": 2, "2": 1}},
@@ -703,7 +703,7 @@
     {"bab": 14, "saves": [6, 6, 11], "features": "", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 3, "9": 3}},
     {"bab": 15, "saves": [6, 6, 12], "features": "Hex, manifestation, wandering spirit (true)", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4}}
   ]},
-  "shifter": {"name": "Shifter", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Shifter", "hd": 10, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "fly", "handle-animal", "knowledge-nature", "perception", "profession", "ride", "stealth", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "shifter": {"name": "Shifter", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Shifter", "hd": 10, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "climb", "craft", "fly", "handle-animal", "knowledge-nature", "perception", "profession", "ride", "stealth", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Ultimate Wilderness pg. 26", "levels": [
     {"bab": 1, "saves": [2, 2, 0], "features": "Shifter aspect, shifter claws, wild empathy"},
     {"bab": 2, "saves": [3, 3, 0], "features": "Defensive instinct, track"},
     {"bab": 3, "saves": [3, 3, 1], "features": "Shifter claws increase, woodland stride"},
@@ -725,7 +725,7 @@
     {"bab": 19, "saves": [11, 11, 6], "features": "Shifter claws increase"},
     {"bab": 20, "saves": [12, 12, 6], "features": "Defensive instinct (+5), final aspect"}
   ]},
-  "skald": {"name": "Skald", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Skald", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "escape-artist", "handle-animal", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "ride", "sense-motive", "spellcraft", "swim", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "skald": {"name": "Skald", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Skald", "hd": 8, "ranks": 4, "wealth_dice": 3, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "escape-artist", "handle-animal", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "ride", "sense-motive", "spellcraft", "swim", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 49", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Bardic knowledge, cantrips, inspired rage +1 (+2 Str/Con), raging song, scribe scroll", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [3, 0, 3], "features": "Versatile performance, well-versed", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Rage power, song of marching", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -747,7 +747,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "DR 3/-, lore master 3/day", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [12, 6, 12], "features": "Inspired rage +6, master skald", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "slayer": {"name": "Slayer", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Slayer", "hd": 10, "ranks": 6, "wealth_dice": 5, "skills": ["acrobatics", "bluff", "climb", "craft", "disguise", "heal", "intimidate", "knowledge-dungeoneering", "knowledge-geography", "knowledge-local", "perception", "profession", "ride", "sense-motive", "stealth", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "slayer": {"name": "Slayer", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Slayer", "hd": 10, "ranks": 6, "wealth_dice": 5, "skills": ["acrobatics", "bluff", "climb", "craft", "disguise", "heal", "intimidate", "knowledge-dungeoneering", "knowledge-geography", "knowledge-local", "perception", "profession", "ride", "sense-motive", "stealth", "survival", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 53", "levels": [
     {"bab": 1, "saves": [2, 2, 0], "features": "1st studied target, track"},
     {"bab": 2, "saves": [3, 3, 0], "features": "Slayer talent"},
     {"bab": 3, "saves": [3, 3, 1], "features": "Sneak attack +1d6"},
@@ -769,7 +769,7 @@
     {"bab": 19, "saves": [11, 11, 6], "features": "Improved quarry"},
     {"bab": 20, "saves": [12, 12, 6], "features": "5th studied target, master slayer, slayer talent"}
   ]},
-  "sorcerer": {"name": "Sorcerer", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Sorcerer", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["appraise", "bluff", "craft", "fly", "intimidate", "knowledge-arcana", "profession", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "sorcerer": {"name": "Sorcerer", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Sorcerer", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["appraise", "bluff", "craft", "fly", "intimidate", "knowledge-arcana", "profession", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 70", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Bloodline power, cantrips, eschew materials", "slots": {"1": 3}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 0, 3], "features": "", "slots": {"1": 4}, "known": {"0": 5, "1": 2}},
     {"bab": 1, "saves": [1, 1, 3], "features": "Bloodline power, bloodline spell", "slots": {"1": 5}, "known": {"0": 5, "1": 3}},
@@ -791,7 +791,7 @@
     {"bab": 9, "saves": [6, 6, 11], "features": "Bloodline feat, bloodline spell", "slots": {"1": 6, "2": 6, "3": 6, "4": 6, "5": 6, "6": 6, "7": 6, "8": 6, "9": 4}, "known": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 2}},
     {"bab": 10, "saves": [6, 6, 12], "features": "Bloodline power", "slots": {"1": 6, "2": 6, "3": 6, "4": 6, "5": 6, "6": 6, "7": 6, "8": 6, "9": 6}, "known": {"0": 9, "1": 5, "2": 5, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 3, "9": 3}}
   ]},
-  "spiritualist": {"name": "Spiritualist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Spiritualist", "hd": 8, "ranks": 4, "wealth_dice": 2, "skills": ["bluff", "craft", "fly", "heal", "intimidate", "knowledge-all", "linguistics", "profession", "sense-motive", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "spiritualist": {"name": "Spiritualist", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Spiritualist", "hd": 8, "ranks": 4, "wealth_dice": 2, "skills": ["bluff", "craft", "fly", "heal", "intimidate", "knowledge-all", "linguistics", "profession", "sense-motive", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "Occult Adventures pg. 72", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Etheric tether, knacks, phantom, shared consciousness", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [3, 0, 3], "features": "Bonded senses", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Bonded manifestation", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -813,7 +813,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "Calm spirit 4/day", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [12, 6, 12], "features": "Empowered consciousness", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "summoner": {"name": "Summoner", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Summoner", "hd": 8, "ranks": 2, "wealth_dice": 2, "skills": ["craft", "fly", "handle-animal", "knowledge-all", "linguistics", "profession", "ride", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "summoner": {"name": "Summoner", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Summoner", "hd": 8, "ranks": 2, "wealth_dice": 2, "skills": ["craft", "fly", "handle-animal", "knowledge-all", "linguistics", "profession", "ride", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Player's Guide pg. 54", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Cantrips, eidolon, life link, summon monster I", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Bond senses", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [1, 1, 3], "features": "Summon monster II", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -835,7 +835,7 @@
     {"bab": 14, "saves": [6, 6, 11], "features": "Gate", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [6, 6, 12], "features": "Twin eidolon", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "summoner-unchained": {"name": "Summoner (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Summoner+%28Unchained%29", "hd": 8, "ranks": 2, "wealth_dice": 2, "skills": ["craft", "fly", "handle-animal", "knowledge-all", "linguistics", "profession", "ride", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Unchained", "caster_delay": 0, "book": 0, "levels": [
+  "summoner-unchained": {"name": "Summoner (Unchained)", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Summoner+%28Unchained%29", "hd": 8, "ranks": 2, "wealth_dice": 2, "skills": ["craft", "fly", "handle-animal", "knowledge-all", "linguistics", "profession", "ride", "spellcraft", "use-magic-device"], "caster": "cha", "group": "Unchained", "caster_delay": 0, "book": 0, "source": "Pathfinder Unchained pg. 25", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Cantrips, eidolon, life link, summon monster I", "slots": {"1": 1}, "known": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Bond senses", "slots": {"1": 2}, "known": {"0": 5, "1": 3}},
     {"bab": 2, "saves": [1, 1, 3], "features": "Summon monster II", "slots": {"1": 3}, "known": {"0": 6, "1": 4}},
@@ -857,7 +857,7 @@
     {"bab": 14, "saves": [6, 6, 11], "features": "Gate", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 5, "5": 5, "6": 4}},
     {"bab": 15, "saves": [6, 6, 12], "features": "Twin eidolon", "slots": {"1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "known": {"0": 6, "1": 6, "2": 6, "3": 6, "4": 6, "5": 5, "6": 5}}
   ]},
-  "swashbuckler": {"name": "Swashbuckler", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Swashbuckler", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["acrobatics", "bluff", "climb", "craft", "diplomacy", "escape-artist", "intimidate", "knowledge-local", "knowledge-nobility", "perception", "perform", "profession", "ride", "sense-motive", "sleight-of-hand", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "swashbuckler": {"name": "Swashbuckler", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Swashbuckler", "hd": 10, "ranks": 4, "wealth_dice": 5, "skills": ["acrobatics", "bluff", "climb", "craft", "diplomacy", "escape-artist", "intimidate", "knowledge-local", "knowledge-nobility", "perception", "perform", "profession", "ride", "sense-motive", "sleight-of-hand", "swim"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 56", "levels": [
     {"bab": 1, "saves": [0, 2, 0], "features": "Deeds, panache, swashbuckler finesse"},
     {"bab": 2, "saves": [0, 3, 0], "features": "Charmed life 3/day"},
     {"bab": 3, "saves": [1, 3, 1], "features": "Deeds, nimble +1"},
@@ -879,7 +879,7 @@
     {"bab": 19, "saves": [6, 11, 6], "features": "Deeds, nimble +5"},
     {"bab": 20, "saves": [6, 12, 6], "features": "Bonus feat, swashbuckler weapon mastery"}
   ]},
-  "vigilante": {"name": "Vigilante", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Vigilante", "hd": 8, "ranks": 6, "wealth_dice": 5, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-dungeoneering", "knowledge-engineering", "knowledge-local", "knowledge-nobility", "perception", "perform", "profession", "ride", "sense-motive", "sleight-of-hand", "stealth", "survival", "swim", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "vigilante": {"name": "Vigilante", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Vigilante", "hd": 8, "ranks": 6, "wealth_dice": 5, "skills": ["acrobatics", "appraise", "bluff", "climb", "craft", "diplomacy", "disable-device", "disguise", "escape-artist", "intimidate", "knowledge-dungeoneering", "knowledge-engineering", "knowledge-local", "knowledge-nobility", "perception", "perform", "profession", "ride", "sense-motive", "sleight-of-hand", "stealth", "survival", "swim", "use-magic-device"], "caster": "", "group": "Base", "caster_delay": 0, "book": 0, "source": "Ultimate Intrigue pg. 9", "levels": [
     {"bab": 0, "saves": [0, 2, 2], "features": "Dual identity, seamless guise, social talent, vigilante specialization"},
     {"bab": 1, "saves": [0, 3, 3], "features": "Vigilante talent"},
     {"bab": 2, "saves": [1, 3, 3], "features": "Social talent, unshakable"},
@@ -901,7 +901,7 @@
     {"bab": 14, "saves": [6, 11, 11], "features": "Social talent"},
     {"bab": 15, "saves": [6, 12, 12], "features": "Vengeance strike, vigilante talent"}
   ]},
-  "warpriest": {"name": "Warpriest", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Warpriest", "hd": 8, "ranks": 2, "wealth_dice": 5, "skills": ["climb", "craft", "diplomacy", "handle-animal", "heal", "intimidate", "knowledge-engineering", "knowledge-religion", "profession", "ride", "sense-motive", "spellcraft", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "levels": [
+  "warpriest": {"name": "Warpriest", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Warpriest", "hd": 8, "ranks": 2, "wealth_dice": 5, "skills": ["climb", "craft", "diplomacy", "handle-animal", "heal", "intimidate", "knowledge-engineering", "knowledge-religion", "profession", "ride", "sense-motive", "spellcraft", "survival", "swim"], "caster": "wis", "group": "Base", "caster_delay": 0, "book": 0, "source": "Advanced Class Guide pg. 60", "levels": [
     {"bab": 0, "saves": [2, 0, 2], "features": "Aura, blessings (minor), focus weapon, orisons, sacred weapon", "slots": {"0": 3, "1": 1}, "statistics": {"Sacred Weapon Damage": "1d6"}},
     {"bab": 1, "saves": [3, 0, 3], "features": "Fervor 1d6", "slots": {"0": 4, "1": 2}, "statistics": {"Sacred Weapon Damage": "1d6"}},
     {"bab": 2, "saves": [3, 1, 3], "features": "Bonus feat", "slots": {"0": 4, "1": 3}, "statistics": {"Sacred Weapon Damage": "1d6"}},
@@ -923,7 +923,7 @@
     {"bab": 14, "saves": [11, 6, 11], "features": "Sacred armor +5", "slots": {"0": 5, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4}, "statistics": {"Sacred Weapon Damage": "2d6"}},
     {"bab": 15, "saves": [12, 6, 12], "features": "Aspect of war, fervor 7d6, sacred weapon +5", "slots": {"0": 5, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 5}, "statistics": {"Sacred Weapon Damage": "2d8"}}
   ]},
-  "witch": {"name": "Witch", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Witch", "hd": 6, "ranks": 2, "wealth_dice": 3, "skills": ["craft", "fly", "heal", "intimidate", "knowledge-arcana", "knowledge-history", "knowledge-nature", "knowledge-planes", "profession", "spellcraft", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "levels": [
+  "witch": {"name": "Witch", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Witch", "hd": 6, "ranks": 2, "wealth_dice": 3, "skills": ["craft", "fly", "heal", "intimidate", "knowledge-arcana", "knowledge-history", "knowledge-nature", "knowledge-planes", "profession", "spellcraft", "use-magic-device"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "source": "Advanced Player's Guide pg. 65", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Cantrips, hex, witch’s familiar", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Hex", "slots": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [1, 1, 3], "features": "", "slots": {"0": 4, "1": 2, "2": 1}},
@@ -945,7 +945,7 @@
     {"bab": 9, "saves": [6, 6, 11], "features": "", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 3, "9": 3}},
     {"bab": 10, "saves": [6, 6, 12], "features": "Hex", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4}}
   ]},
-  "wizard": {"name": "Wizard", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Wizard", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["appraise", "craft", "fly", "knowledge-all", "linguistics", "profession", "spellcraft"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "levels": [
+  "wizard": {"name": "Wizard", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Wizard", "hd": 6, "ranks": 2, "wealth_dice": 2, "skills": ["appraise", "craft", "fly", "knowledge-all", "linguistics", "profession", "spellcraft"], "caster": "int", "group": "Base", "caster_delay": 0, "book": 2, "source": "PRPG Core Rulebook pg. 77", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "Arcane bond, arcane school, cantrips, Scribe Scroll", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [0, 0, 3], "features": "", "slots": {"0": 4, "1": 2}},
     {"bab": 1, "saves": [1, 1, 3], "features": "", "slots": {"0": 4, "1": 2, "2": 1}},
@@ -967,7 +967,7 @@
     {"bab": 9, "saves": [6, 6, 11], "features": "", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 3, "9": 3}},
     {"bab": 10, "saves": [6, 6, 12], "features": "Bonus feat", "slots": {"0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4}}
   ]},
-  "adept": {"name": "Adept", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Adept", "hd": 6, "ranks": 2, "wealth_dice": 0, "skills": ["craft", "handle-animal", "heal", "knowledge-all", "profession", "spellcraft", "survival"], "caster": "wis", "group": "NPC", "caster_delay": 0, "book": 0, "levels": [
+  "adept": {"name": "Adept", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Adept", "hd": 6, "ranks": 2, "wealth_dice": 0, "skills": ["craft", "handle-animal", "heal", "knowledge-all", "profession", "spellcraft", "survival"], "caster": "wis", "group": "NPC", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 448", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": "", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [0, 0, 3], "features": "Summon familiar", "slots": {"0": 3, "1": 1}},
     {"bab": 1, "saves": [1, 1, 3], "features": "", "slots": {"0": 3, "1": 2}},
@@ -989,7 +989,7 @@
     {"bab": 9, "saves": [6, 6, 11], "features": "", "slots": {"0": 3, "1": 3, "2": 3, "3": 3, "4": 3, "5": 2}},
     {"bab": 10, "saves": [6, 6, 12], "features": "", "slots": {"0": 3, "1": 3, "2": 3, "3": 3, "4": 3, "5": 2}}
   ]},
-  "aristocrat": {"name": "Aristocrat", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Aristocrat", "hd": 8, "ranks": 4, "wealth_dice": 0, "skills": ["appraise", "bluff", "craft", "diplomacy", "disguise", "handle-animal", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "ride", "sense-motive", "swim", "survival"], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "levels": [
+  "aristocrat": {"name": "Aristocrat", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Aristocrat", "hd": 8, "ranks": 4, "wealth_dice": 0, "skills": ["appraise", "bluff", "craft", "diplomacy", "disguise", "handle-animal", "intimidate", "knowledge-all", "linguistics", "perception", "perform", "profession", "ride", "sense-motive", "swim", "survival"], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 449", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": ""},
     {"bab": 1, "saves": [0, 0, 3], "features": ""},
     {"bab": 2, "saves": [1, 1, 3], "features": ""},
@@ -1011,7 +1011,7 @@
     {"bab": 14, "saves": [6, 6, 11], "features": ""},
     {"bab": 15, "saves": [6, 6, 12], "features": ""}
   ]},
-  "commoner": {"name": "Commoner", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Commoner", "hd": 6, "ranks": 2, "wealth_dice": 0, "skills": ["climb", "craft", "handle-animal", "perception", "profession", "ride", "swim"], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "levels": [
+  "commoner": {"name": "Commoner", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Commoner", "hd": 6, "ranks": 2, "wealth_dice": 0, "skills": ["climb", "craft", "handle-animal", "perception", "profession", "ride", "swim"], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 449", "levels": [
     {"bab": 0, "saves": [0, 0, 0], "features": ""},
     {"bab": 1, "saves": [0, 0, 0], "features": ""},
     {"bab": 1, "saves": [1, 1, 1], "features": ""},
@@ -1033,7 +1033,7 @@
     {"bab": 9, "saves": [6, 6, 6], "features": ""},
     {"bab": 10, "saves": [6, 6, 6], "features": ""}
   ]},
-  "expert": {"name": "Expert", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Expert", "hd": 8, "ranks": 6, "wealth_dice": 0, "skills": [], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "levels": [
+  "expert": {"name": "Expert", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Expert", "hd": 8, "ranks": 6, "wealth_dice": 0, "skills": [], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 450", "levels": [
     {"bab": 0, "saves": [0, 0, 2], "features": ""},
     {"bab": 1, "saves": [0, 0, 3], "features": ""},
     {"bab": 2, "saves": [1, 1, 3], "features": ""},
@@ -1055,7 +1055,7 @@
     {"bab": 14, "saves": [6, 6, 11], "features": ""},
     {"bab": 15, "saves": [6, 6, 12], "features": ""}
   ]},
-  "warrior": {"name": "Warrior", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Warrior", "hd": 10, "ranks": 2, "wealth_dice": 0, "skills": ["climb", "craft", "handle-animal", "intimidate", "profession", "ride", "swim"], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "levels": [
+  "warrior": {"name": "Warrior", "url": "https://www.aonprd.com/ClassDisplay.aspx?ItemName=Warrior", "hd": 10, "ranks": 2, "wealth_dice": 0, "skills": ["climb", "craft", "handle-animal", "intimidate", "profession", "ride", "swim"], "caster": "", "group": "NPC", "caster_delay": 0, "book": 0, "source": "PRPG Core Rulebook pg. 450", "levels": [
     {"bab": 1, "saves": [2, 0, 0], "features": ""},
     {"bab": 2, "saves": [3, 0, 0], "features": ""},
     {"bab": 3, "saves": [3, 1, 1], "features": ""},

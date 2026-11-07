@@ -1,5 +1,27 @@
 # Weapon catalog facts
 
+## Published source citations
+
+`aon_sources.json` maps normalized AoN record URLs to the first published
+Source citation, including book titles and page numbers. Text fragments select
+the named entry on pages containing multiple records. Later Mythic and Combat
+Trick citations do not replace the primary record's Source. Index pages without
+a published Source retain an empty value rather than an inferred citation.
+
+`scripts/import_aon_sources.py --cache <directory>` downloads and caches public
+AoN pages, writes the citation index, and adds `source` to the shipped catalog
+records. Failed downloads prevent catalog snapshot updates. Re-running resumes
+from the cache. Descriptions are not imported. The application reads local data
+and never scrapes AoN while serving a page.
+
+Migration 029 adds citations to stored catalogs, preserving custom sources,
+links, and statistics. `aon_source_baseline.json` identifies the old armor product
+codes that can be replaced by full book/page citations. Source fields remain
+editable in the catalog editors. Shared rendering and dynamic link handling
+display the citation beside linked items on catalog and character pages.
+
+## Weapon details
+
 `weapons.json` contains 486 records from the Archives of Nethys weapon index
 and linked detail pages. Index membership supplies the proficiency filter.
 The detail page supplies the category and its own proficiency when published.

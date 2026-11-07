@@ -1,0 +1,15 @@
+.aon-source {
+  display: block;
+  max-width: 42rem;
+  margin-top: .15rem;
+  font-size: .72rem;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ds-feature-row:has(> .aon-source) { flex-wrap: wrap; }
+.ds-feature-row > .aon-source { flex: 0 0 100%; order: 3; }
+@media print {
+  .aon-source { color: #333; }
+}
