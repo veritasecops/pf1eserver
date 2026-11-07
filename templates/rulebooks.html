@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=spaced-covers">{% endblock %}
-{% block page_scripts %}{% if can_upload %}<script src="/static/rulebook-upload.js?v=500mb" defer></script>{% endif %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css?v=index-progress">{% endblock %}
+{% block page_scripts %}{% if can_upload %}<script src="/static/rulebook-upload.js?v=500mb" defer></script>{% endif %}<script src="/static/rulebook-index-status.js?v=1" defer></script>{% endblock %}
 {% block content %}
 <header class="page-header">
   <h1>Rulebook library</h1>
@@ -24,6 +24,8 @@
       <span class="rulebook-cover"><img src="/rulebooks/{{ book.id }}/cover" alt="" loading="lazy" decoding="async"></span>
       <strong>{{ book.title }}</strong>
     </a>
+    {% set index = indexes.get(book.id) %}
+    <p class="rulebook-index-status secondary-text" data-rulebook-index="{{ book.id }}" data-index-active="{{ 'true' if not index or index.status in ['queued', 'indexing'] else 'false' }}" role="status"{% if index and index.status == 'ready' %} hidden{% endif %}>{% if not index or index.status != 'ready' %}{{ index_status_text(index) }}{% endif %}</p>
   </li>
   {% endfor %}
 </ul>

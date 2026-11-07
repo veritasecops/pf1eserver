@@ -77,5 +77,6 @@
 .rulebook-search-results h2 { font-size: 1.125rem; margin: 0 0 8px; }
 .rulebook-search-results mark { background: #ffed9e; color: #251b10; }
 .rulebook-card > .secondary-text { margin: 0; }
+.rulebook-index-status { margin: 0; font-size: .75rem; line-height: 1.25; text-align: center; }
 
 .rulebook-grid > li { display: flex; flex-direction: column; gap: 8px; }

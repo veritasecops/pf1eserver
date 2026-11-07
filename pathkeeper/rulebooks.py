@@ -116,6 +116,33 @@ def indexes_for(db, books):
         select(RulebookIndex).where(RulebookIndex.book_id.in_([book.id for book in books])))}
 
 
+def index_status_text(index):
+    if index is None:
+        return "Search index · Queued"
+    text = "Search index · " + STATUS_LABELS.get(index.status, index.status)
+    if index.total_pages:
+        text += f" · {index.completed_pages} / {index.total_pages} pages"
+    if index.failed_pages:
+        text += f" · {index.failed_pages} incomplete"
+    return text
+
+
+@router.get('/index-status')
+async def library_index_status(request: Request, db: Session = Depends(get_db)):
+    user = authenticated(context(request, db))
+    keys = request.query_params.getlist('book')
+    if len(keys) > 100 or any(not re.fullmatch(r'[a-f0-9]{32}', key) for key in keys):
+        raise HTTPException(422, 'Request up to 100 valid rulebook IDs.')
+    books = db.scalars(select(Rulebook).where(
+        Rulebook.id.in_(keys), Rulebook.access_mask.bitwise_and(RULEBOOK_ROLE_BITS[user.role]) != 0,
+    )).all()
+    indexes = indexes_for(db, books)
+    return {book.id: {
+        'status': indexes[book.id].status if book.id in indexes else 'queued',
+        'text': index_status_text(indexes.get(book.id)),
+    } for book in books}
+
+
 @router.get("")
 async def library(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
@@ -129,7 +156,8 @@ async def library(request: Request, db: Session = Depends(get_db)):
     books = db.scalars(query.order_by(Rulebook.title, Rulebook.id)).all()
     return render(ctx, "rulebooks.html", title="Rulebook library", books=books,
                   can_upload=user.role == "admin",
-                  categories=CATEGORIES, access_roles=ROLES, category=category if category in CATEGORIES else "")
+                  categories=CATEGORIES, access_roles=ROLES, category=category if category in CATEGORIES else "",
+                  indexes=indexes_for(db, books), index_status_text=index_status_text)
 
 
 @router.get("/search")
