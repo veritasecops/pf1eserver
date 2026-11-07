@@ -1,0 +1,36 @@
+.rulebook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 164px), 1fr));
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rulebook-card {
+  display: grid;
+  gap: 6px;
+  height: 100%;
+  padding: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.rulebook-card:hover strong,
+.rulebook-card:focus-visible strong { text-decoration: underline; }
+
+.rulebook-cover {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  padding: 8px;
+  background: #e8e1d6;
+  border-radius: 4px;
+}
+
+.rulebook-cover img { width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.rulebook-empty { padding: 16px; }

@@ -251,3 +251,10 @@ class RuleCatalog(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     __mapper_args__ = {"version_id_col": version}
+
+
+class Rulebook(Base):
+    __tablename__ = "rulebooks"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    title: Mapped[str] = mapped_column(String(150))
+    access_role: Mapped[str] = mapped_column(String(10), index=True)

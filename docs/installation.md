@@ -12,7 +12,7 @@ Prepare the destination, copy source into it, and install MariaDB if needed:
 
 ```sh
 sudo apt-get update
-sudo apt-get install mariadb-server curl ca-certificates
+sudo apt-get install mariadb-server curl ca-certificates poppler-utils
 sudo install -d -o "$USER" -m 0750 /opt/pf1eserver
 sudo systemctl enable --now mariadb
 ```

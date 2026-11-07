@@ -140,10 +140,14 @@ def administrator(ctx):
 
 async def read_form(ctx, max_fields=80, max_files=0):
     form = await ctx.request.form(max_files=max_files, max_fields=max_fields, max_part_size=65536)
+    verify_csrf(ctx, form)
+    return form
+
+
+def verify_csrf(ctx, form):
     supplied = str(form.get("csrf", ""))
     if not hmac.compare_digest(supplied.encode(), ctx.session.csrf.encode()):
         raise HTTPException(403, "Your session changed. Reload the form and try again.")
-    return form
 
 
 def field(form, key, max_length=150, required=True):

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/rulebooks.css">{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div><h1>Rulebook library</h1><p>PDFs shared with the {{ role_label }} role.</p></div>
+  {% if can_upload %}<a class="button primary" href="/rulebooks/upload">Upload PDF</a>{% endif %}
+</header>
+{% if books %}
+<ul class="rulebook-grid" aria-label="Rulebooks">
+  {% for book in books %}
+  <li>
+    <a class="rulebook-card" href="/rulebooks/{{ book.id }}/pdf" target="_blank" rel="noopener noreferrer">
+      <span class="rulebook-cover"><img src="/rulebooks/{{ book.id }}/cover" alt="" loading="lazy" decoding="async"></span>
+      <strong>{{ book.title }}</strong>
+      <span class="secondary-text">PDF · Opens in a new tab</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<section class="card rulebook-empty"><p>No rulebooks have been shared with your role yet.</p></section>
+{% endif %}
+{% endblock %}

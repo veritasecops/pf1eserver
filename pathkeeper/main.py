@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from . import backpack, equipment_disposal, character_weapons, character_dice
 from . import account_email, administration, catalog_admin, auth, character_wizard, email_admin, portraits, workspace
+from . import rulebooks
 from .config import ROOT, settings
 from .database import engine
 from .security import COOKIE, RedirectTo, context
@@ -19,7 +20,8 @@ app = FastAPI(title="Pathkeeper", version="0.2.0", docs_url=None, redoc_url=None
 @app.middleware("http")
 async def response_security(request, call_next):
     try:
-        if int(request.headers.get("content-length", "0")) > 256 * 1024:
+        limit = rulebooks.MAX_REQUEST if request.method == "POST" and request.url.path == rulebooks.UPLOAD_PATH else 256 * 1024
+        if int(request.headers.get("content-length", "0")) > limit:
             return JSONResponse({"detail": "This request is too large."}, 413)
     except ValueError:
         return JSONResponse({"detail": "Invalid request length."}, 400)
@@ -86,6 +88,7 @@ app.include_router(backpack.router)
 app.include_router(character_dice.router)
 app.include_router(workspace.router)
 app.include_router(portraits.router)
+app.include_router(rulebooks.router)
 
 # Public documentation never queries the user store.
 from .help import router as help_router

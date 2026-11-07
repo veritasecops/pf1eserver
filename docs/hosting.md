@@ -25,6 +25,8 @@ After browser access uses HTTPS, set `PF_SECURE_COOKIES=true` in `.env` and rest
 - `PF_IDLE_MINUTES` defaults to 60 minutes of inactivity.
 - `PF_STORAGE` can select a storage directory; the default is `/opt/pf1eserver/storage`.
 
+Rulebook uploads accept PDFs up to 50 MB. Allow a 51 MB multipart request at `/rulebooks/upload` in the reverse proxy. The application keeps the normal request limit on other routes. Install `poppler-utils` on the application server to render first-page covers. PDFs and covers are kept under `PF_STORAGE/rulebooks` and served through authenticated routes.
+
 Restart the service after changing configuration. Keep session-lifetime values positive. If changing the storage path, update systemd's ReadWritePaths and directory ownership too.
 
 ## Runtime and filesystem access

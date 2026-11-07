@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RuleCatalog, SchemaMigration, User
+from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, Rulebook, RuleCatalog, SchemaMigration, User
 
 
 def remove_manual_class_fields(db):
@@ -50,7 +50,7 @@ def remove_automatic_racial_summaries(db):
 def migrate(admin_engine):
     # MariaDB DDL commits separately. Complete all DDL before opening a read
     # transaction, so snapshot isolation cannot retain pre-DDL table definitions.
-    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction):
+    for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction, Rulebook):
         model.__table__.create(admin_engine, checkfirst=True)
     additions = {
         "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'"},
@@ -235,4 +235,7 @@ def migrate(admin_engine):
             record.version += 1
             db.add(SchemaMigration(version=23, name="archives_of_nethys_weapon_details"))
             db.commit()
-    print("Database migrations applied through 023 (Archives of Nethys weapon details).")
+        if not db.get(SchemaMigration, 24):
+            db.add(SchemaMigration(version=24, name="role_based_rulebook_library"))
+            db.commit()
+    print("Database migrations applied through 024 (role-based rulebook library).")
