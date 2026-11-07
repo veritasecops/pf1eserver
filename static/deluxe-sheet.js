@@ -98,8 +98,10 @@
         name.textContent = row.querySelector('input').value;
       }
     }
+    const combatGear = new Set(result.combat_gear_rows);
     for (const row of form.querySelectorAll('[data-gear-row]')) {
-      row.hidden = !form.elements.namedItem(`gear.${row.dataset.gearRow}.name`).value;
+      const slot = Number(row.dataset.gearRow);
+      row.hidden = combatGear.has(slot) || !form.elements.namedItem(`gear.${slot}.name`).value;
     }
     window.PathkeeperEquipment?.update(result.equipment_state,result.equipment_groups);
     document.getElementById('sheet-character-name').textContent = result.name;

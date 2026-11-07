@@ -275,9 +275,10 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     from .treasure import COIN_TYPES, treasure
     try: treasure_gp=format(Decimal(treasure(values))/100,'.2f').rstrip('0').rstrip('.')
     except HTTPException: treasure_gp=None
-    from .equipment_state import equipment_groups
+    from .equipment_state import combat_gear_rows, equipment_groups
     from .equipment_effects import contributions
-    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=equipment_groups(character,values),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values,progression_catalog),
+    groups = equipment_groups(character, values)
+    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=groups,combat_gear_rows=combat_gear_rows(character,groups),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values,progression_catalog),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog, (character.sheet_data or {}).get('input',{}).get('class_id',''), (character.sheet_data or {}).get('input',{}).get('expert_skills',())) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,gear_slots=GEAR_SLOTS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

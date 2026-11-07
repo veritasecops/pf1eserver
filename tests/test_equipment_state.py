@@ -31,7 +31,12 @@ def test_weapon_armor_and_gear_markers_sync_and_persist_after_purchase(env):
     response=env.post(client,path+'/equipment',purchase_data(client,character,{'dagger':1,'leather':1}))
     assert response.status_code==200,response.text
     assert response.json()['equipment_state']['weapon.0.equipped']==''
-    form=SheetForm(client.get(path).text)
+    assert response.json()['combat_gear_rows'] == [0, 1]
+    page = client.get(path).text
+    assert '<tr data-gear-row="0" hidden>' in page
+    assert '<tr data-gear-row="1" hidden>' in page
+    form=SheetForm(page)
+    assert form.values['load.total'] == '16'
     assert all(key in form.names for key in ('weapon.0.equipped','armor.0.equipped','gear.0.equipped'))
     assert 'weapon.0.equipped' not in form.readonly
     form.values['weapon.0.equipped']='1'
@@ -59,7 +64,9 @@ def test_manual_equipment_can_be_equipped_and_empty_rows_are_cleared(env):
     assert env.post(client, path + '/backpack', {
         'version': form.values['version'], 'item_id': item_id, 'name': 'Backpack', 'quantity': 1, 'value': '0',
     }).status_code == 200
-    form = SheetForm(client.get(path).text)
+    page = client.get(path).text
+    assert '<tr data-gear-row="0">' in page
+    form = SheetForm(page)
     form.values.update({'gear.0.name':'Forged name','gear.0.equipped':'1','gear.1.equipped':'1'})
     assert env.post(client,path+'/play-sheet',form.values).status_code==303
     saved=SheetForm(client.get(path).text)

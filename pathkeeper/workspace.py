@@ -26,7 +26,7 @@ from .sheet_calculations import calculated_fields, recalculate
 from .sheet_formulas import sheet_formulas
 from .sheet_feats import removable_rows, remove_feat
 from .trait_defenses import trait_defenses
-from .equipment_state import equipment_groups, equipped_values, sync_equipped
+from .equipment_state import combat_gear_rows, equipment_groups, equipped_values, sync_equipped
 from .equipment_effects import EQUIPMENT_AC_FIELDS, contributions, persist_effects
 from .treasure import COINS, record_coin_change, treasure
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
@@ -518,8 +518,10 @@ def autosave_response(ctx, character):
     catalog = load_catalog(ctx.db)
     values = sheet_values(character,owner,campaign,gm,progression_catalog=catalog)
     locked = calculated_fields(character,values,catalog)
+    groups = equipment_groups(character, values)
     return JSONResponse({'version':character.version,'name':character.name,
-                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign, catalog),'equipment_groups':equipment_groups(character,values),'equipment_state':equipped_values(values),
+                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign, catalog),'equipment_groups':groups,'equipment_state':equipped_values(values),
+                         'combat_gear_rows':combat_gear_rows(character, groups),
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values,catalog),
                          'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
                          'armor_links':sheet_armor_links(values,character,catalog),

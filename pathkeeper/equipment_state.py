@@ -22,6 +22,15 @@ def equipped_values(values):
     return {key:value for key,value in values.items() if key.endswith('.equipped')}
 
 
+def combat_gear_rows(character, groups):
+    backpack_rows = {item["gear_row"]: item for item in (character.play_data or {}).get("backpack", [])
+                     if item.get("gear_row") is not None}
+    combat_rows = {row for row, item in backpack_rows.items()
+                   if item.get("combat") or (item.get("catalog") or {}).get("kind") in {"weapon", "armor", "shield"}}
+    legacy_rows = {int(key.split('.')[1]) for group in groups for key in group['fields'] if key.startswith('gear.')}
+    return sorted(combat_rows | (legacy_rows - backpack_rows.keys()))
+
+
 def sync_equipped(character,values,previous):
     for group in equipment_groups(character,values):
         changes={values.get(key,'') for key in group['fields'] if values.get(key,'')!=previous.get(key,'')}
