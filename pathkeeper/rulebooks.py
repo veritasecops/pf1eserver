@@ -109,9 +109,8 @@ async def library(request: Request, db: Session = Depends(get_db)):
         query = query.where(Rulebook.category == category)
     books = db.scalars(query.order_by(Rulebook.title, Rulebook.id)).all()
     return render(ctx, "rulebooks.html", title="Rulebook library", books=books,
-                  role_label=ROLES[user.role], can_upload=user.role == "admin",
-                  categories=CATEGORIES, access_roles=ROLES, category=category if category in CATEGORIES else "",
-                  indexes=indexes_for(db, books), index_statuses=STATUS_LABELS)
+                  can_upload=user.role == "admin",
+                  categories=CATEGORIES, access_roles=ROLES, category=category if category in CATEGORIES else "")
 
 
 @router.get("/search")
@@ -323,7 +322,7 @@ async def read_book(key: str, request: Request, page: int = 1, db: Session = Dep
     book = visible_book(request, db, key)
     _, pages = await reader_page(book, page)
     return render(context(request, db), "rulebook_reader.html", title=book.title, book=book, page=page, pages=pages,
-                  index=db.get(RulebookIndex, book.id), index_statuses=STATUS_LABELS)
+                  index=db.get(RulebookIndex, book.id), index_statuses=STATUS_LABELS, categories=CATEGORIES)
 
 
 @router.get("/{key}/pages/{page}")

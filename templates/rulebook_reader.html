@@ -3,8 +3,12 @@
 {% block content %}
 <header class="page-header">
   <h1>{{ book.title }}</h1>
-  <a class="button" href="/rulebooks">Back to library</a>
+  <div class="row">
+    <a class="button" href="/rulebooks">Back to library</a>
+    {% if user.role == 'admin' %}<a class="button danger" href="/rulebooks/{{ book.id }}/delete" aria-label="Delete {{ book.title }}">Delete PDF</a>{% endif %}
+  </div>
 </header>
+<p class="secondary-text">{{ categories.get(book.category, 'Uncategorized') }} · PDF</p>
 <form method="get" action="/rulebooks/search" class="filter-bar standalone">
   <input type="hidden" name="book" value="{{ book.id }}">
   <input type="search" name="q" maxlength="200" aria-label="Search this rulebook" placeholder="Search this rulebook" required>

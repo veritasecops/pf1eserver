@@ -27,7 +27,8 @@ def test_admin_deletes_files_index_jobs_and_search_results(env, monkeypatch, tmp
     monkeypatch.setattr(indexer, "extract_page", lambda *args: ("deletionsearchtoken", "native", ""))
     assert indexer.process_one()
     assert "matching pages" in admin.get("/rulebooks/search", params={"q": "deletionsearchtoken"}).text
-    assert f'aria-label="Delete Delete handbook"' in admin.get("/rulebooks").text
+    assert 'aria-label="Delete Delete handbook"' not in admin.get("/rulebooks").text
+    assert 'aria-label="Delete Delete handbook"' in admin.get(f"/rulebooks/{key}/read").text
     path = f"/rulebooks/{key}/delete"
     player = env.login(env.player)
     assert "Delete PDF" not in player.get("/rulebooks").text

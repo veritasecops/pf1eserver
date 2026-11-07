@@ -18,6 +18,14 @@ def test_reader_reindex_is_admin_only_and_returns_to_current_page(env, monkeypat
     reader, action = f'/rulebooks/{key}/read?page=2', f'/rulebooks/{key}/reindex'
     page = admin.get(reader)
     assert page.status_code == 200
+    library = admin.get('/rulebooks')
+    assert f'href="/rulebooks/{key}/read"' in library.text
+    assert f'src="/rulebooks/{key}/cover"' in library.text
+    assert '<strong>Reader reindex test</strong>' in library.text
+    assert 'Search index' not in library.text and 'Core · PDF' not in library.text
+    assert 'Delete PDF' not in library.text
+    assert 'Core · PDF' in page.text and 'Search index' in page.text
+    assert f'href="/rulebooks/{key}/delete"' in page.text
     assert f'action="{action}"' in page.text
     assert 'name="reader_page" value="2"' in page.text
     assert 'name="force_ocr"' in page.text
@@ -25,6 +33,7 @@ def test_reader_reindex_is_admin_only_and_returns_to_current_page(env, monkeypat
     for client in (gm, player):
         assert client.get(reader).status_code == 200
         assert f'action="{action}"' not in client.get(reader).text
+        assert f'href="/rulebooks/{key}/delete"' not in client.get(reader).text
         assert env.post(client, action, form).status_code == 403
     assert env.post(admin, action, form, use_csrf=False).status_code == 403
     assert env.post(admin, action, {'reader_page': '//example.com'}).status_code == 422
