@@ -26,6 +26,7 @@ UPLOAD_PATH = "/rulebooks/upload"
 MAX_PDF = 50 * 1024 * 1024
 MAX_REQUEST = MAX_PDF + 64 * 1024
 PDF_ERROR = "Choose a readable PDF with at least one page and no password protection."
+CATEGORIES = {"core": "Core", "expanded": "Expanded", "alternate": "Alternate", "third-party": "3rd Party"}
 
 
 class RequestTooLarge(MultiPartException):
@@ -81,20 +82,31 @@ def roles_for(mask):
     return [role for role, bit in RULEBOOK_ROLE_BITS.items() if mask & bit]
 
 
+def selected_category(form, *, required):
+    category = field(form, "category", 16, required=required)
+    if category and category not in CATEGORIES:
+        raise HTTPException(422, "Choose a category from the list.")
+    return category or None
+
+
 @router.get("")
 async def library(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     user = authenticated(ctx)
-    books = db.scalars(select(Rulebook).where(Rulebook.access_mask.bitwise_and(RULEBOOK_ROLE_BITS[user.role]) != 0)
-                       .order_by(Rulebook.title, Rulebook.id)).all()
+    category = request.query_params.get("category", "")
+    query = select(Rulebook).where(Rulebook.access_mask.bitwise_and(RULEBOOK_ROLE_BITS[user.role]) != 0)
+    if category in CATEGORIES:
+        query = query.where(Rulebook.category == category)
+    books = db.scalars(query.order_by(Rulebook.title, Rulebook.id)).all()
     return render(ctx, "rulebooks.html", title="Rulebook library", books=books,
-                  role_label=ROLES[user.role], can_upload=user.role == "admin")
+                  role_label=ROLES[user.role], can_upload=user.role == "admin",
+                  categories=CATEGORIES, category=category if category in CATEGORIES else "")
 
 
-def upload_page(ctx, title="", roles=(), error="", status=200):
+def upload_page(ctx, title="", roles=(), category=None, error="", status=200):
     books = ctx.db.scalars(select(Rulebook).order_by(Rulebook.title, Rulebook.id))
     response = render(ctx, "rulebook_upload.html", title="Upload rulebook", book_title=title,
-                      selected_roles=roles, access_roles=ROLES, error=error,
+                      selected_roles=roles, access_roles=ROLES, categories=CATEGORIES, category=category, error=error,
                       managed_books=[(book, roles_for(book.access_mask)) for book in books])
     response.status_code = status
     return response
@@ -114,7 +126,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
     if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
         return upload_page(ctx, error="Choose a PDF file to upload.", status=422)
     try:
-        form = await MultiPartParser(request.headers, bounded_upload(request), max_files=1, max_fields=2 + len(ROLES),
+        form = await MultiPartParser(request.headers, bounded_upload(request), max_files=1, max_fields=3 + len(ROLES),
                                      max_part_size=4096).parse()
     except RequestTooLarge as error:
         return upload_page(ctx, error=error.message, status=413)
@@ -123,12 +135,14 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
 
     title = ""
     roles = set()
+    category = None
     try:
         verify_csrf(ctx, form)
         try:
             title = field(form, "title")
             roles = set(form.getlist("access_role"))
             access_mask = selected_access(roles)
+            category = selected_category(form, required=True)
             upload = form.get("pdf")
             if not isinstance(upload, UploadFile) or not (upload.filename or "").lower().endswith(".pdf"):
                 raise HTTPException(422, "Choose a PDF file.")
@@ -144,7 +158,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
                 await run_in_threadpool(save_pdf, upload.file, stage)
                 stage.rename(destination)
                 try:
-                    db.add(Rulebook(id=key, title=title, access_mask=access_mask))
+                    db.add(Rulebook(id=key, title=title, access_mask=access_mask, category=category))
                     labels = ", ".join(ROLES[role] for role in roles_for(access_mask))
                     audit(db, actor, "rulebook.uploaded", f"Uploaded rulebook {key} for {labels}.")
                     return redirect(ctx, "/rulebooks/upload", "Rulebook uploaded.")
@@ -155,7 +169,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
                         logging.getLogger(__name__).exception("Could not remove failed rulebook upload %s", key)
                     raise
         except HTTPException as error:
-            return upload_page(ctx, title, roles, error.detail, error.status_code)
+            return upload_page(ctx, title=title, roles=roles, category=category, error=error.detail, status=error.status_code)
     finally:
         await form.close()
 
@@ -171,14 +185,17 @@ def get_book(db, key, *, lock=False):
 async def update_access(key: str, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     actor = administrator(ctx)
-    form = await read_form(ctx, max_fields=2 + len(ROLES))
+    form = await read_form(ctx, max_fields=4 + len(ROLES))
     book = get_book(db, key, lock=True)
-    if integer(form, "previous_mask", 1, sum(RULEBOOK_ROLE_BITS.values())) != book.access_mask:
-        raise HTTPException(409, "Access changed in another window. Reload before saving.")
+    if (integer(form, "previous_mask", 1, sum(RULEBOOK_ROLE_BITS.values())) != book.access_mask
+            or (form.get("previous_category") or None) != book.category):
+        raise HTTPException(409, "Rulebook settings changed in another window. Reload before saving.")
     book.access_mask = selected_access(set(form.getlist("access_role")))
+    book.category = selected_category(form, required=False)
     labels = ", ".join(ROLES[role] for role in roles_for(book.access_mask))
-    audit(db, actor, "rulebook.access_updated", f"Updated rulebook {key} access for {labels}.")
-    return redirect(ctx, "/rulebooks/upload", "Rulebook access updated.")
+    audit(db, actor, "rulebook.settings_updated",
+          f"Updated rulebook {key} for {labels}. Category {CATEGORIES.get(book.category, 'Uncategorized')}.")
+    return redirect(ctx, "/rulebooks/upload", "Rulebook settings updated.")
 
 
 def visible_book(request, db, key):

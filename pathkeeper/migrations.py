@@ -72,7 +72,7 @@ def migrate(admin_engine):
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
         "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL"},
         "character_drafts": {"portrait": "MEDIUMBLOB NULL", "portrait_changed": "BOOLEAN NOT NULL DEFAULT 0"},
-        "rulebooks": {"access_mask": "INT NOT NULL DEFAULT 0"},
+        "rulebooks": {"access_mask": "INT NOT NULL DEFAULT 0", "category": "VARCHAR(16) NULL"},
     }
     for table, columns in additions.items():
         existing = {column["name"] for column in inspect(admin_engine).get_columns(table)}
@@ -257,4 +257,7 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 25):
             db.add(SchemaMigration(version=25, name="multi_role_rulebook_access"))
             db.commit()
-    print("Database migrations applied through 025 (multi-role rulebook access).")
+        if not db.get(SchemaMigration, 26):
+            db.add(SchemaMigration(version=26, name="rulebook_categories"))
+            db.commit()
+    print("Database migrations applied through 026 (rulebook categories).")

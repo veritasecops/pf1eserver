@@ -19,10 +19,10 @@ def sample_pdf():
     return output.getvalue()
 
 
-def upload(env, client, title, role, data, filename="rulebook.pdf", csrf=True):
+def upload(env, client, title, role, data, filename="rulebook.pdf", csrf=True, category="core"):
     return client.post(
         "/rulebooks/upload",
-        data={"csrf": env.csrf(client) if csrf else "", "title": title, "access_role": role},
+        data={"csrf": env.csrf(client) if csrf else "", "title": title, "access_role": role, "category": category},
         files={"pdf": (filename, data, "application/pdf")},
     )
 
@@ -44,7 +44,7 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
     for role in clients:
         result = upload(env, admin, f"Book for {role}", role, data)
         assert result.status_code == 303, result.text
-    assert upload(env, admin, "Shared book", ["admin", "player"], data).status_code == 303
+    assert upload(env, admin, "Shared book", ["admin", "player"], data, category="expanded").status_code == 303
     assert upload(env, admin, "All roles book", list(clients), data).status_code == 303
 
     with Session(engine()) as db:
@@ -82,19 +82,28 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
 
     shared = next(book for book in books if book.title == "Shared book")
     path = f"/rulebooks/{shared.id}/access"
-    change = {"previous_mask": shared.access_mask, "access_role": ["gm", "player"]}
+    filters = {"category": "expanded"}
+    assert "Shared book" in admin.get("/rulebooks", params=filters).text
+    assert "Shared book" not in clients["gm"].get("/rulebooks", params=filters).text
+    assert "Book for admin" not in admin.get("/rulebooks", params=filters).text
+    change = {"previous_mask": shared.access_mask, "access_role": ["gm", "player"],
+              "previous_category": "expanded", "category": "third-party"}
     assert "Shared book" in admin.get("/rulebooks/upload").text
     assert env.post(clients["player"], path, change).status_code == 403
-    assert env.post(admin, path, {"previous_mask": shared.access_mask}).status_code == 422
+    assert env.post(admin, path, {"previous_mask": shared.access_mask, "previous_category": "expanded"}).status_code == 422
     assert env.post(admin, path, change).status_code == 303
     assert env.post(admin, path, change).status_code == 409
     assert admin.get(f"/rulebooks/{shared.id}/pdf").status_code == 404
     assert clients["gm"].get(f"/rulebooks/{shared.id}/cover").status_code == 200
+    assert "Shared book" not in clients["gm"].get("/rulebooks", params=filters).text
+    assert "Shared book" in clients["gm"].get("/rulebooks", params={"category": "third-party"}).text
 
 
 def test_invalid_rulebook_uploads_leave_no_files_or_records(env, monkeypatch, tmp_path):
     monkeypatch.setattr(rulebooks, "storage_root", lambda: tmp_path)
     admin = env.login(env.admin)
+    assert upload(env, admin, "No category", "admin", b"%PDF-", category="").status_code == 422
+    assert upload(env, admin, "Invalid category", "admin", b"%PDF-", category="unknown").status_code == 422
     assert upload(env, admin, "No role", [], b"%PDF-").status_code == 422
     assert upload(env, admin, "Invalid role", "anyone", b"%PDF-").status_code == 422
     assert upload(env, admin, "Invalid type", "player", b"<html>").status_code == 422
@@ -110,7 +119,7 @@ def test_invalid_rulebook_uploads_leave_no_files_or_records(env, monkeypatch, tm
 
 def test_migration_preserves_each_existing_rulebook_role(isolated_database):
     with isolated_database.begin() as connection:
-        connection.execute(text("ALTER TABLE rulebooks DROP COLUMN access_mask, ADD COLUMN access_role VARCHAR(10) NOT NULL, "
+        connection.execute(text("ALTER TABLE rulebooks DROP COLUMN access_mask, DROP COLUMN category, ADD COLUMN access_role VARCHAR(10) NOT NULL, "
                                 "ADD INDEX ix_rulebooks_access_role (access_role)"))
         connection.execute(text("INSERT INTO rulebooks (id, title, access_role) VALUES (:id, :role, :role)"),
                            [{"id": str(index), "role": role} for index, role in enumerate(RULEBOOK_ROLE_BITS)])
@@ -118,4 +127,5 @@ def test_migration_preserves_each_existing_rulebook_role(isolated_database):
     migrate(isolated_database)
     with isolated_database.connect() as connection:
         assert dict(connection.execute(select(Rulebook.title, Rulebook.access_mask)).all()) == RULEBOOK_ROLE_BITS
+        assert connection.scalars(select(Rulebook.category)).all() == [None, None, None]
     assert "access_role" not in {column["name"] for column in inspect(isolated_database).get_columns("rulebooks")}

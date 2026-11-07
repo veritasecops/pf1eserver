@@ -261,3 +261,4 @@ class Rulebook(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
     title: Mapped[str] = mapped_column(String(150))
     access_mask: Mapped[int] = mapped_column(Integer)
+    category: Mapped[str | None] = mapped_column(String(16))
