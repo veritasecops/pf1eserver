@@ -477,6 +477,22 @@ def test_autosave_retry_cannot_hide_a_later_edit_from_another_window(env):
         assert db.get(Character,character.id).notes == 'Edit from another window'
 
 
+def test_skill_names_link_to_live_catalog_descriptions(env):
+    character = seed_character(env.player)
+    catalog = default_catalog()
+    craft_url = 'https://www.aonprd.com/Skills.aspx?ItemName=Craft#reference'
+    catalog['skills']['craft']['url'] = craft_url
+    catalog['skills']['swim']['url'] = 'javascript:alert(1)'
+    with Session(engine()) as db:
+        db.merge(RuleCatalog(id=1, data=catalog))
+        db.commit()
+    page = env.login(env.player).get(f'/characters/{character.id}')
+    assert page.status_code == 200
+    assert page.text.count(f'href="{craft_url}" target="_blank" rel="noopener noreferrer">Craft</a>') == 2
+    assert 'href="https://www.aonprd.com/Skills.aspx?ItemName=Knowledge"' in page.text
+    assert 'href="javascript:alert(1)"' not in page.text
+
+
 def test_feature_names_link_to_catalog_class_and_race_rules(env):
     character = seed_character(env.player)
     client = env.login(env.player)

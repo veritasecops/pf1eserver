@@ -9,6 +9,7 @@ from .advancement import XP_SOURCE, apply_advancement, saved_xp, track
 from .sheet_calculations import class_record, calculated_fields, recalculate, base_speed_race
 from .sheet_formulas import sheet_formulas
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
+from .weapons import safe_weapon_url
 
 WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('equipped','Equipped'),('attack','Attack bonus'),
                   ('critical','Critical'),('type','Type'),('range','Range'),('ammunition','Ammunition'),
@@ -278,7 +279,10 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     from .equipment_state import combat_gear_rows, equipment_groups
     from .equipment_effects import contributions
     groups = equipment_groups(character, values)
+    live_skills = (progression_catalog if progression_catalog is not None else catalog)['skills']
+    skill_links = {key: safe_weapon_url(live_skills.get(key, meta).get('url', ''))
+                   for key, meta in catalog['skills'].items()}
     return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=groups,combat_gear_rows=combat_gear_rows(character,groups),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values,progression_catalog),
-                abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),class_skills=class_skills(catalog, (character.sheet_data or {}).get('input',{}).get('class_id',''), (character.sheet_data or {}).get('input',{}).get('expert_skills',())) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
+                abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),skill_links=skill_links,class_skills=class_skills(catalog, (character.sheet_data or {}).get('input',{}).get('class_id',''), (character.sheet_data or {}).get('input',{}).get('expert_skills',())) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,gear_slots=GEAR_SLOTS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

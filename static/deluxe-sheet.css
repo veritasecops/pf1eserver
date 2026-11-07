@@ -90,6 +90,7 @@
 .ds-skills th:first-child { width:48%; }
 .ds-page .ds-skills tbody th { text-align:left; padding:7px; font-weight:400; background:transparent; }
 .ds-skill-name { display:block; font-size:1rem; line-height:1.5; }
+.ds-skill-name a { text-decoration:underline; }
 .ds-skill-ability { color:#725e4b; font-size:.875rem; }
 .ds-class-skill { color:#783523; }
 .ds-page .ds-skills th input { font-size:1rem; height:32px; background:transparent; border-width:0 0 1px; }
