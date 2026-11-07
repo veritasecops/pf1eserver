@@ -26,7 +26,7 @@ from .ui import redirect, render
 
 router = APIRouter(prefix="/rulebooks")
 UPLOAD_PATH = "/rulebooks/upload"
-MAX_PDF = 250 * 1024 * 1024
+MAX_PDF = 500 * 1024 * 1024
 MAX_REQUEST = MAX_PDF + 64 * 1024
 PDF_ERROR = "Choose a readable PDF with at least one page and no password protection."
 CATEGORIES = {"core": "Core", "expanded": "Expanded", "alternate": "Alternate", "third-party": "3rd Party"}
@@ -41,7 +41,7 @@ async def bounded_upload(request):
     async for chunk in request.stream():
         total += len(chunk)
         if total > MAX_REQUEST:
-            raise RequestTooLarge("Upload a PDF of 250 MB or smaller.")
+            raise RequestTooLarge("Upload a PDF of 500 MB or smaller.")
         yield chunk
 
 
@@ -59,7 +59,7 @@ def save_pdf(source, destination):
         while chunk := source.read(1024 * 1024):
             remaining -= len(chunk)
             if remaining < 0:
-                raise HTTPException(413, "Upload a PDF of 250 MB or smaller.")
+                raise HTTPException(413, "Upload a PDF of 500 MB or smaller.")
             output.write(chunk)
     try:
         rendered = run(
@@ -170,7 +170,7 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
             if not isinstance(upload, UploadFile) or not (upload.filename or "").lower().endswith(".pdf"):
                 raise HTTPException(422, "Choose a PDF file.")
             if upload.size is not None and upload.size > MAX_PDF:
-                raise HTTPException(413, "Upload a PDF of 250 MB or smaller.")
+                raise HTTPException(413, "Upload a PDF of 500 MB or smaller.")
 
             root = storage_root()
             root.mkdir(mode=0o700, parents=True, exist_ok=True)

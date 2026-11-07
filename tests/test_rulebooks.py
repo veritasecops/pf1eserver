@@ -120,6 +120,12 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
 def test_invalid_rulebook_uploads_leave_no_files_or_records(env, monkeypatch, tmp_path):
     monkeypatch.setattr(rulebooks, "storage_root", lambda: tmp_path)
     admin = env.login(env.admin)
+    assert rulebooks.MAX_PDF == 500 * 1024 * 1024
+    assert rulebooks.MAX_REQUEST == rulebooks.MAX_PDF + 64 * 1024
+    assert 'Up to 500 MB.' in admin.get('/rulebooks/upload').text
+    assert admin.post('/rulebooks/upload', content=b'', headers={
+        'content-length': str(rulebooks.MAX_REQUEST + 1),
+    }).status_code == 413
     assert upload(env, admin, "No category", "admin", b"%PDF-", category="").status_code == 422
     assert upload(env, admin, "Invalid category", "admin", b"%PDF-", category="unknown").status_code == 422
     assert upload(env, admin, "No role", [], b"%PDF-").status_code == 422

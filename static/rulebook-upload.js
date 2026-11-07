@@ -14,8 +14,8 @@ for (const form of document.querySelectorAll('[data-rulebook-upload]')) {
     let message = '';
     if (files.length !== 1 || !/\.pdf$/i.test(files[0].name)) {
       message = 'Choose one PDF file.';
-    } else if (files[0].size > 250 * 1024 * 1024) {
-      message = 'Choose a PDF of 250 MB or smaller.';
+    } else if (files[0].size > 500 * 1024 * 1024) {
+      message = 'Choose a PDF of 500 MB or smaller.';
     } else if (dropped) {
       try {
         input.files = files;
