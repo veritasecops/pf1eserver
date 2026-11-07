@@ -61,6 +61,7 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     client = env.login(env.player)
     page = client.get(f'/characters/{character.id}')
     assert page.status_code == 200
+    assert 'class="ds-class-link" href="https://www.aonprd.com/ClassDisplay.aspx?ItemName=Fighter" target="_blank" rel="noopener noreferrer">Fighter</a>' in page.text
     form = SheetForm(page.text)
     assert set(form.names) == set(FIELDS) | {'csrf','version'}
     assert len(form.names) == len(set(form.names))

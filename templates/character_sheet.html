@@ -3,6 +3,11 @@
 {% if meta.kind == 'deity' %}<label class="ds-field"><span>{{ caption or meta.label }}</span>
 <select id="ds-{{ key }}" name="{{ key }}" aria-label="Change deity or belief"><option value="">Choose deity or belief</option>{% for item in deity_options %}<option value="{{ item.id }}" data-reference-url="{{ item.url }}"{% if deluxe.get(key) == item.id %} selected{% endif %}>{{ item.name }}</option>{% endfor %}</select>
 </label>
+{% elif key == 'class_name' and class_url and not hidden %}
+<div class="ds-field"><span>{{ meta.label }}</span>
+  <a class="ds-class-link" href="{{ class_url }}" target="_blank" rel="noopener noreferrer">{{ deluxe.get(key, '') }}</a>
+  {{ control(key, bare=true, hidden=true) }}
+</div>
 {% else %}
 {% if not bare %}<label class="ds-field" for="ds-{{ key }}"><span>{{ caption or meta.label }}</span>{% endif %}
 {% if meta.kind == 'textarea' %}<textarea id="ds-{{ key }}" name="{{ key }}" rows="{{ rows }}" maxlength="{{ meta.maximum }}"{% if bare %} aria-label="{{ caption or meta.label }}"{% endif %}>{{ deluxe.get(key,'') }}</textarea>
