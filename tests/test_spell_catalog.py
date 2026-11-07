@@ -1,4 +1,8 @@
-from pathkeeper.catalog_admin import spells
+from sqlalchemy.orm import Session
+
+from pathkeeper.catalog_admin import spell_defaults, spells
+from pathkeeper.database import engine
+from pathkeeper.models import RuleCatalog
 
 
 def test_spell_snapshot_includes_published_class_levels_and_mythic_versions():
@@ -31,3 +35,34 @@ def test_spells_tab_is_admin_only_and_filters_class_and_level_together(env):
     assert '1 spell' in match.text and 'SpellDisplay.aspx?ItemName=Adoration' in match.text
     assert 'No matching spells.' in admin.get(path, params={**filters, 'level': 2}).text
     assert 'No matching spells.' in admin.get(path, params={**filters, 'mythic': '1'}).text
+
+
+def test_admin_can_edit_spell_and_filters_use_saved_values(env):
+    path = '/administration/catalog/spells'
+    key = next(key for key, spell in spell_defaults().items() if spell['name'] == 'Fireball')
+    admin = env.login(env.admin)
+    player = env.login(env.player)
+    form = {'key': key, 'version': 1, 'name': 'House Fireball', 'schools': ['Conjuration'],
+            'url': 'https://www.aonprd.com/SpellDisplay.aspx?ItemName=Fireball#reference',
+            'level.Wizard': '4, 6', 'pfs_marked': 'on', 'markers': ['M']}
+    assert player.get(f'{path}/{key}').status_code == 403
+    assert env.post(player, path, form).status_code == 403
+    page = admin.get(f'{path}/{key}')
+    assert page.status_code == 200 and 'name="level.Wizard" value="3"' in page.text
+    invalid = env.post(admin, path, {**form, 'level.Wizard': '10'})
+    assert invalid.status_code == 422 and 'name="level.Wizard" value="10"' in invalid.text
+    saved = env.post(admin, path, form)
+    assert saved.status_code == 303
+    assert env.post(admin, path, form).status_code == 409
+
+    filters = {'kind': 'spells', 'q': 'House Fireball', 'class': 'Wizard', 'school': 'Conjuration'}
+    listing = admin.get('/administration/catalog', params={**filters, 'level': 6})
+    assert '1 spell' in listing.text and 'Wizard 4/6' in listing.text
+    assert 'Special material' in listing.text and 'Mythic version' not in listing.text.split('<tbody>')[1]
+    assert form['url'] in listing.text and f'href="{path}/{key}"' in listing.text
+    assert 'No matching spells.' in admin.get('/administration/catalog', params={**filters, 'level': 3}).text
+    with Session(engine()) as db:
+        overrides = db.get(RuleCatalog, 1).data['spell_overrides']
+        assert set(overrides) == {key}
+        assert overrides[key]['name'] == 'House Fireball'
+    assert spell_defaults()[key]['name'] == 'Fireball'

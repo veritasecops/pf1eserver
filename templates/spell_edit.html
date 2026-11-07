@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/catalog.css?v=contextual-equipment-actions">{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div><h1>Edit {{ spell.name or 'spell' }}</h1><p>Catalog version {{ version }}</p></div>
+  <a class="button" href="/administration/catalog?kind=spells">Back to Spells</a>
+</header>
+{% include 'admin_tabs.html' %}
+{% include 'rule_catalog_tabs.html' %}
+{% if errors %}<div class="alert error" role="alert">{% for error in errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+<form method="post" action="/administration/catalog/spells" class="card form-card catalog-editor">
+  {{ csrf_input(csrf) }}
+  <input type="hidden" name="key" value="{{ key }}">
+  <input type="hidden" name="version" value="{{ version }}">
+  <div class="form-grid">
+    <label class="field"><span>Spell name</span><input name="name" value="{{ spell.name }}" required maxlength="150"></label>
+    <label class="field"><span>Reference URL</span><input type="url" name="url" value="{{ spell.url }}" required maxlength="1000"></label>
+  </div>
+  <fieldset>
+    <legend>Schools</legend>
+    <div class="form-grid">
+      {% for school in schools %}<label class="checkbox"><input type="checkbox" name="schools" value="{{ school }}"{% if school in spell.schools %} checked{% endif %}> {{ school }}</label>{% endfor %}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Class levels</legend>
+    <p class="hint">Leave a class blank if the spell does not appear on its list. Separate multiple levels with commas.</p>
+    <div class="form-grid">
+      {% for name in classes %}<label class="field"><span>{{ name }}</span><input name="level.{{ name }}" value="{{ spell.class_levels.get(name, '') }}" maxlength="40" placeholder="e.g. 2, 3"></label>{% endfor %}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Source markers</legend>
+    <div class="form-grid">
+      <label class="checkbox"><input type="checkbox" name="mythic"{% if spell.mythic %} checked{% endif %}> Has Mythic version</label>
+      <label class="checkbox"><input type="checkbox" name="pfs_marked"{% if spell.pfs_marked %} checked{% endif %}> PFS Legal marker</label>
+      {% for code, label in marker_labels.items() %}<label class="checkbox"><input type="checkbox" name="markers" value="{{ code }}"{% if code in spell.markers %} checked{% endif %}> {{ label }}</label>{% endfor %}
+    </div>
+  </fieldset>
+  <div class="row"><button class="button primary" type="submit">Save spell</button><a class="button" href="/administration/catalog?kind=spells">Cancel</a></div>
+</form>
+{% endblock %}

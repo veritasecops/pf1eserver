@@ -3,6 +3,7 @@ import json
 import re
 from copy import deepcopy
 from functools import lru_cache
+from hashlib import sha256
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -30,6 +31,8 @@ magic_items_router = APIRouter(prefix='/administration/magic-items')
 KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
 RULE_TABS = {**{key: KINDS[key] for key in ('feats', 'skills')}, 'spells': 'Spells',
              **{key: KINDS[key] for key in ('deities', 'classes')}}
+SPELL_MARKERS = {'F': 'Special focus', 'M': 'Special material', 'R': 'Religion or ancestry requirement',
+                 'T': 'Torag preparation requirement'}
 
 
 def record_for(ctx, lock=False):
@@ -97,11 +100,22 @@ def spells():
     return json.loads((Path(__file__).parent / 'data' / 'spells.json').read_text())
 
 
+@lru_cache
+def spell_defaults():
+    return {sha256(spell['url'].encode()).hexdigest(): spell for spell in spells()}
+
+
+@lru_cache
+def spell_choices():
+    return (sorted({school for spell in spells() for school in spell['schools']}),
+            sorted({name for spell in spells() for name in spell['levels']}))
+
+
 def render_spell_catalog(ctx, request):
     params = request.query_params
-    entries = spells()
-    schools = sorted({school for spell in entries for school in spell['schools']})
-    classes = sorted({name for spell in entries for name in spell['levels']})
+    overrides = record_for(ctx).data.get('spell_overrides', {})
+    entries = ((key, overrides.get(key, spell)) for key, spell in spell_defaults().items())
+    schools, classes = spell_choices()
     search = params.get('q', '').strip()[:100]
     school = params.get('school', '')
     school = school if school in schools else ''
@@ -121,7 +135,8 @@ def render_spell_catalog(ctx, request):
             return spell_class in levels and (level is None or level in levels[spell_class])
         return level is None or any(level in values for values in levels.values())
 
-    items = [spell for spell in entries if matches(spell)]
+    items = sorted(((key, spell) for key, spell in entries if matches(spell)),
+                   key=lambda entry: (entry[1]['name'].casefold(), entry[0]))
     total = len(items)
     pages = max(1, (total + 49) // 50)
     raw_page = params.get('page', '')
@@ -131,7 +146,51 @@ def render_spell_catalog(ctx, request):
     return render(ctx, 'spell_catalog.html', title='Spells', kind='spells', rule_tabs=RULE_TABS,
                   items=items[(page - 1) * 50:page * 50], schools=schools, classes=classes,
                   search=search, school=school, spell_class=spell_class, level=level, mythic=mythic,
-                  total=total, page=page, pages=pages, query=query)
+                  total=total, page=page, pages=pages, query=query, marker_labels=SPELL_MARKERS)
+
+
+def spell_editor(ctx, record, key, form=None, errors=()):
+    spell = spell_defaults().get(key)
+    if spell is None:
+        raise HTTPException(404, 'Spell not found.')
+    spell = record.data.get('spell_overrides', {}).get(key, spell)
+    schools, classes = spell_choices()
+    values = {**spell, 'class_levels': {name: ', '.join(map(str, levels)) for name, levels in spell['levels'].items()}}
+    if form is not None:
+        values.update(name=form.get('name', ''), url=form.get('url', ''),
+                      schools=form.getlist('schools'), markers=form.getlist('markers'),
+                      mythic=form.get('mythic') == 'on', pfs_marked=form.get('pfs_marked') == 'on',
+                      class_levels={name: form.get(f'level.{name}', '') for name in classes})
+    response = render(ctx, 'spell_edit.html', title='Edit spell', kind='spells', rule_tabs=RULE_TABS,
+                      key=key, spell=values, schools=schools, classes=classes, marker_labels=SPELL_MARKERS,
+                      version=record.version, errors=errors)
+    if errors:
+        response.status_code = 422
+    return response
+
+
+def parse_spell(form):
+    schools, classes = spell_choices()
+    selected_schools = set(form.getlist('schools'))
+    if not selected_schools or selected_schools.difference(schools):
+        raise HTTPException(422, 'Select at least one spell school from the list.')
+    markers = set(form.getlist('markers'))
+    if markers.difference(SPELL_MARKERS):
+        raise HTTPException(422, 'Choose source markers from the list.')
+    url = field(form, 'url', 1000)
+    if not safe_weapon_url(url):
+        raise HTTPException(422, 'Enter a valid HTTP or HTTPS spell reference URL.')
+    levels = {}
+    for name in classes:
+        raw = field(form, f'level.{name}', 40, required=False)
+        if raw:
+            if not re.fullmatch(r'[0-9](?:\s*,\s*[0-9])*', raw):
+                raise HTTPException(422, f'Enter levels 0 through 9 for {name}, separated by commas.')
+            levels[name] = sorted({int(value) for value in raw.split(',')})
+    mythic = form.get('mythic') == 'on'
+    return {'name': field(form, 'name'), 'url': url, 'schools': sorted(selected_schools),
+            'levels': levels, 'mythic': mythic, 'pfs_marked': form.get('pfs_marked') == 'on',
+            'markers': sorted(markers | ({'Y'} if mythic else set()))}
 
 
 @magic_items_router.get('')
@@ -230,6 +289,8 @@ async def new_entry(kind: str, request: Request, db: Session = Depends(get_db)):
 async def edit_entry(kind: str, key: str, request: Request, db: Session = Depends(get_db)):
     ctx=context(request,db)
     administrator(ctx)
+    if kind == 'spells':
+        return spell_editor(ctx, record_for(ctx), key)
     kind_check(kind)
     record=record_for(ctx)
     if kind == 'classes':
@@ -382,12 +443,30 @@ def parse_entry(form,kind,key,catalog):
 async def save_entry(kind: str, request: Request, db: Session = Depends(get_db)):
     ctx=context(request,db)
     administrator(ctx)
-    kind_check(kind)
+    if kind != 'spells':
+        kind_check(kind)
     form=await read_form(ctx,max_fields=500 if kind == 'classes' else 200)
     record=record_for(ctx,True)
     if integer(form,'version',1,2**31-1)!=record.version: raise HTTPException(409,'The catalog changed in another window. Reload before saving.')
     new=form.get('new')=='1'
-    key=field(form,'key',100 if kind in {'feats','equipment'} else 60)
+    key=field(form,'key',100 if kind in {'feats','equipment','spells'} else 60)
+    if kind == 'spells':
+        original = spell_defaults().get(key)
+        if original is None:
+            raise HTTPException(404, 'Spell not found.')
+        try:
+            spell = parse_spell(form)
+        except HTTPException as error:
+            return spell_editor(ctx, record, key, form, [error.detail])
+        overrides = dict(record.data.get('spell_overrides', {}))
+        if spell == original:
+            overrides.pop(key, None)
+        else:
+            overrides[key] = spell
+        record.data = {**record.data, 'spell_overrides': overrides}
+        record.updated_at, record.updated_by = utcnow(), ctx.user.id
+        audit(db, ctx.user, 'catalog.updated', f"Updated spell: {original['name']}.")
+        return redirect(ctx, '/administration/catalog?kind=spells', 'Spell saved.')
     if kind == 'classes':
         if new or key not in CLASSES:
             raise HTTPException(404, 'Character class not found.')

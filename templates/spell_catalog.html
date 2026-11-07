@@ -27,10 +27,9 @@
   </form>
   <div class="table-scroll">
     <table class="catalog-table">
-      <thead><tr><th scope="col">Spell</th><th scope="col">School</th><th scope="col">Class levels</th><th scope="col">Source markers</th></tr></thead>
+      <thead><tr><th scope="col">Spell</th><th scope="col">School</th><th scope="col">Class levels</th><th scope="col">Source markers</th><th scope="col">Actions</th></tr></thead>
       <tbody>
-        {% set marker_labels = {'F': 'Special focus', 'M': 'Special material', 'R': 'Religion or ancestry requirement', 'T': 'Torag preparation requirement'} %}
-        {% for spell in items %}
+        {% for key, spell in items %}
         <tr>
           <th scope="row"><a class="catalog-source-link" href="{{ spell.url }}" target="_blank" rel="noopener noreferrer">{{ spell.name }}</a></th>
           <td>{{ spell.schools|join(' · ') }}</td>
@@ -41,9 +40,10 @@
             {% for marker in spell.markers if marker in marker_labels %}{% set markers.labels = markers.labels + [marker_labels[marker]] %}{% endfor %}
             {{ markers.labels|join(' · ') or '—' }}
           </td>
+          <td><a class="button small" href="/administration/catalog/spells/{{ key }}" aria-label="Edit {{ spell.name }}">Edit</a></td>
         </tr>
         {% else %}
-        <tr><td colspan="4">No matching spells.</td></tr>
+        <tr><td colspan="5">No matching spells.</td></tr>
         {% endfor %}
       </tbody>
     </table>
