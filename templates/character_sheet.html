@@ -46,7 +46,26 @@
 </div><div>
 <h3 class="ds-speed-title">Speed</h3><div class="ds-fields ds-three">{% for key,label in [('base','Base (ft.)'),('armor','With armor (ft.)'),('fly','Fly (ft.)'),('climb','Climb (ft.)'),('burrow','Burrow (ft.)'),('maneuverability','Maneuverability')] %}{{ control('speed.' ~ key,label) }}{% endfor %}</div>{{ control('temporary_modifiers',rows=2) }}
 <h3>Saving throws</h3><div class="ds-table-scroll"><table class="ds-table ds-saves"><thead><tr><th scope="col">Save</th>{% for label in ['Total','Class','Ability','Magic','Misc'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for key,label,ability in save_rows %}<tr><th scope="row">{{ label }} <span>({{ ability|upper }})</span></th>{% for part in ['total','base','ability','magic','misc'] %}<td>{{ control('save.' ~ key ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{{ control('save_modifiers',rows=2) }}
-<h3>Resistances</h3>{{ control('resistance.spell') }}<div class="ds-table-scroll"><table class="ds-table"><thead><tr>{% for label in ['Damage reduction','Bypassed by','Energy resistance','Energy type'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for row in range(3) %}<tr>{% for key in ['damage','bypass','energy','type'] %}<td>{{ control('resistance.' ~ row ~ '.' ~ key,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+<h3>Resistances</h3>
+{{ control('resistance.spell') }}
+{% for id, title, columns in [
+  ('physical', 'Physical', [('damage', 'Damage reduction'), ('bypass', 'Bypassed by')]),
+  ('energy', 'Energy', [('energy', 'Energy resistance'), ('type', 'Energy type')])
+] %}
+<section class="ds-block" aria-labelledby="resistance-{{ id }}-title">
+  <h4 id="resistance-{{ id }}-title">{{ title }}</h4>
+  <div class="ds-table-scroll">
+    <table class="ds-table">
+      <thead><tr>{% for key, label in columns %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for row in range(3) %}
+        <tr>{% for key, label in columns %}<td>{{ control('resistance.' ~ row ~ '.' ~ key, bare=true) }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endfor %}
 </div></div>
 <section aria-labelledby="sheet-trait-defenses-title">
   <h3 id="sheet-trait-defenses-title">Situational checks and defenses</h3>
