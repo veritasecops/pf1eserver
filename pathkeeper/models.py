@@ -253,8 +253,11 @@ class RuleCatalog(Base):
     __mapper_args__ = {"version_id_col": version}
 
 
+RULEBOOK_ROLE_BITS = {"player": 1, "gm": 2, "admin": 4}
+
+
 class Rulebook(Base):
     __tablename__ = "rulebooks"
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
     title: Mapped[str] = mapped_column(String(150))
-    access_role: Mapped[str] = mapped_column(String(10), index=True)
+    access_mask: Mapped[int] = mapped_column(Integer)

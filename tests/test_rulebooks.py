@@ -2,12 +2,13 @@ from io import BytesIO
 from os import urandom
 
 from PIL import Image
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
 from pathkeeper import rulebooks
 from pathkeeper.database import engine
-from pathkeeper.models import Rulebook
+from pathkeeper.migrations import migrate
+from pathkeeper.models import RULEBOOK_ROLE_BITS, Rulebook
 
 
 def sample_pdf():
@@ -43,20 +44,28 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
     for role in clients:
         result = upload(env, admin, f"Book for {role}", role, data)
         assert result.status_code == 303, result.text
+    assert upload(env, admin, "Shared book", ["admin", "player"], data).status_code == 303
+    assert upload(env, admin, "All roles book", list(clients), data).status_code == 303
 
     with Session(engine()) as db:
-        ids = dict(db.execute(select(Rulebook.access_role, Rulebook.id)).all())
+        books = db.scalars(select(Rulebook)).all()
+    assert {book.title: book.access_mask for book in books} == {
+        **{f"Book for {role}": bit for role, bit in RULEBOOK_ROLE_BITS.items()},
+        "Shared book": RULEBOOK_ROLE_BITS["admin"] | RULEBOOK_ROLE_BITS["player"],
+        "All roles book": sum(RULEBOOK_ROLE_BITS.values()),
+    }
     for role, client in clients.items():
         page = client.get("/rulebooks")
         assert page.status_code == 200
-        for audience, key in ids.items():
+        for book in books:
+            key = book.id
             pdf_path, cover_path = f"/rulebooks/{key}/pdf", f"/rulebooks/{key}/cover"
-            if audience != role:
-                assert key not in page.text and f"Book for {audience}" not in page.text
+            if not book.access_mask & RULEBOOK_ROLE_BITS[role]:
+                assert key not in page.text and book.title not in page.text
                 assert client.get(pdf_path, headers={"Range": "bytes=0-4"}).status_code == 404
                 assert client.head(cover_path).status_code == 404
                 continue
-            assert pdf_path in page.text and cover_path in page.text and f"Book for {audience}" in page.text
+            assert pdf_path in page.text and cover_path in page.text and book.title in page.text
             pdf = client.get(pdf_path)
             assert pdf.status_code == 200 and pdf.content == data
             assert pdf.headers["content-type"] == "application/pdf"
@@ -71,10 +80,22 @@ def test_rulebook_upload_and_role_scoped_library_and_files(env, monkeypatch, tmp
                 red, green, blue = image.getpixel((image.width // 2, image.height // 2))
                 assert red > green + 80 and red > blue + 80
 
+    shared = next(book for book in books if book.title == "Shared book")
+    path = f"/rulebooks/{shared.id}/access"
+    change = {"previous_mask": shared.access_mask, "access_role": ["gm", "player"]}
+    assert "Shared book" in admin.get("/rulebooks/upload").text
+    assert env.post(clients["player"], path, change).status_code == 403
+    assert env.post(admin, path, {"previous_mask": shared.access_mask}).status_code == 422
+    assert env.post(admin, path, change).status_code == 303
+    assert env.post(admin, path, change).status_code == 409
+    assert admin.get(f"/rulebooks/{shared.id}/pdf").status_code == 404
+    assert clients["gm"].get(f"/rulebooks/{shared.id}/cover").status_code == 200
+
 
 def test_invalid_rulebook_uploads_leave_no_files_or_records(env, monkeypatch, tmp_path):
     monkeypatch.setattr(rulebooks, "storage_root", lambda: tmp_path)
     admin = env.login(env.admin)
+    assert upload(env, admin, "No role", [], b"%PDF-").status_code == 422
     assert upload(env, admin, "Invalid role", "anyone", b"%PDF-").status_code == 422
     assert upload(env, admin, "Invalid type", "player", b"<html>").status_code == 422
     assert upload(env, admin, "Broken PDF", "player", b"%PDF-1.7\ninvalid").status_code == 422
@@ -85,3 +106,16 @@ def test_invalid_rulebook_uploads_leave_no_files_or_records(env, monkeypatch, tm
     assert not list(tmp_path.iterdir())
     with Session(engine()) as db:
         assert db.scalar(select(Rulebook)) is None
+
+
+def test_migration_preserves_each_existing_rulebook_role(isolated_database):
+    with isolated_database.begin() as connection:
+        connection.execute(text("ALTER TABLE rulebooks DROP COLUMN access_mask, ADD COLUMN access_role VARCHAR(10) NOT NULL, "
+                                "ADD INDEX ix_rulebooks_access_role (access_role)"))
+        connection.execute(text("INSERT INTO rulebooks (id, title, access_role) VALUES (:id, :role, :role)"),
+                           [{"id": str(index), "role": role} for index, role in enumerate(RULEBOOK_ROLE_BITS)])
+    migrate(isolated_database)
+    migrate(isolated_database)
+    with isolated_database.connect() as connection:
+        assert dict(connection.execute(select(Rulebook.title, Rulebook.access_mask)).all()) == RULEBOOK_ROLE_BITS
+    assert "access_role" not in {column["name"] for column in inspect(isolated_database).get_columns("rulebooks")}

@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, Rulebook, RuleCatalog, SchemaMigration, User
+from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RULEBOOK_ROLE_BITS, Rulebook, RuleCatalog, SchemaMigration, User
 
 
 def remove_manual_class_fields(db):
@@ -47,6 +47,20 @@ def remove_automatic_racial_summaries(db):
                 draft.existing_version = character.version
 
 
+def migrate_rulebook_access(admin_engine):
+    columns = {column["name"] for column in inspect(admin_engine).get_columns("rulebooks")}
+    if "access_role" not in columns:
+        return
+    with admin_engine.begin() as connection:
+        for role, bit in RULEBOOK_ROLE_BITS.items():
+            connection.execute(text("UPDATE rulebooks SET access_mask = :bit WHERE access_role = :role AND access_mask = 0"),
+                               {"bit": bit, "role": role})
+        if connection.scalar(text("SELECT 1 FROM rulebooks WHERE access_mask = 0 LIMIT 1")):
+            raise ValueError("A rulebook has an unrecognized access role.")
+    with admin_engine.begin() as connection:
+        connection.execute(text("ALTER TABLE rulebooks DROP COLUMN access_role"))
+
+
 def migrate(admin_engine):
     # MariaDB DDL commits separately. Complete all DDL before opening a read
     # transaction, so snapshot isolation cannot retain pre-DDL table definitions.
@@ -58,6 +72,7 @@ def migrate(admin_engine):
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
         "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL"},
         "character_drafts": {"portrait": "MEDIUMBLOB NULL", "portrait_changed": "BOOLEAN NOT NULL DEFAULT 0"},
+        "rulebooks": {"access_mask": "INT NOT NULL DEFAULT 0"},
     }
     for table, columns in additions.items():
         existing = {column["name"] for column in inspect(admin_engine).get_columns(table)}
@@ -65,6 +80,7 @@ def migrate(admin_engine):
             if name not in existing:
                 with admin_engine.begin() as connection:
                     connection.execute(text(f"ALTER TABLE `{table}` ADD COLUMN `{name}` {definition}"))
+    migrate_rulebook_access(admin_engine)
     with Session(admin_engine) as db:
         if not db.get(SchemaMigration, 1):
             if not db.get(EmailConfiguration, 1):
@@ -238,4 +254,7 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 24):
             db.add(SchemaMigration(version=24, name="role_based_rulebook_library"))
             db.commit()
-    print("Database migrations applied through 024 (role-based rulebook library).")
+        if not db.get(SchemaMigration, 25):
+            db.add(SchemaMigration(version=25, name="multi_role_rulebook_access"))
+            db.commit()
+    print("Database migrations applied through 025 (multi-role rulebook access).")

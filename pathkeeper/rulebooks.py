@@ -17,8 +17,8 @@ from starlette.formparsers import MultiPartException, MultiPartParser
 
 from .config import settings
 from .database import get_db
-from .models import Rulebook
-from .security import ROLES, administrator, audit, authenticated, context, field, verify_csrf
+from .models import RULEBOOK_ROLE_BITS, Rulebook
+from .security import ROLES, administrator, audit, authenticated, context, field, integer, read_form, verify_csrf
 from .ui import redirect, render
 
 router = APIRouter(prefix="/rulebooks")
@@ -71,19 +71,31 @@ def save_pdf(source, destination):
         raise HTTPException(422, PDF_ERROR)
 
 
+def selected_access(roles):
+    if not roles or roles.difference(RULEBOOK_ROLE_BITS):
+        raise HTTPException(422, "Choose one or more access roles from the list.")
+    return sum(RULEBOOK_ROLE_BITS[role] for role in roles)
+
+
+def roles_for(mask):
+    return [role for role, bit in RULEBOOK_ROLE_BITS.items() if mask & bit]
+
+
 @router.get("")
 async def library(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     user = authenticated(ctx)
-    books = db.scalars(select(Rulebook).where(Rulebook.access_role == user.role)
+    books = db.scalars(select(Rulebook).where(Rulebook.access_mask.bitwise_and(RULEBOOK_ROLE_BITS[user.role]) != 0)
                        .order_by(Rulebook.title, Rulebook.id)).all()
     return render(ctx, "rulebooks.html", title="Rulebook library", books=books,
                   role_label=ROLES[user.role], can_upload=user.role == "admin")
 
 
-def upload_page(ctx, title="", access_role="", error="", status=200):
+def upload_page(ctx, title="", roles=(), error="", status=200):
+    books = ctx.db.scalars(select(Rulebook).order_by(Rulebook.title, Rulebook.id))
     response = render(ctx, "rulebook_upload.html", title="Upload rulebook", book_title=title,
-                      access_role=access_role, access_roles=ROLES, error=error)
+                      selected_roles=roles, access_roles=ROLES, error=error,
+                      managed_books=[(book, roles_for(book.access_mask)) for book in books])
     response.status_code = status
     return response
 
@@ -102,21 +114,21 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
     if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
         return upload_page(ctx, error="Choose a PDF file to upload.", status=422)
     try:
-        form = await MultiPartParser(request.headers, bounded_upload(request), max_files=1, max_fields=3,
+        form = await MultiPartParser(request.headers, bounded_upload(request), max_files=1, max_fields=2 + len(ROLES),
                                      max_part_size=4096).parse()
     except RequestTooLarge as error:
         return upload_page(ctx, error=error.message, status=413)
     except MultiPartException:
         return upload_page(ctx, error="The upload form could not be read.", status=422)
 
-    title = access_role = ""
+    title = ""
+    roles = set()
     try:
         verify_csrf(ctx, form)
         try:
             title = field(form, "title")
-            access_role = field(form, "access_role", 10)
-            if access_role not in ROLES:
-                raise HTTPException(422, "Choose an access role from the list.")
+            roles = set(form.getlist("access_role"))
+            access_mask = selected_access(roles)
             upload = form.get("pdf")
             if not isinstance(upload, UploadFile) or not (upload.filename or "").lower().endswith(".pdf"):
                 raise HTTPException(422, "Choose a PDF file.")
@@ -132,9 +144,10 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
                 await run_in_threadpool(save_pdf, upload.file, stage)
                 stage.rename(destination)
                 try:
-                    db.add(Rulebook(id=key, title=title, access_role=access_role))
-                    audit(db, actor, "rulebook.uploaded", f"Uploaded rulebook {key} for {ROLES[access_role]}.")
-                    return redirect(ctx, "/rulebooks/upload", f"Rulebook uploaded for {ROLES[access_role]} access.")
+                    db.add(Rulebook(id=key, title=title, access_mask=access_mask))
+                    labels = ", ".join(ROLES[role] for role in roles_for(access_mask))
+                    audit(db, actor, "rulebook.uploaded", f"Uploaded rulebook {key} for {labels}.")
+                    return redirect(ctx, "/rulebooks/upload", "Rulebook uploaded.")
                 except Exception:
                     try:
                         shutil.rmtree(destination)
@@ -142,16 +155,37 @@ async def upload_book(request: Request, db: Session = Depends(get_db)):
                         logging.getLogger(__name__).exception("Could not remove failed rulebook upload %s", key)
                     raise
         except HTTPException as error:
-            return upload_page(ctx, title, access_role, error.detail, error.status_code)
+            return upload_page(ctx, title, roles, error.detail, error.status_code)
     finally:
         await form.close()
+
+
+def get_book(db, key, *, lock=False):
+    book = db.get(Rulebook, key, with_for_update=lock) if re.fullmatch(r"[a-f0-9]{32}", key) else None
+    if book is None:
+        raise HTTPException(404, "Rulebook not found.")
+    return book
+
+
+@router.post("/{key}/access")
+async def update_access(key: str, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    actor = administrator(ctx)
+    form = await read_form(ctx, max_fields=2 + len(ROLES))
+    book = get_book(db, key, lock=True)
+    if integer(form, "previous_mask", 1, sum(RULEBOOK_ROLE_BITS.values())) != book.access_mask:
+        raise HTTPException(409, "Access changed in another window. Reload before saving.")
+    book.access_mask = selected_access(set(form.getlist("access_role")))
+    labels = ", ".join(ROLES[role] for role in roles_for(book.access_mask))
+    audit(db, actor, "rulebook.access_updated", f"Updated rulebook {key} access for {labels}.")
+    return redirect(ctx, "/rulebooks/upload", "Rulebook access updated.")
 
 
 def visible_book(request, db, key):
     ctx = context(request, db)
     user = authenticated(ctx)
-    book = db.get(Rulebook, key) if re.fullmatch(r"[a-f0-9]{32}", key) else None
-    if not book or book.access_role != user.role:
+    book = get_book(db, key)
+    if not book.access_mask & RULEBOOK_ROLE_BITS[user.role]:
         raise HTTPException(404, "Rulebook not found.")
     return book
 
