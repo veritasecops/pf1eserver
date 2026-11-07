@@ -27,7 +27,7 @@ from .sheet_formulas import sheet_formulas
 from .sheet_feats import removable_rows, remove_feat
 from .trait_defenses import trait_defenses
 from .equipment_state import equipment_groups, equipped_values, sync_equipped
-from .equipment_effects import contributions, persist_effects
+from .equipment_effects import EQUIPMENT_AC_FIELDS, contributions, persist_effects
 from .treasure import COINS, record_coin_change, treasure
 from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
 
@@ -424,7 +424,7 @@ async def read_play_sheet(ctx, character, form=None):
         from .equipment_effects import validate_armor
         validate_armor(character, values)
         encoded = ctx.request.headers.get('x-equipment-effects')
-        keep = [key for key in ('ac.dex', 'speed.armor') if not encoded and values[key] != current[key]]
+        keep = ('speed.armor',) if not encoded and values['speed.armor'] != current['speed.armor'] else ()
         if encoded:
             from .equipment_effects import number
             from decimal import Decimal
@@ -435,7 +435,8 @@ async def read_play_sheet(ctx, character, form=None):
                 for key, amount in shown.items():
                     value = Decimal(str(amount))
                     if not value.is_finite() or abs(value) > 1000000000: raise ValueError
-                    values[key] = format(number(values[key]) - value + number(actual[key]), 'f')
+                    if key not in EQUIPMENT_AC_FIELDS:
+                        values[key] = format(number(values[key]) - value + number(actual[key]), 'f')
             except (ValueError, TypeError, ArithmeticError):
                 raise HTTPException(422, 'Reload the sheet to refresh equipment modifiers.') from None
         recalculate(character, values, equipment_previous=contributions(character, current), equipment_keep=keep, progression_catalog=catalog)

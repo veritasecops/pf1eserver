@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from math import floor
 
 from .class_catalog import class_key, class_save_bonuses, creation_class
+from .equipment_effects import EQUIPMENT_AC_FIELDS
 from .pf1_data import ABILITIES, RACES
 from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
 from .trait_rules import class_skill_bonus, racial_skill_bonus
@@ -24,6 +25,7 @@ def calculated_fields(character, values, progression_catalog=None):
     SKILLS = catalog["skills"]
     locked = {'level','next_level','player','class_name','speed.base','initiative.total','initiative.dex','cmb.total','cmd.total',
               'ac.total','ac.flat','ac.touch','skill_points.total','skill_points.int','load.total'}
+    locked.update(EQUIPMENT_AC_FIELDS)
     locked.update(f"money.{coin}" for coin in COINS)
     for ability in ABILITIES:
         locked.update({f'ability.{ability}.mod',f'ability.{ability}.temp_mod'})

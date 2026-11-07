@@ -230,13 +230,13 @@ def test_calculated_fields_ignore_forgery_and_follow_editable_inputs(env):
     client = env.login(env.player)
     path = f'/characters/{character.id}'
     form = SheetForm(client.get(path).text)
-    assert {'hp.total','bab','save.fortitude.base','skill_points.base'} <= form.readonly
+    assert {'hp.total','bab','save.fortitude.base','skill_points.base','ac.armor','ac.shield','ac.dex'} <= form.readonly
     values = dict(form.values)
     for key in form.readonly: values[key] = '999999'
     values.update({'ability.str.score':'18','ability.dex.temp_score':'16',
                    'initiative.misc':'4','skill.climb.ranks':'2','skill.climb.misc':'1',
                    'skill.perception.ranks':'2','skill.perception.misc':'1',
-                   'ac.armor':'4','ac.shield':'2','ac.dex':'3','ac.dodge':'1','ac.misc':'0',
+                   'ac.dodge':'1','ac.misc':'0',
                    'save.reflex.magic':'2','save.reflex.misc':'1','hp.current':'7','ability.con.temp_score':'14',
                    'spell.2.list':'Scorching ray\n\nMirror image'})
     assert env.post(client,path+'/play-sheet',values).status_code == 303
@@ -250,9 +250,10 @@ def test_calculated_fields_ignore_forgery_and_follow_editable_inputs(env):
     assert saved.values['skill.climb.total'] == '10'  # 4 STR + 2 ranks + 3 class + 1 misc
     assert saved.values['skill.perception.total'] == '3'  # no class bonus
     assert saved.values['save.reflex.total'] == '6'
-    assert saved.values['ac.total'] == '20'
+    assert (saved.values['ac.armor'], saved.values['ac.shield'], saved.values['ac.dex']) == ('2', '2', '3')
+    assert saved.values['ac.total'] == '18'
     assert saved.values['ac.touch'] == '14'
-    assert saved.values['ac.flat'] == '16'
+    assert saved.values['ac.flat'] == '14'
     assert saved.values['spell.2.known'] == '2'
     assert '999999' not in [saved.values[key] for key in saved.readonly]
 
@@ -268,7 +269,7 @@ def test_calculations_preserve_manual_progression_and_negative_modifiers(env):
     form.values.update({'ability.dex.score':'7','ability.str.score':'9','size':'Small',
                         'bab':'3','save.will.base':'3','ability.wis.score':'12',
                         'skill_points.base':'2','ability.int.score':'6','skill_points.misc':'1',
-                        'ac.armor':'2','ac.dex':'-2','ac.dodge':'1','ac.misc':'0'})
+                        'ac.dodge':'1','ac.misc':'0'})
     assert env.post(client,path+'/play-sheet',form.values).status_code == 303
     saved = SheetForm(client.get(path).text)
     assert saved.values['ability.dex.mod'] == '-2'
@@ -277,7 +278,7 @@ def test_calculations_preserve_manual_progression_and_negative_modifiers(env):
     assert saved.values['save.will.base'] == '1'
     assert saved.values['save.will.total'] == '2'
     assert saved.values['cmb.size'] == '-1' and saved.values['ac.size'] == '1'
-    assert saved.values['ac.flat'] == '11'  # negative DEX remains, dodge is excluded
+    assert saved.values['ac.flat'] == '9'  # negative DEX remains, dodge is excluded
 
 
 def test_class_saves_follow_the_current_level_progression_catalog(env):

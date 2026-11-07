@@ -8,6 +8,10 @@ from .rule_catalog import character_catalog, equipment
 from .trait_rules import FAST_MOVEMENT, MONKS, armor_training, load_category, nimble
 
 
+EQUIPMENT_AC_FIELDS = frozenset({'ac.armor', 'ac.shield', 'ac.dex'})
+LOAD_DEX_CAPS = {'medium': 3, 'heavy': 1}
+
+
 def number(value, default=Decimal(0)):
     try:
         result = Decimal(str(value)) if str(value).strip() else default
@@ -84,6 +88,7 @@ def contributions(character, values, original=False):
         training = armor_training(cls, level) if armor else 0
         armor_cap = number(armor.get('max_dex', 100))
         dex = min(modifier('dex'), armor_cap + training, number(shield.get('max_dex', 100)))
+        dex = min(dex, LOAD_DEX_CAPS.get(load, 100))
         penalty = min(0, number(armor.get('acp', 0)) + training) + number(shield.get('acp', 0))
         # Older creation snapshots already include these two Unchained bonuses
         # in their editable starting values. Remove that baked-in component.
@@ -123,10 +128,9 @@ def contributions(character, values, original=False):
             for row in (key, key+'-2') if key in {'craft','perform','profession'} else (key,):
                 result[f'skill.{row}.misc'] = penalty
     if original and not snapshot.get('computed'):
-        # Preserve existing hand-entered modifiers on legacy characters. Blank
-        # DEX and speed fields can start following their known base values.
-        for key in ('ac.dex', 'speed.armor'):
-            if values.get(key, '') == '': result[key] = 0
+        # A blank speed field can start following the known base speed.
+        if values.get('speed.armor', '') == '':
+            result['speed.armor'] = 0
         result['ac.misc'] = result['cmd.misc'] = 0
     return {key:format(number(value), 'f') for key, value in result.items()}
 
@@ -136,7 +140,10 @@ def apply_effects(character, values, previous=None, keep=()):
     if previous is None:
         previous = contributions(character, values, original=True)
     current = contributions(character, values)
+    values.update({key: current[key] for key in EQUIPMENT_AC_FIELDS})
     for key, amount in current.items():
+        if key in EQUIPMENT_AC_FIELDS:
+            continue
         delta = number(amount) - number(previous.get(key, 0))
         if delta and key not in keep:
             updated = number(values.get(key, '')) + delta

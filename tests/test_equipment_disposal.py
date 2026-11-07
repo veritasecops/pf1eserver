@@ -63,7 +63,7 @@ def test_sale_credits_exact_coin_types_once_and_checks_retries(env):
     assert client.get(path+'/equipment').json()['owned']=={}
 
 
-def test_creation_armor_effects_reverse_once_preserving_manual_offsets(env):
+def test_creation_armor_effects_reverse_once_and_preserve_editable_offsets(env):
     character=seed_character(env.player)
     data=fighter(defaults(env.player.id));data.update(method='manual',wealth_method='manual',manual_gold=500000)
     data['abilities']['dex']=18
@@ -80,16 +80,16 @@ def test_creation_armor_effects_reverse_once_preserving_manual_offsets(env):
     result=env.post(client,path+'/equipment/dispose',disposal(client,character.id,kind='armor',row=armor_row))
     assert result.status_code==200,result.text
     fields=result.json()['purchase_fields']
-    assert fields['ac.armor']=='2' and fields['ac.dex']=='5'
+    assert fields['ac.armor']=='0' and fields['ac.dex']=='4'
     assert fields['skill.climb.misc']=='1' and fields['speed.armor']=='35'
-    assert result.json()['values']['ac.total']=='19'
+    assert result.json()['values']['ac.total']=='16'
     # Buying and removing the same catalog item again cannot reverse creation effects twice.
     bought=env.post(client,path+'/equipment',purchase_data(client,character.id,{'full-plate':1}))
     assert bought.status_code==200,bought.text
     again=env.post(client,path+'/equipment/dispose',disposal(client,character.id,kind='armor',row=armor_row))
     assert again.status_code==200,again.text
     sheet=SheetForm(client.get(path).text)
-    assert sheet.values['ac.armor']=='2' and sheet.values['skill.climb.misc']=='1'
+    assert sheet.values['ac.armor']=='0' and sheet.values['skill.climb.misc']=='1'
 
 
 @pytest.mark.parametrize('changes',[

@@ -62,6 +62,10 @@ def test_fighter_armor_training_and_temporary_dex_follow_equipped_armor(env):
     form=saved_form(client,character)
     assert form.values['ac.armor']=='5' and form.values['ac.dex']=='4' and form.values['speed.armor']=='30'
     assert form.values['skill.climb.misc']=='-3'
+    for strength, dex_cap in [('8', '3'), ('4', '1')]:
+        preview = client.post(path+'/play-sheet/calculate', data={**form.values, 'ability.str.score': strength})
+        assert preview.status_code == 200, preview.text
+        assert preview.json()['values']['ac.dex'] == dex_cap
     form.values['ability.dex.temp_score']='8'
     assert env.post(client,path+'/play-sheet',form.values).status_code==303
     form=saved_form(client,character);assert form.values['ac.dex']=='-1'
@@ -71,22 +75,22 @@ def test_fighter_armor_training_and_temporary_dex_follow_equipped_armor(env):
     assert form.values['speed.armor']=='30' and form.values['ac.dex']=='-1' and form.values['skill.climb.misc']=='0'
 
 
-def test_rapid_saves_use_displayed_equipment_contributions_without_double_offsets(env):
+def test_rapid_saves_recalculate_armor_from_the_equipped_item(env):
     client,character=setup_sheet(env);path=f'/characters/{character}'
     buy(env,client,character,{'leather':1,'chain-shirt':1})
     page=client.get(path).text;original=SheetForm(page)
     shown=json.loads(re.search(r'id="sheet-equipment-effects">(.*?)</script>',page,re.S).group(1))
-    original.values.update({'armor.0.equipped':'1','ac.armor':'3'}) # +3 manual offset before armor arrives
+    original.values.update({'armor.0.equipped':'1','ac.armor':'3'})
     first=client.post(path+'/play-sheet',data=original.values,headers={'Accept':'application/json','X-Sheet-Save-Id':secrets.token_hex(16),'X-Equipment-Effects':json.dumps(shown)})
     assert first.status_code==200,first.text
-    assert first.json()['equipment_fields']['ac.armor']=='5'
+    assert first.json()['equipment_fields']['ac.armor']=='2'
     # Next request was typed before the first reply updated displayed modifiers.
     original.values['version']=first.json()['version']
     original.values.pop('armor.0.equipped');original.values['armor.1.equipped']='1'
     second=client.post(path+'/play-sheet',data=original.values,headers={'Accept':'application/json','X-Sheet-Save-Id':secrets.token_hex(16),'X-Equipment-Effects':json.dumps(shown)})
     assert second.status_code==200,second.text
-    assert second.json()['equipment_fields']['ac.armor']=='7'
-    assert saved_form(client,character).values['ac.armor']=='7'
+    assert second.json()['equipment_fields']['ac.armor']=='4'
+    assert saved_form(client,character).values['ac.armor']=='4'
 
 
 def test_equipped_weapons_recalculate_current_ability_and_feat_modifiers(env):
