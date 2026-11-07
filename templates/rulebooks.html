@@ -5,10 +5,7 @@
 <header class="page-header">
   <div><h1>Rulebook library</h1><p>PDFs shared with the {{ role_label }} role.</p></div>
   {% if can_upload %}
-  <div class="row">
-    <button class="button primary" type="button" data-open-dialog="rulebook-upload-dialog" aria-haspopup="dialog">Upload PDF</button>
-    <a class="button" href="/rulebooks/upload">Manage rulebooks</a>
-  </div>
+  <button class="button primary" type="button" data-open-dialog="rulebook-upload-dialog" aria-haspopup="dialog">Upload PDF</button>
   {% endif %}
 </header>
 <form method="get" class="filter-bar standalone" aria-label="Filter rulebooks">
