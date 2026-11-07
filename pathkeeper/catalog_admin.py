@@ -28,6 +28,8 @@ router = APIRouter(prefix='/administration/catalog')
 equipment_router = APIRouter(prefix='/administration/equipment')
 magic_items_router = APIRouter(prefix='/administration/magic-items')
 KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
+RULE_TABS = {**{key: KINDS[key] for key in ('feats', 'skills')}, 'spells': 'Spells',
+             **{key: KINDS[key] for key in ('deities', 'classes')}}
 
 
 def record_for(ctx, lock=False):
@@ -70,6 +72,8 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     ctx=context(request,db)
     administrator(ctx)
     kind = request.query_params.get('kind', 'feats')
+    if kind == 'spells':
+        return render_spell_catalog(ctx, request)
     if kind == 'equipment':
         query = urlencode([(key, value) for key, value in request.query_params.multi_items() if key != 'kind'])
         return RedirectResponse('/administration/equipment' + ('?' + query if query else ''), status_code=303)
@@ -86,6 +90,48 @@ async def equipment_page(request: Request, db: Session = Depends(get_db)):
 @lru_cache
 def magic_items():
     return json.loads((Path(__file__).parent / 'data' / 'magic_items.json').read_text())
+
+
+@lru_cache
+def spells():
+    return json.loads((Path(__file__).parent / 'data' / 'spells.json').read_text())
+
+
+def render_spell_catalog(ctx, request):
+    params = request.query_params
+    entries = spells()
+    schools = sorted({school for spell in entries for school in spell['schools']})
+    classes = sorted({name for spell in entries for name in spell['levels']})
+    search = params.get('q', '').strip()[:100]
+    school = params.get('school', '')
+    school = school if school in schools else ''
+    spell_class = params.get('class', '')
+    spell_class = spell_class if spell_class in classes else ''
+    raw_level = params.get('level', '')
+    level = int(raw_level) if re.fullmatch(r'[0-9]', raw_level) else None
+    mythic = params.get('mythic') == '1'
+
+    def matches(spell):
+        if search.casefold() not in spell['name'].casefold() or (school and school not in spell['schools']):
+            return False
+        if mythic and not spell['mythic']:
+            return False
+        levels = spell['levels']
+        if spell_class:
+            return spell_class in levels and (level is None or level in levels[spell_class])
+        return level is None or any(level in values for values in levels.values())
+
+    items = [spell for spell in entries if matches(spell)]
+    total = len(items)
+    pages = max(1, (total + 49) // 50)
+    raw_page = params.get('page', '')
+    page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
+    query = urlencode({'kind': 'spells', 'q': search, 'school': school, 'class': spell_class,
+                       'level': '' if level is None else level, 'mythic': '1' if mythic else ''})
+    return render(ctx, 'spell_catalog.html', title='Spells', kind='spells', rule_tabs=RULE_TABS,
+                  items=items[(page - 1) * 50:page * 50], schools=schools, classes=classes,
+                  search=search, school=school, spell_class=spell_class, level=level, mythic=mythic,
+                  total=total, page=page, pages=pages, query=query)
 
 
 @magic_items_router.get('')
@@ -163,7 +209,7 @@ def render_catalog(ctx, request, kind):
     if kind in {'feats', 'equipment'}:
         items = items[(page - 1) * 100:page * 100]
     return render(ctx,'catalog.html',title='Equipment' if kind == 'equipment' else 'Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories,
-                  equipment_counts=equipment_counts,equipment_status=equipment_status,weapon_items=record.data.get('weapons', {}))
+                  equipment_counts=equipment_counts,equipment_status=equipment_status,weapon_items=record.data.get('weapons', {}),rule_tabs=RULE_TABS)
 
 
 @router.get('/{kind}/new')

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/catalog.css?v=contextual-equipment-actions">{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div><h1>Rules catalog</h1><p>Browse spell schools and class levels. Select a spell to open its description on Archives of Nethys.</p></div>
+</header>
+{% include 'admin_tabs.html' %}
+{% include 'rule_catalog_tabs.html' %}
+<section class="card" aria-label="Spells">
+  <form method="get" class="filter-bar catalog-toolbar">
+    <input type="hidden" name="kind" value="spells">
+    <label class="search-input"><input type="search" name="q" value="{{ search }}" aria-label="Search spells" placeholder="Search spells"></label>
+    <select name="school" aria-label="Spell school">
+      <option value="">All schools</option>
+      {% for label in schools %}<option{% if label == school %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="class" aria-label="Spell class">
+      <option value="">All classes</option>
+      {% for label in classes %}<option{% if label == spell_class %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="level" aria-label="Spell level">
+      <option value="">All levels</option>
+      {% for number in range(10) %}<option value="{{ number }}"{% if number == level %} selected{% endif %}>Level {{ number }}</option>{% endfor %}
+    </select>
+    <label class="checkbox"><input type="checkbox" name="mythic" value="1"{% if mythic %} checked{% endif %}> Has Mythic version</label>
+    <button class="button" type="submit">Filter</button>
+  </form>
+  <div class="table-scroll">
+    <table class="catalog-table">
+      <thead><tr><th scope="col">Spell</th><th scope="col">School</th><th scope="col">Class levels</th><th scope="col">Source markers</th></tr></thead>
+      <tbody>
+        {% set marker_labels = {'F': 'Special focus', 'M': 'Special material', 'R': 'Religion or ancestry requirement', 'T': 'Torag preparation requirement'} %}
+        {% for spell in items %}
+        <tr>
+          <th scope="row"><a class="catalog-source-link" href="{{ spell.url }}" target="_blank" rel="noopener noreferrer">{{ spell.name }}</a></th>
+          <td>{{ spell.schools|join(' · ') }}</td>
+          <td>{% for label, levels in spell.levels.items() %}{{ label }} {{ levels|join('/') }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</td>
+          <td>{% set markers = namespace(labels=[]) %}
+            {% if spell.mythic %}{% set markers.labels = markers.labels + ['Mythic version'] %}{% endif %}
+            {% if spell.pfs_marked %}{% set markers.labels = markers.labels + ['PFS Legal'] %}{% endif %}
+            {% for marker in spell.markers if marker in marker_labels %}{% set markers.labels = markers.labels + [marker_labels[marker]] %}{% endfor %}
+            {{ markers.labels|join(' · ') or '—' }}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">No matching spells.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    {{ total }} {{ 'spell' if total == 1 else 'spells' }}
+    {% if pages > 1 %}
+    <nav class="row" aria-label="Catalog pages">
+      {% if page > 1 %}<a class="button small" href="?{{ query }}&amp;page={{ page - 1 }}">Previous</a>{% endif %}
+      <span>Page {{ page }} of {{ pages }}</span>
+      {% if page < pages %}<a class="button small" href="?{{ query }}&amp;page={{ page + 1 }}">Next</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

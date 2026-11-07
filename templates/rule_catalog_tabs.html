@@ -1,0 +1,5 @@
+<nav class="tabs" aria-label="Catalog lists">
+  {% for value, label in rule_tabs.items() %}
+  <a href="/administration/catalog?kind={{ value }}"{% if kind == value %} class="active" aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
