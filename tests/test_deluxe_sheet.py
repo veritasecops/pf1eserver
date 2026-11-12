@@ -528,7 +528,7 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert '>Weapon Focus (Longsword)</a>' in page.text
     class_start = page.text.index('id="class-abilities-title"')
     race_start = page.text.index('id="racial-abilities-title"')
-    feats_start = page.text.index('<h3>Feats</h3>')
+    feats_start = page.text.index('<h3 id="feats-title">Feats</h3>')
     class_block = page.text[class_start:race_start]
     assert '<table class="ds-table ds-ability-table ds-class-abilities"' in class_block
     assert '<th scope="col">Ability</th>' in class_block
@@ -538,6 +538,13 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert '<th scope="col">Ability</th>' in racial_block
     assert '<tr><td><a' in racial_block and '>Skilled</a>' in racial_block
     assert page.text.count('>Skilled</a>') == 1
+    feats_block = page.text[feats_start:page.text.index('<h3>Skills</h3>')]
+    assert '<table class="ds-table ds-ability-table" aria-labelledby="feats-title">' in feats_block
+    assert '<th scope="col">Feat</th>' in feats_block
+    assert '<tr data-feature-row="0">' in feats_block and '>Weapon Focus (Longsword)</a>' in feats_block
+    assert '<tr data-feature-row="1" hidden>' in feats_block
+    assert '<tr data-feature-row="4" hidden>' in feats_block
+    assert 'data-remove-feat="0"' in feats_block
     assert SheetForm(page.text).values['feature.3'] == 'Custom campaign ability'
 
 def test_investigator_talent_links_to_the_talents_index(env):
@@ -567,9 +574,11 @@ def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     names = {item['name'] for item in options['options']['feat']}
     assert 'Weapon Focus' in names
     assert not {'Extra Bombs', 'Extra Discovery', 'Advanced Weapon Training', 'Power Attack', 'Improved Grapple'} & names
-    assert '>Armor Training 1</a>' in client.get(path).text
-    assert '>Skilled</a>' in client.get(path).text
-    form = SheetForm(client.get(path).text)
+    page = client.get(path)
+    assert '>Armor Training 1</a>' in page.text
+    assert '>Skilled</a>' in page.text
+    assert '<td>No feats recorded.</td>' in page.text
+    form = SheetForm(page.text)
     data = {'version': form.values['version'], 'kind': 'feat', 'feature': 'Weapon Focus'}
     assert env.post(client, path + '/features', {**data, 'kind': 'class', 'feature': 'Armor training 1'}).status_code == 422
     assert env.post(client, path + '/features', {**data, 'kind': 'racial', 'feature': 'Skilled'}).status_code == 422
@@ -580,6 +589,7 @@ def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     assert env.post(client, path + '/features', {**data, 'target': 'longsword'}).status_code == 409
     page = client.get(path)
     assert 'id="sheet-feature-picker"' in page.text and '>Weapon Focus (Longsword)</a>' in page.text
+    assert '<td>No feats recorded.</td>' not in page.text
     options = client.get(path + '/features').json()
     weapon_focus = next(item for item in options['options']['feat'] if item['name'] == 'Weapon Focus')
     assert 'longsword' not in weapon_focus['targets'] and 'shortsword' in weapon_focus['targets']

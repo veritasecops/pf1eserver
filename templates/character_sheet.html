@@ -108,7 +108,7 @@
     <div class="ds-table-scroll" tabindex="0" role="region" aria-labelledby="class-abilities-title">
       <table class="ds-table ds-ability-table ds-class-abilities" aria-labelledby="class-abilities-title">
         <thead>
-          <tr><th scope="col">Ability</th>{% if has_choices %}<th scope="col">Choice</th>{% endif %}{% if catalog_entries %}<th scope="col" class="ds-class-ability-actions">Actions</th>{% endif %}</tr>
+          <tr><th scope="col">Ability</th>{% if has_choices %}<th scope="col">Choice</th>{% endif %}{% if catalog_entries %}<th scope="col" class="ds-ability-actions">Actions</th>{% endif %}</tr>
         </thead>
         <tbody>
           {% for name, url in ability_blocks['class'] %}
@@ -117,7 +117,7 @@
           <tr>
             <th scope="row">{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }}</a>{{ source_note(url) }}{% else %}{{ label }}{% endif %}</th>
             {% if has_choices %}<td>{% if editor %}<textarea rows="2" maxlength="150" aria-label="{{ label }} Choice" data-class-ability-input="{{ editor.row }}" data-ability-label="{{ editor.label }}">{{ editor.choice }}</textarea>{% endif %}</td>{% endif %}
-            {% if catalog_entries %}<td class="ds-class-ability-actions">{% if name in catalog_entries %}<button class="button small" type="button" data-remove-class-ability="{{ catalog_entries[name].id }}" aria-label="Remove {{ label }}">Remove</button>{% endif %}</td>{% endif %}
+            {% if catalog_entries %}<td class="ds-ability-actions">{% if name in catalog_entries %}<button class="button small" type="button" data-remove-class-ability="{{ catalog_entries[name].id }}" aria-label="Remove {{ label }}">Remove</button>{% endif %}</td>{% endif %}
           </tr>
           {% endfor %}
         </tbody>
@@ -141,25 +141,42 @@
     {% else %}<p class="ds-record-note">No racial abilities recorded.</p>{% endif %}
   </section>
 </div>
-<div class="ds-weapon-heading"><h3>Feats</h3><button class="button primary" type="button" id="add-sheet-feature" aria-haspopup="dialog" aria-controls="sheet-feature-picker">Add Feat</button></div>
-<p class="error" id="sheet-feat-remove-error" role="alert" hidden></p>
-<div class="ds-feature-grid">{% for i in range(56) %}{% set reference = feature_links.get(i|string) %}
-<div class="ds-feature-row" data-feature-row="{{ i }}"{% if i in ability_blocks.slots %} hidden{% endif %}>
-  {{ control('feature.' ~ i,bare=true,hidden=true) }}
-  {% if i not in ability_blocks.slots %}
-  <span class="ds-feature-name"{% if reference %} hidden{% endif %}>{{ deluxe.get('feature.' ~ i, '') }}</span>
-  <a class="ds-feature-link" target="_blank" rel="noopener noreferrer"{% if reference %} href="{{ reference.url }}"{% else %} hidden{% endif %}>{{ reference.name if reference else '' }}</a>{{ source_note(reference.url) }}
-  {% if i in removable_feats %}
-  <button class="button small" type="button" data-remove-feat="{{ i }}" aria-label="Remove {{ deluxe.get('feature.' ~ i) }}">Remove</button>
-  {% endif %}
-  {% endif %}
-</div>{% endfor %}</div>
+<section aria-labelledby="feats-title">
+  <div class="ds-weapon-heading"><h3 id="feats-title">Feats</h3><button class="button primary" type="button" id="add-sheet-feature" aria-haspopup="dialog" aria-controls="sheet-feature-picker">Add Feat</button></div>
+  <p class="error" id="sheet-feat-remove-error" role="alert" hidden></p>
+  <div class="ds-table-scroll" tabindex="0" role="region" aria-labelledby="feats-title">
+    <table class="ds-table ds-ability-table" aria-labelledby="feats-title">
+      <thead><tr><th scope="col">Feat</th>{% if removable_feats %}<th scope="col" class="ds-ability-actions">Actions</th>{% endif %}</tr></thead>
+      <tbody>
+        {% set feats = namespace(recorded=false) %}
+        {% for i in range(56) %}
+        {% set key = 'feature.' ~ i %}
+        {% set name = deluxe.get(key, '') %}
+        {% set visible = name|trim and i not in ability_blocks.slots %}
+        {% if visible %}{% set feats.recorded = true %}{% endif %}
+        <tr data-feature-row="{{ i }}"{% if not visible %} hidden{% endif %}>
+          <td>
+            {{ control(key, bare=true, hidden=true) }}
+            {% if visible %}
+            {% set reference = feature_links.get(i|string) %}
+            <span class="ds-feature-name"{% if reference %} hidden{% endif %}>{{ name }}</span>
+            <a class="ds-feature-link" target="_blank" rel="noopener noreferrer"{% if reference %} href="{{ reference.url }}"{% else %} hidden{% endif %}>{{ reference.name if reference else '' }}</a>{{ source_note(reference.url) }}
+            {% endif %}
+          </td>
+          {% if removable_feats %}<td class="ds-ability-actions">{% if i in removable_feats %}<button class="button small" type="button" data-remove-feat="{{ i }}" aria-label="Remove {{ name }}">Remove</button>{% endif %}</td>{% endif %}
+        </tr>
+        {% endfor %}
+        {% if not feats.recorded %}<tr><td>No feats recorded.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
 <h3>Skills</h3><div class="ds-fields ds-four">{{ control('skill_points.total','Skill Points / Level') }}{{ control('skill_points.base','Base') }}{{ control('skill_points.int','INT Modifier') }}{{ control('skill_points.misc','Misc') }}</div><p class="ds-equation">◆ Class Skill · * Trained Only · Any class can invest ranks in any skill. Class skills with ranks receive +3.</p>
 <div class="ds-skill-columns">{% for half in skill_rows|batch((skill_rows|length + 1)//2) %}<div class="ds-table-scroll"><table class="ds-table ds-skills"><thead><tr><th scope="col">Skill</th>{% for label in ['Total','Ability','Ranks','Misc'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for key,meta in half %}{% set base=key.removesuffix('-2') %}<tr><th scope="row"><span class="ds-skill-name">{% if base in class_skills %}<span class="ds-class-skill" title="Class Skill" aria-label="Class Skill">◆</span>{% endif %}{% set skill_url = skill_links.get(base) %}{% if skill_url %}<a href="{{ skill_url }}" target="_blank" rel="noopener noreferrer">{{ sheet_label(meta.name) }}</a>{% else %}{{ sheet_label(meta.name) }}{% endif %}{{ '*' if base in trained_only }} <span class="ds-skill-ability">{{ meta.ability|upper }}</span></span>{{ source_note(skill_url) }}{% if base in ['craft','perform','profession'] %}{{ control('skill.' ~ key ~ '.specialty',bare=true) }}{% endif %}</th>{% for part in ['total','ability','ranks','misc'] %}<td>{{ control('skill.' ~ key ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% endfor %}</div>{{ control('skill_specialties',rows=2) }}<footer class="ds-footer">PATHKEEPER <span>Abilities & Skills · 2 / 4</span></footer>
 </section>
 <section class="ds-page" id="spells" aria-labelledby="spells-title"><h2 id="spells-title" class="ds-bar">Spells And Special Abilities</h2>
 <div class="ds-spell-layout"><div class="ds-spell-summary"><div class="ds-fields ds-two">{{ control('concentration') }}{{ control('caster_level') }}</div><div class="ds-table-scroll"><table class="ds-table"><thead><tr>{% for label in ['Level','Known','Save DC','Per Day','Bonus'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>{% for level in range(10) %}<tr><th scope="row">{{ '0' if level == 0 else level }}</th>{% for part in ['known','dc','daily','bonus'] %}<td>{{ control('spell.' ~ level ~ '.' ~ part,bare=true) }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div><h3>Domain / School / Special</h3>{{ control('domain',bare=true,rows=5) }}{{ control('spell_notes',rows=8) }}</div>
-<div class="ds-spell-lists">{% for level in range(10) %}<section class="ds-spell-level"><h3>{{ 'Cantrips / Orisons' if level == 0 else 'Level ' ~ level }}</h3><fieldset class="ds-slots"><legend>Used Slots</legend>{% for slot in range(4 if level == 0 else 8) %}{{ control('spell.' ~ level ~ '.used.' ~ slot,bare=true) }}{% endfor %}</fieldset>{{ control('spell.' ~ level ~ '.list',bare=true,rows=8) }}</section>{% endfor %}</div></div><footer class="ds-footer">PATHKEEPER <span>Spells & Special Abilities · 3 / 4</span></footer>
+<div class="ds-spell-lists">{% for level in range(10) %}<section class="ds-spell-level"><div class="ds-spell-heading"><h3>{{ 'Cantrips / Orisons' if level == 0 else 'Level ' ~ level }}</h3><button type="button" class="button small" data-add-spells="{{ level }}" aria-haspopup="dialog" aria-controls="sheet-spell-picker">Add Spells</button></div><fieldset class="ds-slots"><legend>Used Slots</legend>{% for slot in range(4 if level == 0 else 8) %}{{ control('spell.' ~ level ~ '.used.' ~ slot,bare=true) }}{% endfor %}</fieldset><div hidden>{{ control('spell.' ~ level ~ '.list',bare=true,rows=8) }}</div><ul class="ds-spell-entries" data-spell-entries="{{ level }}">{% for spell in deluxe.get('spell.' ~ level ~ '.list','').splitlines() if spell.strip() %}<li>{{ spell }}</li>{% else %}<li>No spells added.</li>{% endfor %}</ul></section>{% endfor %}</div></div><footer class="ds-footer">PATHKEEPER <span>Spells & Special Abilities · 3 / 4</span></footer>
 </section>
 <section class="ds-page" id="gear" aria-labelledby="gear-title"><h2 id="gear-title" class="ds-bar">Gear</h2><p class="ds-record-note"><button type="button" class="treasure-text-trigger" data-open-backpack>Open Backpack</button> to add or remove gear.</p>
 <div class="ds-table-scroll"><table class="ds-table ds-gear">

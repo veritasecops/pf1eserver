@@ -8,8 +8,6 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.ds-feature-row:has(> .aon-source) { flex-wrap: wrap; }
-.ds-feature-row > .aon-source { flex: 0 0 100%; order: 3; }
 @media print {
   .aon-source { color: #333; }
 }
