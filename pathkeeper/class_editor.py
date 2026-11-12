@@ -15,7 +15,7 @@ SAVES = ("fortitude", "reflex", "will")
 SPELL_FIELDS = {"slots": "Daily slots", "known": "Spells known", "prepared": "Spells prepared"}
 
 
-def editor(ctx, record, key, form=None, errors=()):
+def editor(ctx, record, key, form=None, errors=(), *, feature_level=None):
     catalog = record.data
     profile = class_profile(catalog, key)
     first_swap, frequency, lower = profile["spell_swap"] or (0, 0, False)
@@ -41,7 +41,7 @@ def editor(ctx, record, key, form=None, errors=()):
                       version=record.version, abilities=ABILITIES, groups=GROUPS, bonus_feats=BONUS_FEATS,
                       skills=sorted(catalog["skills"].items(), key=lambda entry: entry[1]["name"]),
                       selected_skills=form.getlist("class_skills") if form is not None else class_skills(catalog, key),
-                      saves=SAVES, spell_fields=SPELL_FIELDS, errors=errors)
+                      saves=SAVES, spell_fields=SPELL_FIELDS, errors=errors, feature_level=feature_level)
     if errors:
         response.status_code = 422
     return response

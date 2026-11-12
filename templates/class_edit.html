@@ -48,7 +48,7 @@
     <p>Enter total base attack and saves for each level. For spell counts, use spell level=count pairs such as 0=4, 1=2. A count of zero can mark a spell level available through bonus slots.</p>
     {% for level in range(1, 21) %}
     {% set prefix = 'level.' ~ level ~ '.' %}
-    <details{% if errors %} open{% endif %}><summary>Level {{ level }}</summary>
+    <details id="class-features-{{ level }}"{% if errors or feature_level == level|string %} open{% endif %}><summary>Level {{ level }}</summary>
       <div class="form-grid">
         {{ input('Base attack bonus', prefix ~ 'bab', 'number', 0, 40) }}
         {% for save in saves %}{{ input(save|capitalize ~ ' base save', prefix ~ save, 'number', 0, 40) }}{% endfor %}

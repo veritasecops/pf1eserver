@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/catalog.css?v=contextual-equipment-actions">{% endblock %}
+{% block content %}
+<header class="page-header"><div><h1>Class Abilities</h1><p>Browse abilities by class and level. Open an ability to read its rules on Archives of Nethys.</p></div></header>
+{% include 'admin_tabs.html' %}
+{% include 'rule_catalog_tabs.html' %}
+<section class="card" aria-label="Class abilities">
+  <form method="get" class="filter-bar catalog-toolbar">
+    <input type="hidden" name="kind" value="class-abilities">
+    <label class="search-input"><input type="search" name="q" value="{{ search }}" aria-label="Search class abilities" placeholder="Search class abilities"></label>
+    <select name="class" aria-label="Class"><option value="">All classes</option>{% for key, profile in classes %}<option value="{{ key }}"{% if key == selected_class %} selected{% endif %}>{{ profile.name }}</option>{% endfor %}</select>
+    <select name="level" aria-label="Class level"><option value="">All levels</option>{% for number in range(1,21) %}<option value="{{ number }}"{% if number == level %} selected{% endif %}>Level {{ number }}</option>{% endfor %}</select>
+    <button class="button" type="submit">Search</button>
+  </form>
+  {% if selected_profile %}<p class="inline-note"><a href="{{ selected_profile.url }}" target="_blank" rel="noopener noreferrer">{{ selected_profile.name }} class rules</a>{{ source_note(selected_profile.url) }}</p>{% endif %}
+  <div class="table-scroll"><table class="catalog-table"><thead><tr><th scope="col">Ability</th><th scope="col">Class</th><th scope="col">Levels and progression</th><th scope="col">Actions</th></tr></thead><tbody>
+  {% for item in items %}
+  {% set edit_level = level or item.gains[0].level %}
+  <tr><th scope="row">{% if item.url %}<a class="catalog-source-link" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.name }}</a>{% else %}{{ item.name }}{% endif %}</th><td><a href="{{ item.class_url }}" target="_blank" rel="noopener noreferrer">{{ item.class_name }}</a><span class="secondary-text">{{ item.group }}</span></td><td>{% for gain in item.gains %}{{ gain.level }}: {{ gain.name }}{% if not loop.last %}<br>{% endif %}{% endfor %}{% if item.source %}<span class="secondary-text">{{ item.source }}</span>{% endif %}</td>
+    <td><a class="button small" href="/administration/catalog/classes/{{ item.class_id }}?feature_level={{ edit_level }}#class-features-{{ edit_level }}" aria-label="Edit {{ item.name }} for {{ item.class_name }}">Edit</a></td>
+  </tr>
+  {% else %}<tr><td colspan="4">No matching class abilities.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="table-footer">{{ total }} {{ 'ability' if total == 1 else 'abilities' }}{% if pages > 1 %}<nav class="row" aria-label="Catalog pages">{% if page > 1 %}<a class="button small" href="?{{ query }}&amp;page={{ page - 1 }}">Previous</a>{% endif %}<span>Page {{ page }} of {{ pages }}</span>{% if page < pages %}<a class="button small" href="?{{ query }}&amp;page={{ page + 1 }}">Next</a>{% endif %}</nav>{% endif %}</div>
+</section>
+{% endblock %}

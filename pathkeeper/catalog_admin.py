@@ -30,7 +30,7 @@ equipment_router = APIRouter(prefix='/administration/equipment')
 magic_items_router = APIRouter(prefix='/administration/magic-items')
 KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
 RULE_TABS = {**{key: KINDS[key] for key in ('feats', 'skills')}, 'spells': 'Spells',
-             **{key: KINDS[key] for key in ('deities', 'classes')}}
+             **{key: KINDS[key] for key in ('deities', 'classes')}, 'class-abilities': 'Class Abilities'}
 SPELL_MARKERS = {'F': 'Special focus', 'M': 'Special material', 'R': 'Religion or ancestry requirement',
                  'T': 'Torag preparation requirement'}
 
@@ -77,6 +77,8 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     kind = request.query_params.get('kind', 'feats')
     if kind == 'spells':
         return render_spell_catalog(ctx, request)
+    if kind == 'class-abilities':
+        return render_class_abilities(ctx, request)
     if kind == 'equipment':
         query = urlencode([(key, value) for key, value in request.query_params.multi_items() if key != 'kind'])
         return RedirectResponse('/administration/equipment' + ('?' + query if query else ''), status_code=303)
@@ -147,6 +149,33 @@ def render_spell_catalog(ctx, request):
                   items=items[(page - 1) * 50:page * 50], schools=schools, classes=classes,
                   search=search, school=school, spell_class=spell_class, level=level, mythic=mythic,
                   total=total, page=page, pages=pages, query=query, marker_labels=SPELL_MARKERS)
+
+
+def render_class_abilities(ctx, request):
+    from .class_abilities import class_abilities
+
+    params = request.query_params
+    entries, classes = class_abilities(record_for(ctx).data)
+    search = params.get('q', '').strip()[:100]
+    selected_class = params.get('class', '')
+    selected_class = selected_class if selected_class in classes else ''
+    raw_level = params.get('level', '')
+    level = int(raw_level) if re.fullmatch(r'(?:[1-9]|1[0-9]|20)', raw_level) else None
+    items = [item for item in entries if (not selected_class or item['class_id'] == selected_class)
+             and search.casefold() in ' '.join([item['name'], *(gain['name'] for gain in item['gains'])]).casefold()
+             and (level is None or any(gain['level'] == level for gain in item['gains']))]
+    items.sort(key=lambda item: (item['class_name'].casefold(), item['gains'][0]['level'], item['name'].casefold()))
+    total = len(items)
+    pages = max(1, (total + 49) // 50)
+    raw_page = params.get('page', '')
+    page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
+    query = urlencode({'kind': 'class-abilities', 'q': search, 'class': selected_class,
+                       'level': '' if level is None else level})
+    return render(ctx, 'class_ability_catalog.html', title='Class Abilities', kind='class-abilities',
+                  rule_tabs=RULE_TABS, items=items[(page - 1) * 50:page * 50], total=total,
+                  classes=sorted(classes.items(), key=lambda item: item[1]['name'].casefold()),
+                  search=search, selected_class=selected_class, level=level, page=page, pages=pages, query=query,
+                  selected_profile=classes.get(selected_class))
 
 
 def spell_editor(ctx, record, key, form=None, errors=()):
@@ -297,7 +326,7 @@ async def edit_entry(kind: str, key: str, request: Request, db: Session = Depend
     if kind == 'classes':
         if key not in CLASSES:
             raise HTTPException(404, 'Character class not found.')
-        return class_editor(ctx, record, key)
+        return class_editor(ctx, record, key, feature_level=request.query_params.get('feature_level'))
     if kind == 'equipment':
         item = equipment_entries(record.data).get(key)
         if item is None:

@@ -40,6 +40,8 @@ The Admin-only Activity log shows the latest 100 security and management events.
 
 ## Rules catalog
 
+**Class Abilities** lists progression features for all supported classes. Search by ability name, filter by class or level, and open the Archives of Nethys reference. Scaling features share one entry with each level of progression. The list follows the current Character Classes definitions; edit those definitions to change the catalog. Individual selectable powers, such as hexes and rage powers, are outside this list.
+
 Administrators can open **Administration → Rules catalog** (`/administration/catalog`) to search, add, edit, and archive the feat, skill, and weapon lists used by the character wizard. All writes require an authenticated Admin and CSRF protection, use a catalog version to prevent overwriting another administrator's changes, and record an audit event. Migration 009 creates the versioned database catalog using the existing built-in values.
 
 Feat forms expose combat and first-level monk eligibility, ability/BAB/feat prerequisites, skill or weapon selection, repeatability by distinct choice, numerical HP/initiative/save/dodge/skill/weapon-attack modifiers, and the finesse effect. Conditional rules belong in the description and require manual handling during play. The same feat and choice do not stack. Prerequisite cycles and incompatible selection modifiers are rejected.
