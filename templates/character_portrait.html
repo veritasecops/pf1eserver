@@ -1,9 +1,9 @@
 <div class="character-portrait-editor" data-portrait-editor data-endpoint="{{ portrait_endpoint }}" data-csrf="{{ csrf }}">
-  <label class="character-portrait-picker" title="Choose character image">
+  <label class="character-portrait-picker" title="Choose Character Image">
     <img data-character-portrait {% if portrait_url %}src="{{ portrait_url }}"{% endif %} alt="Character portrait"{% if not portrait_url %} hidden{% endif %}>
     <span class="character-portrait-placeholder" data-character-portrait-placeholder{% if portrait_url %} hidden{% endif %}>{{ icon('user') }}</span>
     <span class="character-portrait-edit" aria-hidden="true">{{ icon('edit') }}</span>
-    <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose character image">
+    <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose Character Image">
   </label>
-  <button type="button" class="text-button character-portrait-remove" data-portrait-remove{% if not portrait_url %} hidden{% endif %}>Remove image</button>
+  <button type="button" class="text-button character-portrait-remove" data-portrait-remove{% if not portrait_url %} hidden{% endif %}>Remove Image</button>
 </div>

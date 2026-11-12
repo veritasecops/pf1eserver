@@ -1,8 +1,8 @@
 <dialog id="equipment-disposal-dialog" class="equipment-disposal-dialog" aria-labelledby="equipment-disposal-title">
-<header><h2 id="equipment-disposal-title">Remove item</h2><button type="button" class="button" id="close-equipment-disposal" aria-label="Close item action">×</button></header>
+<header><h2 id="equipment-disposal-title">Remove Item</h2><button type="button" class="button" id="close-equipment-disposal" aria-label="Close Item Action">×</button></header>
 <p id="equipment-disposal-summary"></p>
 <form id="equipment-disposal-form">
-<fieldset id="equipment-sale-coins"><legend>Total sale proceeds for the entire entry</legend><div class="form-grid">{% for coin,label,_ in coin_types %}<label class="field"><span>{{ label }}</span><input type="number" id="sale-{{ coin }}" data-sale-coin="{{ coin }}" min="0" max="1000000000" step="1" value="0" required></label>{% endfor %}</div><p id="equipment-sale-total" role="status">Total: 0 gp</p></fieldset>
+<fieldset id="equipment-sale-coins"><legend>Total Sale Proceeds For The Entire Entry</legend><div class="form-grid">{% for coin,label,_ in coin_types %}<label class="field"><span>{{ sheet_label(label) }}</span><input type="number" id="sale-{{ coin }}" data-sale-coin="{{ coin }}" min="0" max="1000000000" step="1" value="0" required></label>{% endfor %}</div><p id="equipment-sale-total" role="status">Total: 0 gp</p></fieldset>
 <p class="error" id="equipment-disposal-error" role="alert" hidden></p>
-<div class="row"><button type="button" class="button" id="cancel-equipment-disposal">Cancel</button><button type="submit" class="button primary" id="confirm-equipment-disposal">Remove item</button></div>
+<div class="row"><button type="button" class="button" id="cancel-equipment-disposal">Cancel</button><button type="submit" class="button primary" id="confirm-equipment-disposal">Remove Item</button></div>
 </form></dialog>

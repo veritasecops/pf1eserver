@@ -62,6 +62,11 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     page = client.get(f'/characters/{character.id}')
     assert page.status_code == 200
     assert 'class="ds-class-link" href="https://www.aonprd.com/ClassDisplay.aspx?ItemName=Fighter" target="_blank" rel="noopener noreferrer">Fighter</a>' in page.text
+    for label in ('Character Name', 'Base Attack Bonus', 'Saving Throws', 'Attack Bonus', 'Sleight Of Hand',
+                  'Spells And Special Abilities', 'Used Slots', 'Carrying Capacity / Lift', 'Inventory Notes'):
+        assert f'>{label}<' in page.text
+    assert 'aria-label="Strength: Temporary Modifier"' in page.text
+    assert 'aria-label="Armor 1: Speed (30 / 20 ft.)"' in page.text
     form = SheetForm(page.text)
     assert set(form.names) == set(FIELDS) | {'csrf','version'}
     assert len(form.names) == len(set(form.names))
@@ -144,7 +149,7 @@ def test_sheet_rejects_csrf_stale_invalid_and_incomplete_saves(env):
     for changes in [{'alignment':'invalid'},{'experience':'-1'},{'hp.current':'NaN'},{'hp.current':'1e9999999'},{'skill.climb.ranks':'-1'},{'ancestry':'x'*101},{'notes':'x'*10001}]:
         response = env.post(client,path,{**values,'homeland':'Preserved entry',**changes})
         assert response.status_code == 422
-        assert 'Preserved entry' in response.text and 'Check these fields' in response.text
+        assert 'Preserved entry' in response.text and 'Check These Fields' in response.text
     assert env.post(client,path,{'version':'1','name':'Incomplete'}).status_code == 422
     assert env.post(client,path,{**values,'owner_id':str(env.player2.id)}).status_code == 422
     assert env.post(client,path,{**values,'level':'3.0','notes':'<script>alert(1)</script>'}).status_code == 303
@@ -556,7 +561,7 @@ def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     names = {item['name'] for item in options['options']['feat']}
     assert 'Weapon Focus' in names
     assert not {'Extra Bombs', 'Extra Discovery', 'Advanced Weapon Training', 'Power Attack', 'Improved Grapple'} & names
-    assert '>Armor training 1</a>' in client.get(path).text
+    assert '>Armor Training 1</a>' in client.get(path).text
     assert '>Skilled</a>' in client.get(path).text
     form = SheetForm(client.get(path).text)
     data = {'version': form.values['version'], 'kind': 'feat', 'feature': 'Weapon Focus'}

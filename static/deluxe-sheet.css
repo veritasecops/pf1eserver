@@ -12,7 +12,8 @@
 .deluxe-sheet { --ds-ink:#241c19; --ds-line:#a99b89; color:var(--ds-ink); min-width:0; }
 .ds-page { background:#fffdf7; border:1px solid #b7a485; box-shadow:0 5px 22px #291d2024; padding:30px; margin:0 0 30px; scroll-margin-top:120px; }
 .ds-page :is(h2,h3,caption) { font-family:Georgia,'Times New Roman',serif; color:var(--ds-ink); }
-.ds-page h3,.ds-page .ds-bar { color:#fffdf4; background:#241c19; padding:8px 10px; font-size:1.0625rem; font-weight:600; text-transform:uppercase; text-align:center; line-height:1.4; letter-spacing:.035em; border:0; margin:20px 0 10px; border-radius:0; }
+.ds-page h3,.ds-page .ds-bar { color:#fffdf4; background:#241c19; padding:8px 10px; font-size:1.0625rem; font-weight:600; text-transform:none; text-align:center; line-height:1.4; letter-spacing:.035em; border:0; margin:20px 0 10px; border-radius:0; }
+:is(#sheet-class-ability-picker,#sheet-spell-picker) :is(label,th,button,[data-spell-level]) { text-transform:capitalize; }
 .ds-page>.ds-bar:first-child { margin-top:0; }
 .ds-page h3 span { font-size:.875rem; font-weight:400; display:block; }
 .ds-page .ds-brand h2 { font-size:1.375rem; margin:5px 0; font-weight:400; }

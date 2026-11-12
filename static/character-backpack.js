@@ -25,7 +25,7 @@
   function refreshCategories() {
     const selected = category.value;
     const labels = [...new Set(groupItems().flatMap(item => item.catalog?.categories || []))].sort();
-    category.replaceChildren(new Option('All categories', ''), ...labels.map(label => new Option(label, label)));
+    category.replaceChildren(new Option('All Categories', ''), ...labels.map(label => new Option(label, label)));
     category.value = labels.includes(selected) ? selected : '';
     window.PathkeeperDropdown?.refresh(category);
   }
@@ -56,7 +56,7 @@
       const note = document.createElement('button');
       note.type = 'button';
       note.className = 'button small';
-      note.textContent = item.notes ? 'Edit note' : 'Add note';
+      note.textContent = item.notes ? 'Edit Note' : 'Add Note';
       note.addEventListener('click', () => editNote(item));
       nameCell.append(note);
       if (item.notes) {
@@ -68,7 +68,7 @@
       if (catalog) {
         const details = document.createElement('details');
         const summary = document.createElement('summary');
-        summary.textContent = 'Catalog details';
+        summary.textContent = 'Catalog Details';
         details.append(summary);
         const weight = catalog.weight_text || (catalog.weight == null ? '' : `${catalog.weight} lb.`);
         for (const value of [

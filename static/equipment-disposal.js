@@ -57,9 +57,9 @@
         }
       }
       document.getElementById('equipment-sale-total').textContent=`Total: ${(proceeds(coins()).copper/100).toLocaleString(undefined,{maximumFractionDigits:2})} gp`;
-      document.getElementById('equipment-disposal-title').textContent=action==='sell'?'Sell item':'Remove item';
+      document.getElementById('equipment-disposal-title').textContent=action==='sell'?'Sell Item':'Remove Item';
       document.getElementById('equipment-disposal-summary').textContent=`${name} × ${quantity}. This removes the entire entry${fromBag?'':' and its linked gear row'}.${action==='remove'?' Treasure stays unchanged.':' Enter the total agreed sale price below.'}`;
-      submit.textContent=action==='sell'?'Sell item':'Remove item';submit.disabled=false;
+      submit.textContent=action==='sell'?'Sell Item':'Remove Item';submit.disabled=false;
       sheet.inert=true;dialog.showModal();
     } catch(e) {
       const panel=document.getElementById('sheet-autosave-errors');panel.textContent=e.message;panel.hidden=false;sheet.inert=false;
@@ -97,7 +97,7 @@
     } catch(e) {
       if(e.name==='AbortError'||e instanceof TypeError){uncertain=true;error.textContent='The response was lost. Retry to check the same action safely, or close to reload inventory.';}
       else error.textContent=e.message;
-      error.hidden=false;submit.textContent=uncertain?'Retry same action':selection.action==='sell'?'Sell item':'Remove item';
+      error.hidden=false;submit.textContent=uncertain?'Retry Same Action':selection.action==='sell'?'Sell Item':'Remove Item';
     } finally {clearTimeout(timeout);busy=false;submit.disabled=false;fieldset.disabled=uncertain||selection.action!=='sell';}
   }
   form.addEventListener('submit',dispose);

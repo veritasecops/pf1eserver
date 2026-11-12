@@ -33,7 +33,7 @@
   const amounts=()=>Object.fromEntries(Object.entries(inputs).map(([coin,input])=>[coin,input.value]));
   function refresh() {
     const result=balance(amounts());
-    document.getElementById('open-treasure').setAttribute('aria-label',result.error?'Open treasure, check coin amounts':'Open treasure, '+result.gp.toLocaleString(undefined,{maximumFractionDigits:2})+' gp on hand');
+    document.getElementById('open-treasure').setAttribute('aria-label',result.error?'Open Treasure, Check Coin Amounts':'Open Treasure, '+result.gp.toLocaleString(undefined,{maximumFractionDigits:2})+' gp On Hand');
     document.getElementById('treasure-total').textContent=result.error?'Check coin amounts':result.gp.toLocaleString(undefined,{maximumFractionDigits:2})+' gp';
     const validation=document.getElementById('treasure-validation');
     validation.textContent=result.error||'';

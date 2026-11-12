@@ -12,7 +12,7 @@
     simple:'Simple', martial:'Martial', exotic:'Exotic', ammunition:'Ammunition',
     firearms:'Firearms', mods:'Mods', 'siege-engines':'Siege Engines', special:'Special',
   };
-  const armorCategories = {light:'Light armor',medium:'Medium armor',heavy:'Heavy armor',shield:'Shields',extra:'Armor extras'};
+  const armorCategories = {light:'Light Armor',medium:'Medium Armor',heavy:'Heavy Armor',shield:'Shields',extra:'Armor Extras'};
   const isArmor = item => ['armor','shield'].includes(item.kind) || item.category === 'extra';
   const isWeapon = item => item.kind === 'weapon' || (item.kind === 'gear' && ['ammunition','modification','alchemical-weapons'].includes(item.category));
   const isGear = item => ['material','misc'].includes(item.kind);
@@ -131,7 +131,7 @@
       this.quantities = {};
       this.prices = Object.fromEntries(Object.entries(options.prices || {}).map(([id,cp]) => [id,(cp / 100).toFixed(2)]));
       this.busy = false;
-      this.dialog.innerHTML = `<form class="pw-weapon-picker-form"><header class="pw-weapon-picker-heading"><div><h2 id="pw-weapon-picker-title">Add Equipment</h2><p id="pw-weapon-picker-description">Choose quantities, then add the selection to your inventory.</p></div><button class="icon-button" type="button" data-cancel-weapons aria-label="Close equipment selection">×</button></header><div class="pw-equipment-tabs" role="tablist" aria-label="Equipment catalogs">${this.tabs.map(tab => `<button type="button" id="equipment-${tab}-tab" role="tab" data-equipment-tab="${tab}" aria-controls="equipment-results">${catalogs[tab].label}</button>`).join('')}</div><div id="equipment-results" role="tabpanel" aria-labelledby="equipment-weapons-tab"><div class="pw-weapon-filters"><label>Search equipment by name<input type="search" name="weapon-search" placeholder="Longsword, crossbow…" autocomplete="off"></label><label data-weapon-proficiency>Proficiency<select name="weapon-group"><option value="">All proficiencies</option>${Object.entries(proficiencies).map(([id,label]) => `<option value="${id}">${label}</option>`).join('')}</select></label><label><span data-equipment-type-label>Weapon type</span><select name="weapon-type"><option value="">All types</option>${Object.entries(categories).map(([id,label]) => `<option value="${id}">${label}</option>`).join('')}</select></label><label class="pw-weapon-selected-only"><input type="checkbox" name="selected-only">Selected only</label></div><p class="pw-weapon-result-count" role="status"></p><div class="pw-weapon-results" tabindex="0" role="region" aria-label="Available weapons"><table><thead><tr><th scope="col" data-equipment-name-heading>Weapon</th><th scope="col">Unit price</th><th scope="col">Add quantity</th><th scope="col">Line total</th></tr></thead><tbody></tbody></table><button class="button" type="button" data-equipment-more hidden>Show more equipment</button></div></div><footer class="pw-weapon-picker-footer"><div class="pw-weapon-totals" aria-live="polite"></div><p class="pw-weapon-validation" role="status"></p><p class="pw-weapon-submit-error" role="alert" hidden></p><div class="pw-weapon-picker-actions"><button class="button" type="button" data-cancel-weapons>Cancel</button><button class="button primary" type="submit">Add selected equipment</button></div></footer></form>`;
+      this.dialog.innerHTML = `<form class="pw-weapon-picker-form"><header class="pw-weapon-picker-heading"><div><h2 id="pw-weapon-picker-title">Add Equipment</h2><p id="pw-weapon-picker-description">Choose quantities, then add the selection to your inventory.</p></div><button class="icon-button" type="button" data-cancel-weapons aria-label="Close Equipment Selection">×</button></header><div class="pw-equipment-tabs" role="tablist" aria-label="Equipment Catalogs">${this.tabs.map(tab => `<button type="button" id="equipment-${tab}-tab" role="tab" data-equipment-tab="${tab}" aria-controls="equipment-results">${catalogs[tab].label}</button>`).join('')}</div><div id="equipment-results" role="tabpanel" aria-labelledby="equipment-weapons-tab"><div class="pw-weapon-filters"><label>Search Equipment By Name<input type="search" name="weapon-search" placeholder="Longsword, crossbow…" autocomplete="off"></label><label data-weapon-proficiency>Proficiency<select name="weapon-group"><option value="">All Proficiencies</option>${Object.entries(proficiencies).map(([id,label]) => `<option value="${id}">${label}</option>`).join('')}</select></label><label><span data-equipment-type-label>Weapon Type</span><select name="weapon-type"><option value="">All Types</option>${Object.entries(categories).map(([id,label]) => `<option value="${id}">${label}</option>`).join('')}</select></label><label class="pw-weapon-selected-only"><input type="checkbox" name="selected-only">Selected Only</label></div><p class="pw-weapon-result-count" role="status"></p><div class="pw-weapon-results" tabindex="0" role="region" aria-label="Available Weapons"><table><thead><tr><th scope="col" data-equipment-name-heading>Weapon</th><th scope="col">Unit Price</th><th scope="col">Add Quantity</th><th scope="col">Line Total</th></tr></thead><tbody></tbody></table><button class="button" type="button" data-equipment-more hidden>Show More Equipment</button></div></div><footer class="pw-weapon-picker-footer"><div class="pw-weapon-totals" aria-live="polite"></div><p class="pw-weapon-validation" role="status"></p><p class="pw-weapon-submit-error" role="alert" hidden></p><div class="pw-weapon-picker-actions"><button class="button" type="button" data-cancel-weapons>Cancel</button><button class="button primary" type="submit">Add Selected Equipment</button></div></footer></form>`;
       this.error = this.dialog.querySelector('.pw-weapon-submit-error');
       this.selectTab('weapons');
       this.update();
@@ -158,14 +158,14 @@
       const search=this.dialog.querySelector('[name="weapon-search"]');
       if (!catalogFilters) search.value='';
       search.placeholder=tab==='weapons'?'Longsword, crossbow…':tab==='armor'?'Chain shirt, shield…':'Search by name…';
-      this.dialog.querySelector('[data-equipment-type-label]').textContent=tab==='armor'&&!catalogFilters?'Armor type':'Category';
+      this.dialog.querySelector('[data-equipment-type-label]').textContent=tab==='armor'&&!catalogFilters?'Armor Type':'Category';
       this.dialog.querySelector('[data-equipment-name-heading]').textContent=catalog.heading;
       this.dialog.querySelector('.pw-weapon-results').setAttribute('aria-label',catalog.label);
       const type=this.dialog.querySelector('[name="weapon-type"]');
       const types=tab==='weapons'?Object.entries(categories):catalogFilters?catalogFilters[catalog.label].map(label=>[label,label]):catalog.types?Object.entries(catalog.types):
         [...new Set(Object.values(this.options.equipment).filter(catalog.match).flatMap(item=>item.categories))].sort().map(label=>[label,label]);
       type.closest('label').hidden=!catalogFilters&&types.length<=1;
-      type.replaceChildren(new Option(catalogFilters||tab==='weapons'?'All categories':'All types',''),...types.map(([id,label])=>new Option(label,id)));
+      type.replaceChildren(new Option(catalogFilters||tab==='weapons'?'All Categories':'All Types',''),...types.map(([id,label])=>new Option(label,id)));
       window.PathkeeperDropdown?.refresh(type);
       this.renderResults();
     }
@@ -189,7 +189,7 @@
       this.dialog.querySelector('tbody').innerHTML = items.slice(0,this.limit).map(([id,item]) => {
         const available = 100 - (this.options.owned[id] || 0);
         const fixedPrice = item.cost === null && (this.options.owned[id] || 0) > 0 && this.options.prices?.[id] !== undefined;
-        const price = item.cost === null && !fixedPrice ? `<label class="pw-weapon-price-label">Agreed unit price (gp)<input type="number" data-weapon-price="${escape(id)}" min="0" max="1000000" step="0.01" value="${escape(this.prices[id] ?? '')}" aria-label="Agreed unit price for ${escape(item.name)}"></label><span class="secondary-text">Published: ${escape(item.cost_text || 'Special price')}</span>` : money(item.cost === null ? this.options.prices[id] : item.cost);
+        const price = item.cost === null && !fixedPrice ? `<label class="pw-weapon-price-label">Agreed Unit Price (gp)<input type="number" data-weapon-price="${escape(id)}" min="0" max="1000000" step="0.01" value="${escape(this.prices[id] ?? '')}" aria-label="Agreed Unit Price For ${escape(item.name)}"></label><span class="secondary-text">Published: ${escape(item.cost_text || 'Special price')}</span>` : money(item.cost === null ? this.options.prices[id] : item.cost);
         const armor=isArmor(item);
         const details=isGear(item)?[...item.categories,item.weight_text].filter(Boolean).join(' · '):armor?`${armorCategories[item.category]} · Bonus ${item.bonus_text || (item.kind==='shield'?item.shield:item.armor) || '—'} · Max Dex ${item.max_dex===100?'—':item.max_dex} · Check ${item.acp} · Spell failure ${item.spell_failure_text || '—'} · Speed ${item.speed_30_text || '—'}/${item.speed_20_text || '—'} · ${item.weight_text || (item.weight ?? '—')+' lb.'}`:[(item.proficiencies || [item.group]).map(group => proficiencies[group]).filter(Boolean).join(' / '), categories[item.category]].filter(Boolean).join(' · ');
         const stats = this.tab === 'weapons' ? weaponStats(item) : '';
@@ -197,7 +197,7 @@
         const name = reference
           ? `<a class="equipment-name-reference" href="${escape(reference)}" target="_blank" rel="noopener noreferrer">${escape(item.name)}</a>`
           : escape(item.name);
-        return `<tr data-weapon-row="${escape(id)}"><th scope="row"><strong>${name}</strong><span class="secondary-text">${escape(details)}</span>${stats ? `<span class="secondary-text">${escape(stats)}</span>` : ''}${this.options.owned[id] ? `<span class="secondary-text">Already in inventory: ${this.options.owned[id]}</span>` : ''}</th><td>${price}</td><td><input type="number" data-weapon-quantity="${escape(id)}" min="0" max="${available}" step="1" value="${escape(this.quantities[id] || 0)}" aria-label="Add quantity of ${escape(item.name)}" ${available ? '' : 'disabled'}></td><td data-weapon-line="${escape(id)}">${money(0)}</td></tr>`;
+        return `<tr data-weapon-row="${escape(id)}"><th scope="row"><strong>${name}</strong><span class="secondary-text">${escape(details)}</span>${stats ? `<span class="secondary-text">${escape(stats)}</span>` : ''}${this.options.owned[id] ? `<span class="secondary-text">Already in inventory: ${this.options.owned[id]}</span>` : ''}</th><td>${price}</td><td><input type="number" data-weapon-quantity="${escape(id)}" min="0" max="${available}" step="1" value="${escape(this.quantities[id] || 0)}" aria-label="Add Quantity Of ${escape(item.name)}" ${available ? '' : 'disabled'}></td><td data-weapon-line="${escape(id)}">${money(0)}</td></tr>`;
       }).join('') || '<tr><td colspan="4">No matching equipment. Try another name or type.</td></tr>';
       this.dialog.querySelector('[data-equipment-more]').hidden=items.length<=this.limit;
       this.dialog.querySelector('.pw-weapon-result-count').textContent = `${items.length} matching ${items.length === 1 ? 'entry' : 'entries'}`;
@@ -216,7 +216,7 @@
       this.dialog.querySelector('.pw-weapon-validation').textContent = cart.errors[0] || '';
       const submit = this.dialog.querySelector('[type="submit"]');
       submit.disabled = this.busy || !cart.units || cart.errors.length > 0;
-      submit.textContent = this.busy ? 'Adding equipment…' : 'Add selected equipment';
+      submit.textContent = this.busy ? 'Adding equipment…' : 'Add Selected Equipment';
       for (const input of this.dialog.querySelectorAll('input,select,button[data-cancel-weapons],button[data-equipment-tab]')) {
         input.disabled = this.busy || input.hasAttribute('data-weapon-quantity') && Number(input.max) === 0;
       }

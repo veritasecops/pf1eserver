@@ -1,4 +1,5 @@
 """Editable play records, laid out like the four-page deluxe character sheet."""
+import re
 from decimal import Decimal, InvalidOperation
 
 from fastapi import HTTPException
@@ -27,6 +28,11 @@ for key in ('craft','perform','profession'):
     SKILL_ROWS.insert(index+1,(key+'-2',SKILLS[key]))
 TRAINED_ONLY = {'disable-device','handle-animal','linguistics','profession','sleight-of-hand','spellcraft','use-magic-device'} | {k for k in SKILLS if k.startswith('knowledge-')}
 FIELDS = {}
+LABEL_WORD_START = re.compile(r"(^|[\s(/-])(?!(?:ft|gp|lb)\b)([^\W\d_])")
+
+
+def sheet_label(label):
+    return LABEL_WORD_START.sub(lambda match: match[1] + match[2].upper(), label)
 
 
 def register(key, label, kind='text', maximum=200):
@@ -283,7 +289,7 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     live_class = class_record(character, progression_catalog) if progression_catalog is not None else cls
     skill_links = {key: safe_weapon_url(live_skills.get(key, meta).get('url', ''))
                    for key, meta in catalog['skills'].items()}
-    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=groups,combat_gear_rows=combat_gear_rows(character,groups),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),readonly_fields=calculated_fields(character,values,progression_catalog),
+    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=groups,combat_gear_rows=combat_gear_rows(character,groups),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),sheet_label=sheet_label,readonly_fields=calculated_fields(character,values,progression_catalog),
                 abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),skill_links=skill_links,class_skills=class_skills(catalog, (character.sheet_data or {}).get('input',{}).get('class_id',''), (character.sheet_data or {}).get('input',{}).get('expert_skills',())) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
                 class_url=safe_weapon_url(live_class.get('url', '')),weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,gear_slots=GEAR_SLOTS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

@@ -1,8 +1,8 @@
 <dialog class="treasure-dialog" id="add-treasure-dialog" aria-labelledby="add-treasure-title">
 <form id="add-treasure-form">
-<h2 id="add-treasure-title">Add coins</h2>
-<label class="field"><span>Coin type</span><select name="coin">{% for coin,label,gp in coin_types %}<option value="{{ coin }}" {% if coin=='gp' %}selected{% endif %}>{{ label }} ({{ coin }}) · {{ gp }} gp each</option>{% endfor %}</select></label>
-<label class="field"><span>Number of coins to add</span><input type="number" name="amount" min="1" max="1000000000" step="1" value="1" required inputmode="numeric"></label>
+<h2 id="add-treasure-title">Add Coins</h2>
+<label class="field"><span>Coin Type</span><select name="coin">{% for coin,label,gp in coin_types %}<option value="{{ coin }}" {% if coin=='gp' %}selected{% endif %}>{{ sheet_label(label) }} ({{ coin }}) · {{ gp }} gp each</option>{% endfor %}</select></label>
+<label class="field"><span>Number Of Coins To Add</span><input type="number" name="amount" min="1" max="1000000000" step="1" value="1" required inputmode="numeric"></label>
 <p id="add-treasure-error" role="alert" hidden></p>
-<div class="treasure-dialog-actions"><button class="button" type="button" id="cancel-add-treasure">Cancel</button><button class="button primary" type="submit">Add coins</button></div>
+<div class="treasure-dialog-actions"><button class="button" type="button" id="cancel-add-treasure">Cancel</button><button class="button primary" type="submit">Add Coins</button></div>
 </form></dialog>

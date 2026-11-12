@@ -80,7 +80,7 @@ def test_character_deletion_is_visible_to_owners_and_admins_and_requires_confirm
     assert '<dialog class="character-delete-dialog"' in page.text
     assert 'CHARACTER RECORD' not in page.text
     assert page.text.index('id="sheet-character-name"') < page.text.index('class="deluxe-toolbar"')
-    assert page.text.index('id="gear"') < page.text.index('>Manage character</a>') < page.text.index('id="open-character-delete"')
+    assert page.text.index('id="gear"') < page.text.index('>Manage Character</a>') < page.text.index('id="open-character-delete"')
     assert page.text.index('id="open-character-delete"') < page.text.index('id="delete-character"')
     assert page.text.count('id="delete-character"') == 1
     assert page.text.index("<body") < page.text.index('id="delete-character"')
@@ -139,7 +139,7 @@ def test_gm_can_manage_only_joined_assigned_characters(env):
         record = db.get(Character, assigned.id)
         assert env.post(c, f"/characters/{record.id}", char_form(record, campaign_id="")).status_code == 403
         version = record.version
-    assert "Delete character" not in c.get(f"/characters/{assigned.id}").text
+    assert 'id="open-character-delete"' not in c.get(f"/characters/{assigned.id}").text
     assert env.post(c, f"/characters/{assigned.id}/delete", {"confirm_name": "GM edited", "version": version}).status_code == 403
     with Session(engine()) as db:
         assert db.get(Character, assigned.id) is not None
