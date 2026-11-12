@@ -106,7 +106,7 @@
     {% if 'catalog_entries' in ability_blocks %}<p id="class-ability-error" class="error" role="alert" hidden></p>{% endif %}
     {% if ability_blocks['class'] %}
     <div class="ds-table-scroll" tabindex="0" role="region" aria-labelledby="class-abilities-title">
-      <table class="ds-table ds-class-abilities" aria-labelledby="class-abilities-title">
+      <table class="ds-table ds-ability-table ds-class-abilities" aria-labelledby="class-abilities-title">
         <thead>
           <tr><th scope="col">Ability</th>{% if has_choices %}<th scope="col">Choice</th>{% endif %}{% if catalog_entries %}<th scope="col" class="ds-class-ability-actions">Actions</th>{% endif %}</tr>
         </thead>
@@ -126,13 +126,18 @@
     {% else %}<p class="ds-record-note">No class abilities recorded.</p>{% endif %}
   </section>
   <section class="ds-ability-block" aria-labelledby="racial-abilities-title">
-    <div class="ds-ability-heading"><h3 id="racial-abilities-title">Racial Abilities</h3></div>
+    <h3 id="racial-abilities-title">Racial Abilities</h3>
     {% if ability_blocks['racial'] %}
-    <ul>
-      {% for name, url in ability_blocks['racial'] %}
-      <li>{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ sheet_label(name) }}</a>{{ source_note(url) }}{% else %}{{ sheet_label(name) }}{% endif %}</li>
-      {% endfor %}
-    </ul>
+    <div class="ds-table-scroll" tabindex="0" role="region" aria-labelledby="racial-abilities-title">
+      <table class="ds-table ds-ability-table" aria-labelledby="racial-abilities-title">
+        <thead><tr><th scope="col">Ability</th></tr></thead>
+        <tbody>
+          {% for name, url in ability_blocks['racial'] %}
+          <tr><td>{% if url %}<a class="ds-feature-link" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ sheet_label(name) }}</a>{{ source_note(url) }}{% else %}{{ sheet_label(name) }}{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}<p class="ds-record-note">No racial abilities recorded.</p>{% endif %}
   </section>
 </div>
