@@ -68,12 +68,20 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
         assert f'>{label}<' in page.text
     nav = page.text.split('aria-label="Character Sheet Sections">', 1)[1].split('</nav>', 1)[0]
     sheet = page.text.split('<div class="deluxe-sheet">', 1)[1].split('<script ', 1)[0]
-    heading_ids = re.findall(r'<h3\b[^>]*\bid="([^"]+)"', sheet)
-    assert len(heading_ids) == len(re.findall(r'<h3\b', sheet))
-    links = re.findall(r'href="#([^"]+)"', nav)
-    assert len(links) == len(set(links))
-    assert set(links) == set(heading_ids) | {'combat', 'abilities-skills', 'spells', 'gear'}
-    assert all(sheet.count(f' id="{target}"') == 1 for target in links)
+    links = re.findall(r'<a href="#([^"]+)">([^<]+)</a>', nav)
+    assert links == [
+        ('combat', 'Combat'),
+        ('sheet-trait-defenses-title', 'Situational Checks and Defenses'),
+        ('weapons-and-attacks', 'Weapons and Attacks'),
+        ('armor-and-protection', 'Armor and Protection'),
+        ('abilities-skills', 'Feats, Class, and Racial Abilities'),
+        ('skills', 'Skills'),
+        ('spells', 'Spells and Special Abilities'),
+        ('gear', 'Gear'),
+        ('notes', 'Notes'),
+    ]
+    assert nav.count('<a ') == len(links)
+    assert all(sheet.count(f' id="{target}"') == 1 for target, _ in links)
     assert 'aria-label="Strength: Temporary Modifier"' in page.text
     assert 'aria-label="Armor 1: Speed (30 / 20 ft.)"' in page.text
     form = SheetForm(page.text)

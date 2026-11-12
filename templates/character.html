@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components.html' import icon, field, csrf_input %}
-{% block extra_head %}<link rel="stylesheet" href="/static/sheet-formulas.css?v=20261104-1"><link rel="stylesheet" href="/static/character-treasure.css?v=floating-sheet-tools"><link rel="stylesheet" href="/static/weapon-picker.css?v=equipment-catalogs"><link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/deluxe-sheet.css?v=section-navigation">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/sheet-formulas.css?v=20261104-1"><link rel="stylesheet" href="/static/character-treasure.css?v=floating-sheet-tools"><link rel="stylesheet" href="/static/weapon-picker.css?v=equipment-catalogs"><link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/deluxe-sheet.css?v=primary-section-links">{% endblock %}
 {% block floating_sheet_tools %}{% include 'backpack_icon.html' %}{% include 'treasure_chest.html' %}{% endblock %}
 {% block content %}
 <header class="character-sheet-banner">
@@ -21,20 +21,15 @@
     <div class="deluxe-toolbar-context"><a class="text-button" href="/characters">{{ icon('back') }}All Characters</a><span>Owned by {{ owner.name }}{% if campaign %} · <a href="/campaigns/{{ campaign.id }}">{{ campaign.name }}</a>{% endif %}</span></div>
     <div class="row"><span id="sheet-save-status" role="status">All changes saved</span><button class="button" type="button" id="print-sheet">Print</button><button class="button" type="button" id="retry-sheet-save" hidden>Retry Saving</button></div>
     <nav class="sheet-section-nav" aria-label="Character Sheet Sections">
-      {% for page, title, links in [
-        ('combat', 'Combat', [('hit-points', 'Hit Points'), ('xp-title', 'XP'), ('combat-maneuvers', 'Combat Maneuvers'), ('armor-class', 'Armor Class'), ('speed', 'Speed'), ('saving-throws', 'Saving Throws'), ('resistances', 'Resistances'), ('sheet-trait-defenses-title', 'Situational Checks And Defenses'), ('weapons-and-attacks', 'Weapons And Attacks'), ('armor-and-protection', 'Armor And Protection'), ('languages', 'Languages'), ('campaign-information', 'Campaign Information')]),
-        ('abilities-skills', 'Abilities & Skills', [('class-abilities-title', 'Class Abilities'), ('racial-abilities-title', 'Racial Abilities'), ('feats-title', 'Feats'), ('skills', 'Skills')]),
-        ('spells', 'Spells', [('domain-school-special', 'Domain / School / Special'), ('spell-level-0', 'Cantrips / Orisons')]),
-        ('gear', 'Gear & Notes', [('carrying-capacity', 'Carrying Capacity / Lift'), ('money', 'Money'), ('faction-points', 'Faction / Fame / Other Points'), ('notes', 'Notes')])
-      ] %}
-      <div class="sheet-section-group">
-        <a class="sheet-section-page" href="#{{ page }}">{{ title }}</a>
-        <div class="sheet-section-links">
-          {% for target, label in links %}<a href="#{{ target }}">{{ label }}</a>{% endfor %}
-          {% if page == 'spells' %}{% for level in range(1, 10) %}<a href="#spell-level-{{ level }}">Level {{ level }}</a>{% endfor %}{% endif %}
-        </div>
-      </div>
-      {% endfor %}
+      <a href="#combat">Combat</a>
+      <a href="#sheet-trait-defenses-title">Situational Checks and Defenses</a>
+      <a href="#weapons-and-attacks">Weapons and Attacks</a>
+      <a href="#armor-and-protection">Armor and Protection</a>
+      <a href="#abilities-skills">Feats, Class, and Racial Abilities</a>
+      <a href="#skills">Skills</a>
+      <a href="#spells">Spells and Special Abilities</a>
+      <a href="#gear">Gear</a>
+      <a href="#notes">Notes</a>
     </nav>
   </div>
 </div>
