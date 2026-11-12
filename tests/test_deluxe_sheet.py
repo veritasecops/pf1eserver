@@ -1,3 +1,4 @@
+import re
 from html.parser import HTMLParser
 
 import pytest
@@ -65,6 +66,14 @@ def test_deluxe_editable_fields_round_trip_and_identity_is_readonly(env):
     for label in ('Character Name', 'Base Attack Bonus', 'Saving Throws', 'Attack Bonus', 'Sleight Of Hand',
                   'Spells And Special Abilities', 'Used Slots', 'Carrying Capacity / Lift', 'Inventory Notes'):
         assert f'>{label}<' in page.text
+    nav = page.text.split('aria-label="Character Sheet Sections">', 1)[1].split('</nav>', 1)[0]
+    sheet = page.text.split('<div class="deluxe-sheet">', 1)[1].split('<script ', 1)[0]
+    heading_ids = re.findall(r'<h3\b[^>]*\bid="([^"]+)"', sheet)
+    assert len(heading_ids) == len(re.findall(r'<h3\b', sheet))
+    links = re.findall(r'href="#([^"]+)"', nav)
+    assert len(links) == len(set(links))
+    assert set(links) == set(heading_ids) | {'combat', 'abilities-skills', 'spells', 'gear'}
+    assert all(sheet.count(f' id="{target}"') == 1 for target in links)
     assert 'aria-label="Strength: Temporary Modifier"' in page.text
     assert 'aria-label="Armor 1: Speed (30 / 20 ft.)"' in page.text
     form = SheetForm(page.text)
@@ -528,7 +537,7 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert '>Weapon Focus (Longsword)</a>' in page.text
     class_start = page.text.index('id="class-abilities-title"')
     race_start = page.text.index('id="racial-abilities-title"')
-    feats_start = page.text.index('<h3 id="feats-title">Feats</h3>')
+    feats_start = page.text.index('id="feats-title"')
     class_block = page.text[class_start:race_start]
     assert '<table class="ds-table ds-ability-table ds-class-abilities"' in class_block
     assert '<th scope="col">Ability</th>' in class_block
@@ -538,7 +547,7 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert '<th scope="col">Ability</th>' in racial_block
     assert '<tr><td><a' in racial_block and '>Skilled</a>' in racial_block
     assert page.text.count('>Skilled</a>') == 1
-    feats_block = page.text[feats_start:page.text.index('<h3>Skills</h3>')]
+    feats_block = page.text[feats_start:page.text.index('id="skills"')]
     assert '<table class="ds-table ds-ability-table" aria-labelledby="feats-title">' in feats_block
     assert '<th scope="col">Feat</th>' in feats_block
     assert '<tr data-feature-row="0">' in feats_block and '>Weapon Focus (Longsword)</a>' in feats_block

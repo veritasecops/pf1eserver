@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components.html' import icon, field, csrf_input %}
-{% block extra_head %}<link rel="stylesheet" href="/static/sheet-formulas.css?v=20261104-1"><link rel="stylesheet" href="/static/character-treasure.css?v=floating-sheet-tools"><link rel="stylesheet" href="/static/weapon-picker.css?v=equipment-catalogs"><link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/deluxe-sheet.css?v=feat-table">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/sheet-formulas.css?v=20261104-1"><link rel="stylesheet" href="/static/character-treasure.css?v=floating-sheet-tools"><link rel="stylesheet" href="/static/weapon-picker.css?v=equipment-catalogs"><link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/deluxe-sheet.css?v=section-navigation">{% endblock %}
 {% block floating_sheet_tools %}{% include 'backpack_icon.html' %}{% include 'treasure_chest.html' %}{% endblock %}
 {% block content %}
 <header class="character-sheet-banner">
@@ -16,7 +16,27 @@
 {% if sheet_errors %}<div class="error deluxe-errors" role="alert" tabindex="-1"><h2>Check These Fields</h2><ul>{% for error in sheet_errors %}<li>{{ error }}</li>{% endfor %}</ul><p>Your entries are still on the sheet below.</p></div>{% endif %}
 <form method="post" action="/characters/{{ character.id }}/play-sheet" id="deluxe-form">
 {{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ character.version }}">
-<div class="character-sheet-dock"><div class="deluxe-toolbar"><div class="deluxe-toolbar-main"><div class="deluxe-toolbar-context"><a class="text-button" href="/characters">{{ icon('back') }}All Characters</a><span>Owned by {{ owner.name }}{% if campaign %} · <a href="/campaigns/{{ campaign.id }}">{{ campaign.name }}</a>{% endif %}</span></div><nav aria-label="Character Sheet Pages"><a href="#combat">Combat</a><a href="#abilities-skills">Abilities & Skills</a><a href="#spells">Spells</a><a href="#gear">Gear & Notes</a></nav></div><div class="row"><span id="sheet-save-status" role="status">All changes saved</span><button class="button" type="button" id="print-sheet">Print</button><button class="button" type="button" id="retry-sheet-save" hidden>Retry Saving</button></div></div>
+<div class="character-sheet-dock">
+  <div class="deluxe-toolbar">
+    <div class="deluxe-toolbar-context"><a class="text-button" href="/characters">{{ icon('back') }}All Characters</a><span>Owned by {{ owner.name }}{% if campaign %} · <a href="/campaigns/{{ campaign.id }}">{{ campaign.name }}</a>{% endif %}</span></div>
+    <div class="row"><span id="sheet-save-status" role="status">All changes saved</span><button class="button" type="button" id="print-sheet">Print</button><button class="button" type="button" id="retry-sheet-save" hidden>Retry Saving</button></div>
+    <nav class="sheet-section-nav" aria-label="Character Sheet Sections">
+      {% for page, title, links in [
+        ('combat', 'Combat', [('hit-points', 'Hit Points'), ('xp-title', 'XP'), ('combat-maneuvers', 'Combat Maneuvers'), ('armor-class', 'Armor Class'), ('speed', 'Speed'), ('saving-throws', 'Saving Throws'), ('resistances', 'Resistances'), ('sheet-trait-defenses-title', 'Situational Checks And Defenses'), ('weapons-and-attacks', 'Weapons And Attacks'), ('armor-and-protection', 'Armor And Protection'), ('languages', 'Languages'), ('campaign-information', 'Campaign Information')]),
+        ('abilities-skills', 'Abilities & Skills', [('class-abilities-title', 'Class Abilities'), ('racial-abilities-title', 'Racial Abilities'), ('feats-title', 'Feats'), ('skills', 'Skills')]),
+        ('spells', 'Spells', [('domain-school-special', 'Domain / School / Special'), ('spell-level-0', 'Cantrips / Orisons')]),
+        ('gear', 'Gear & Notes', [('carrying-capacity', 'Carrying Capacity / Lift'), ('money', 'Money'), ('faction-points', 'Faction / Fame / Other Points'), ('notes', 'Notes')])
+      ] %}
+      <div class="sheet-section-group">
+        <a class="sheet-section-page" href="#{{ page }}">{{ title }}</a>
+        <div class="sheet-section-links">
+          {% for target, label in links %}<a href="#{{ target }}">{{ label }}</a>{% endfor %}
+          {% if page == 'spells' %}{% for level in range(1, 10) %}<a href="#spell-level-{{ level }}">Level {{ level }}</a>{% endfor %}{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </nav>
+  </div>
 </div>
 <details class="hint deluxe-guidance"><summary>Edits Save Automatically · Sheet Help</summary><p>Changes save automatically as you type. Calculated fields are read-only and update automatically. Record situational bonuses in the editable modifier fields. Class skills come from the character’s class and grant +3 when trained.</p></details>
 <div id="sheet-autosave-errors" class="error deluxe-errors" role="alert" hidden></div>
