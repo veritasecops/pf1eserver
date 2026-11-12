@@ -529,7 +529,11 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     class_start = page.text.index('id="class-abilities-title"')
     race_start = page.text.index('id="racial-abilities-title"')
     feats_start = page.text.index('<h3>Feats</h3>')
-    assert '>Armor Training +1</a>' in page.text[class_start:race_start]
+    class_block = page.text[class_start:race_start]
+    assert '<table class="ds-table ds-class-abilities"' in class_block
+    assert '<th scope="col">Ability</th>' in class_block
+    assert '<th scope="row"><a' in class_block and '>Armor Training +1</a>' in class_block
+    assert '<ul>' in page.text[race_start:feats_start]
     assert '>Skilled</a>' in page.text[race_start:feats_start]
     assert page.text.count('>Skilled</a>') == 1
     assert SheetForm(page.text).values['feature.3'] == 'Custom campaign ability'

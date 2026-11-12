@@ -81,6 +81,15 @@
 .ds-ability-block h3 { margin:0; }
 .ds-ability-block ul { display:flex; flex-wrap:wrap; gap:4px 12px; padding:8px; margin:0; list-style:none; }
 .ds-ability-block .ds-record-note { padding:8px; margin:0; }
+.ds-class-ability-heading { display:flex; align-items:center; gap:8px; }
+.ds-class-ability-heading h3 { flex:1; }
+.ds-class-ability-heading .button { margin-inline-end:8px; }
+.ds-page .ds-class-abilities :is(th,td) { padding:6px; overflow-wrap:anywhere; }
+.ds-page .ds-class-abilities th:first-child { text-align:left; }
+.ds-class-abilities .ds-feature-link { padding:0; }
+.ds-class-abilities textarea { display:block; width:100%; }
+.ds-class-abilities .ds-class-ability-actions { width:88px; }
+@media print { .ds-class-ability-heading .button,.ds-class-abilities .ds-class-ability-actions { display:none; } }
 @media(max-width:650px) { .ds-ability-blocks { grid-template-columns:1fr; } }
 .ds-feature-row { display:flex; align-items:center; gap:6px; min-width:0; }
 .ds-feature-link { padding:6px 7px; text-decoration:underline; overflow-wrap:anywhere; flex:1; }
