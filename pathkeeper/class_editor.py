@@ -4,6 +4,7 @@ import re
 from fastapi import HTTPException
 
 from .class_catalog import BONUS_FEATS, GROUPS, class_profile
+from .feature_links import ability_name
 from .level_up import feature_choices
 from .pf1_data import ABILITIES, CLASSES
 from .rule_catalog import class_skills
@@ -23,6 +24,7 @@ def editor(ctx, record, key, form=None, errors=(), *, feature_level=None):
         **profile,
         "swap_first": first_swap, "swap_frequency": frequency, "swap_lower": lower,
         "automatic_feats": "\n".join(profile["automatic_feats"]),
+        "feature_references": "\n".join(f"{name}={url}" for name, url in profile["feature_references"].items()),
         **{save: value for save, value in zip(SAVES, profile["saves"])},
     }
     for index, row in enumerate(profile["levels"], 1):
@@ -66,6 +68,21 @@ def spell_counts(form, key):
     return values
 
 
+def parse_feature_references(form):
+    references = {}
+    raw = field(form, "feature_references", 20000, required=False)
+    for line in raw.splitlines():
+        if not line.strip():
+            continue
+        name, _, url = line.partition("=")
+        key = ability_name(name)
+        url = safe_weapon_url(url.strip())
+        if not key or not url or key in references:
+            raise HTTPException(422, "Enter each feature name once, followed by = and a valid HTTP or HTTPS URL.")
+        references[key] = url
+    return references
+
+
 def parse_class(form, key, catalog):
     old = class_profile(catalog, key)
     item = {
@@ -88,6 +105,10 @@ def parse_class(form, key, catalog):
     }
     if item["url"] and not safe_weapon_url(item["url"]):
         raise HTTPException(422, "Use a safe HTTP or HTTPS reference link.")
+    if "feature_references" in form:
+        item["feature_references"] = parse_feature_references(form)
+    elif "feature_references" in catalog.get("classes", {}).get(key, {}):
+        item["feature_references"] = old["feature_references"]
     if item["group"] not in GROUPS or item["bonus_feat"] not in BONUS_FEATS or item["casting_ability"] not in {"", *ABILITIES}:
         raise HTTPException(422, "Choose a valid class group, bonus feat type, and spellcasting ability.")
     if item["hd"] not in {4, 6, 8, 10, 12, 20}:

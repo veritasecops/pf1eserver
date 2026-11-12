@@ -26,6 +26,10 @@ def ability_name(name):
     return normalized(re.sub(r"\s+(?:\([^)]*\)|[+]?\d.*)$", "", name).strip())
 
 
+def class_feature_reference(profile, name):
+    return safe_weapon_url(profile.get("feature_references", {}).get(ability_name(name)))
+
+
 def ability_options(character, catalog, include_prompts=True):
     class_id = class_key(character, catalog)
     profile = class_profile(catalog, class_id) if class_id else {}
@@ -37,7 +41,7 @@ def ability_options(character, catalog, include_prompts=True):
             names.extend(level.get("choices", []))
         for name in names:
             if name:
-                features[ability_name(name)] = (name, class_url)
+                features[ability_name(name)] = (name, class_feature_reference(profile, name) or class_url)
     race = next((key for key, item in RACES.items() if normalized(item["name"]) == normalized(character.ancestry)), None)
     race_url = "https://www.aonprd.com/RacesDisplay.aspx?ItemName=" + quote(RACES[race]["name"]) if race else ""
     racial = {normalized(name): (name, race_url) for name in RACIAL_ABILITIES.get(race, ())}

@@ -529,6 +529,24 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert page.text.count('>Skilled</a>') == 1
     assert SheetForm(page.text).values['feature.3'] == 'Custom campaign ability'
 
+def test_investigator_talent_links_to_the_talents_index(env):
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.class_name = 'Investigator'
+        record.play_data = {'feature.0': 'Investigator Talent: Quick Study'}
+        db.commit()
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    url = 'https://www.aonprd.com/InvestigatorTalents.aspx'
+    page = client.get(path)
+    assert page.status_code == 200
+    assert f'href="{url}" target="_blank" rel="noopener noreferrer">Investigator Talent' in page.text
+    response = autosave(client, path, SheetForm(page.text).values)
+    assert response.status_code == 200, response.text
+    assert response.json()['feature_links']['0']['url'] == url
+
+
 def test_feature_picker_adds_catalog_entries_and_rejects_invalid_choices(env):
     character = seed_character(env.player)
     client = env.login(env.player)

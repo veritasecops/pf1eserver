@@ -4,6 +4,10 @@ from .pf1_data import CLASSES, CLASS_PROGRESSIONS
 GROUPS = ("Core", "Base", "Alternate", "Unchained", "NPC")
 BONUS_FEATS = ("", "combat", "monk", "teamwork", "technique")
 
+FEATURE_REFERENCES = {
+    "investigator": {"investigator talent": "https://www.aonprd.com/InvestigatorTalents.aspx"},
+}
+
 
 # First eligible level, frequency, and whether the exchanged spell must be below
 # the highest spell level the character can cast.
@@ -27,6 +31,7 @@ def class_profile(catalog, key):
         "book": progression["book"],
         "starting_book": {0: 0, 1: 2, 2: 3}[progression["book"]],
         "levels": progression["levels"],
+        "feature_references": FEATURE_REFERENCES.get(key, {}),
         **catalog.get("classes", {}).get(key, {}),
     }
     if 'source' not in result:

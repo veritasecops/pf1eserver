@@ -185,8 +185,16 @@ def test_character_class_editor_updates_creation_and_future_advancement(env):
             form[prefix + column] = ', '.join(f'{key}={value}' for key, value in row.get(column, {}).items())
     form.update(name='Vanguard', hd=12)
     assert env.post(admin, '/administration/catalog/classes', {**form, 'hd': 11}).status_code == 422
+    assert env.post(admin, '/administration/catalog/classes', {
+        **form, 'feature_references': 'Bravery=javascript:alert(1)',
+    }).status_code == 422
+    feature_url = 'https://example.com/class-features?name=bravery'
+    form['feature_references'] = f'Bravery={feature_url}'
     assert env.post(admin, '/administration/catalog/classes', form).status_code == 303
     assert env.post(admin, '/administration/catalog/classes', form).status_code == 409
+    assert f'bravery={feature_url}</textarea>' in admin.get('/administration/catalog/classes/fighter').text
+    abilities = admin.get('/administration/catalog', params={'kind': 'class-abilities', 'class': 'fighter', 'q': 'bravery'})
+    assert f'href="{feature_url}"' in abilities.text
     saved = save(env, player, draft_id, version, data)
     assert saved.json()['computed']['hp'] == original['hp'] + 2
     assert 'perception' in saved.json()['computed']['class_skills']

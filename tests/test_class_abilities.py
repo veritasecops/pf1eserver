@@ -16,7 +16,9 @@ def test_progression_catalog_groups_scaling_features_and_covers_every_class():
     bravery = next(item for item in entries if item['class_id'] == 'fighter' and item['name'].casefold() == 'bravery')
     assert [gain['level'] for gain in bravery['gains']] == [2, 6, 10, 14, 18]
     assert bravery['url'].endswith('#:~:text=' + quote('bravery +1', safe=''))
-    assert all(item['url'].startswith('https://www.aonprd.com/ClassDisplay.aspx?ItemName=') for item in entries)
+    talent = next(item for item in entries if item['id'] == 'investigator:investigator talent')
+    assert talent['url'] == 'https://www.aonprd.com/InvestigatorTalents.aspx'
+    assert all(item['url'].startswith('https://www.aonprd.com/ClassDisplay.aspx?ItemName=') for item in entries if item is not talent)
     assert all(1 <= gain['level'] <= 20 for item in entries for gain in item['gains'])
     assert len({(item['class_id'], item['name'].casefold()) for item in entries}) == len(entries)
 
