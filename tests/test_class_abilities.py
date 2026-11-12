@@ -15,10 +15,13 @@ def test_progression_catalog_groups_scaling_features_and_covers_every_class():
     assert set(classes) == set(CLASSES)
     bravery = next(item for item in entries if item['class_id'] == 'fighter' and item['name'].casefold() == 'bravery')
     assert [gain['level'] for gain in bravery['gains']] == [2, 6, 10, 14, 18]
-    assert bravery['url'].endswith('#:~:text=' + quote('bravery +1', safe=''))
+    assert bravery['url'].endswith('#:~:text=' + quote('Bravery (Ex):', safe=''))
     talent = next(item for item in entries if item['id'] == 'investigator:investigator talent')
     assert talent['url'] == 'https://www.aonprd.com/InvestigatorTalents.aspx'
-    assert all(item['url'].startswith('https://www.aonprd.com/ClassDisplay.aspx?ItemName=') for item in entries if item is not talent)
+    assert all(item['url'].startswith(item['class_url'] + '#:~:text=') for item in entries if item is not talent)
+    urls = {item['id']: item['url'] for item in entries}
+    assert urls['bard:inspire courage'].endswith('#:~:text=Inspire%20Courage%20%28Su%29%3A')
+    assert urls['ranger:3rd favored enemy'].endswith('#:~:text=Favored%20Enemy%20%28Ex%29%3A')
     assert all(1 <= gain['level'] <= 20 for item in entries for gain in item['gains'])
     assert len({(item['class_id'], item['name'].casefold()) for item in entries}) == len(entries)
 
@@ -31,7 +34,7 @@ def test_class_ability_catalog_filters_and_admin_access(env):
     page = client.get(path, params=params)
     assert page.status_code == 200
     assert '1 ability' in page.text and '6: bravery +2' in page.text
-    assert 'ClassDisplay.aspx?ItemName=Fighter#:~:text=bravery%20%2B1' in page.text
+    assert 'ClassDisplay.aspx?ItemName=Fighter#:~:text=Bravery%20%28Ex%29%3A' in page.text
     edit_path = '/administration/catalog/classes/fighter?feature_level=6#class-features-6'
     assert f'href="{edit_path}" aria-label="Edit bravery for Fighter">Edit</a>' in page.text
     editor = client.get(edit_path)
@@ -60,4 +63,4 @@ def test_class_ability_catalog_uses_active_class_overrides(env):
     response = env.login(env.admin).get('/administration/catalog', params={'kind': 'class-abilities', 'class': 'fighter', 'q': 'House'})
     assert response.status_code == 200 and '1 ability' in response.text
     assert 'House ability' in response.text
-    assert '#:~:text=House%20ability' in response.text
+    assert 'House ability</th>' in response.text

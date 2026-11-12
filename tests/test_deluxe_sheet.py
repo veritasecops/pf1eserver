@@ -516,7 +516,7 @@ def test_feature_names_link_to_catalog_class_and_race_rules(env):
     assert response.status_code == 200, response.text
     links = response.json()['feature_links']
     assert links['0']['url'].endswith('ItemName=Weapon%20Focus')
-    assert links['1']['url'].endswith('ItemName=Fighter')
+    assert links['1']['url'].endswith('ItemName=Fighter#:~:text=Armor%20Training%20%28Ex%29%3A')
     assert links['2']['url'].endswith('ItemName=Human')
     assert '3' not in links
     page = client.get(path)

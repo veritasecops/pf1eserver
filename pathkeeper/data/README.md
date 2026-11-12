@@ -43,4 +43,9 @@ Migration 023 refreshes the live catalog and uses
 local statistical overrides. The migration preserves character inventory and
 creation snapshots.
 
+`aon_class_feature_headings.json` maps progression labels to the exact titles
+in the descriptions below the Archives of Nethys class tables. The titles were
+verified against the class pages on November 12, 2026. Progression labels that
+share a description, such as later uses of Favored Enemy, use the same title.
+
 `aon_reference_links.json` records verified replacements for 279 weapon/ammunition entries, 72 armor entries, and 23 class options. Destinations were checked against AoN indexes and item pages on November 4, 2026. Different names include Aldori dueling sword, Shoanti bolas, Varisian dancing scarves, Erutaki coat, and Alkenstar fortress plate. Unarmed strike links to the weapon descriptions in the AoN legacy Core Rulebook. Five shield boss variants share a description page containing all five variants. Omdura and Vampire Hunter were removed from the selectable classes in migration 014. The legacy URL paths support migration 013; they are not outbound application links.

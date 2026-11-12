@@ -1,9 +1,12 @@
 """Resolve named sheet features against their published references."""
+import json
 import re
+from functools import lru_cache
+from pathlib import Path
 from urllib.parse import quote
 
 from .class_catalog import class_key, class_profile
-from .pf1_data import RACES
+from .pf1_data import CLASSES, RACES
 from .rule_catalog import equipment
 from .weapons import safe_weapon_url
 
@@ -26,14 +29,30 @@ def ability_name(name):
     return normalized(re.sub(r"\s+(?:\([^)]*\)|[+]?\d.*)$", "", name).strip())
 
 
-def class_feature_reference(profile, name):
-    return safe_weapon_url(profile.get("feature_references", {}).get(ability_name(name)))
+@lru_cache(maxsize=1)
+def aon_class_feature_headings():
+    path = Path(__file__).with_name("data") / "aon_class_feature_headings.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def class_feature_reference(class_id, profile, name):
+    key = ability_name(name)
+    reference = safe_weapon_url(profile.get("feature_references", {}).get(key))
+    if reference:
+        return reference
+    class_url = safe_weapon_url(profile.get("url", "")).partition("#")[0]
+    if not class_url or class_url != CLASSES[class_id]["url"]:
+        return ""
+    heading = aon_class_feature_headings().get(class_id, {}).get(key)
+    if not heading:
+        return ""
+    fragment = quote(heading, safe="").replace("-", "%2D")
+    return f"{class_url}#:~:text={fragment}"
 
 
 def ability_options(character, catalog, include_prompts=True):
     class_id = class_key(character, catalog)
     profile = class_profile(catalog, class_id) if class_id else {}
-    class_url = safe_weapon_url(profile.get("url", ""))
     features = {}
     for level in profile.get("levels", [])[:character.level]:
         names = re.split(r",\s*(?![^()]*\))", level["features"])
@@ -41,7 +60,7 @@ def ability_options(character, catalog, include_prompts=True):
             names.extend(level.get("choices", []))
         for name in names:
             if name:
-                features[ability_name(name)] = (name, class_feature_reference(profile, name) or class_url)
+                features[ability_name(name)] = (name, class_feature_reference(class_id, profile, name))
     race = next((key for key, item in RACES.items() if normalized(item["name"]) == normalized(character.ancestry)), None)
     race_url = "https://www.aonprd.com/RacesDisplay.aspx?ItemName=" + quote(RACES[race]["name"]) if race else ""
     racial = {normalized(name): (name, race_url) for name in RACIAL_ABILITIES.get(race, ())}

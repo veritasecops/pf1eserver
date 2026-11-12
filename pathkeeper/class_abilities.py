@@ -1,6 +1,5 @@
 """Browse class progression features using the active class catalog."""
 import re
-from urllib.parse import quote
 
 from .class_catalog import class_profile
 from .feature_links import ability_name, class_feature_reference
@@ -26,11 +25,8 @@ def class_abilities(catalog, class_ids=None):
                 item['gains'].append({'level': level, 'name': label})
         reference = safe_weapon_url(profile.get('url', ''))
         for item in grouped.values():
-            feature_url = class_feature_reference(profile, item['name'])
-            if not feature_url and reference:
-                feature_url = reference.split('#')[0] + '#:~:text=' + quote(item['gains'][0]['name'], safe='')
             entries.append({**item, 'id': f'{class_id}:{ability_name(item["name"])}', 'class_id': class_id, 'class_name': profile['name'],
                             'group': profile['group'], 'class_url': reference,
-                            'url': feature_url,
+                            'url': class_feature_reference(class_id, profile, item['name']),
                             'source': profile.get('source', '')})
     return entries, classes
