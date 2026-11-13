@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=1">{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Monsters</h1><p>Pathfinder First Edition stat blocks from the <a href="https://www.aonprd.com/Monsters.aspx" target="_blank" rel="noopener noreferrer">Archives of Nethys</a>.</p></div></div>
+{% include 'admin_tabs.html' %}
+{% include 'rule_catalog_tabs.html' %}
+<section class="card" aria-label="Monsters">
+  <nav class="monster-letters" aria-label="Monster index letters">
+    {% for label, url in letter_links %}
+    <a class="button small{% if label == selected_letter %} primary{% endif %}" href="{{ url }}"{% if label == selected_letter %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <form method="get" class="filter-bar catalog-toolbar">
+    <input type="hidden" name="kind" value="monsters">
+    {% if letter %}<input type="hidden" name="letter" value="{{ letter }}">{% endif %}
+    <label class="search-input"><input type="search" name="q" value="{{ search }}" aria-label="Search monsters" placeholder="Search monsters"></label>
+    <button class="button" type="submit">Search</button>
+  </form>
+  <div class="table-scroll">
+    <table class="catalog-table">
+      <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th></tr></thead>
+      <tbody>
+        {% for key, monster in items %}
+        <tr><th scope="row"><a class="monster-name" href="/administration/catalog/monsters/{{ key }}?{{ back_query }}">{{ monster.name }}</a></th><td>{{ monster.cr or '—' }}</td><td>{{ monster.type or '—' }}</td><td>{{ monster.environment or '—' }}</td></tr>
+        {% else %}<tr><td colspan="4">No matching monsters.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    {{ total }} {{ 'monster' if total == 1 else 'monsters' }}
+    {% if pages > 1 %}
+    <nav class="row" aria-label="Catalog pages">
+      {% if page > 1 %}<a class="button small" href="?{{ query }}&amp;page={{ page - 1 }}">Previous</a>{% endif %}
+      <span>Page {{ page }} of {{ pages }}</span>
+      {% if page < pages %}<a class="button small" href="?{{ query }}&amp;page={{ page + 1 }}">Next</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
