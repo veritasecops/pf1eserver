@@ -61,7 +61,8 @@ def ability_options(character, catalog, include_prompts=True):
         for name in names:
             if name:
                 features[ability_name(name)] = (name, class_feature_reference(class_id, profile, name))
-    race = next((key for key, item in RACES.items() if normalized(item["name"]) == normalized(character.ancestry)), None)
+        race = next((key for key, item in RACES.items()
+                     if normalized(item["name"]) == normalized(character.ancestry or "")), None)
     race_url = "https://www.aonprd.com/RacesDisplay.aspx?ItemName=" + quote(RACES[race]["name"]) if race else ""
     racial = {normalized(name): (name, race_url) for name in RACIAL_ABILITIES.get(race, ())}
     return features, racial
@@ -84,7 +85,7 @@ def sheet_ability_blocks(values, character, catalog):
     recorded_class, recorded_racial, slots = {}, {}, set()
     editable = {}
     for row in range(56):
-        name = values[f"feature.{row}"].strip()
+        name = values.get(f"feature.{row}", "").strip()
         base = re.sub(r"\s+\([^)]*\)$", "", name)
         if normalized(name) in feat_names or normalized(base) in feat_names:
             continue
