@@ -668,3 +668,59 @@ def test_remove_sheet_and_advancement_feats(env):
         assert record.play_data["advancement_history"][0]["choices"] == []
         assert record.play_data["feature.1"] == ""
         assert record.level == 3
+
+
+def test_sheet_spell_additions_and_removals_persist_and_update_known_counts(env):
+    character = seed_character(env.player)
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    page = client.get(path)
+    assert page.text.count('data-add-spells=') == 10
+    assert 'id="sheet-spell-picker"' in page.text
+    form = SheetForm(page.text)
+    form.values['spell.1.list'] = 'Shield\nSleep'
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 303
+    saved = SheetForm(client.get(path).text)
+    assert saved.values['spell.1.known'] == '2'
+    saved.values['spell.1.list'] = ''
+    assert env.post(client, path + '/play-sheet', saved.values).status_code == 303
+    saved = SheetForm(client.get(path).text)
+    assert saved.values['spell.1.list'] == '' and saved.values['spell.1.known'] == '0'
+
+
+def test_class_ability_freeform_choices_are_editable_and_saved(env):
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.class_name = 'Bard'
+        record.play_data = {'feature.0': 'Versatile performance: Oratory', 'feature.1': 'Bardic knowledge'}
+        db.commit()
+    client = env.login(env.player)
+    path = f'/characters/{character.id}'
+    page = client.get(path)
+    assert 'data-class-ability-input="0"' in page.text
+    assert 'data-class-ability-input="1"' not in page.text
+    form = SheetForm(page.text)
+    assert len(form.names) == len(set(form.names))
+    form.values['feature.0'] = 'Versatile performance: Comedy'
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 303
+    page = client.get(path)
+    assert 'data-ability-label="Versatile performance">Comedy</textarea>' in page.text
+    assert SheetForm(page.text).values['feature.0'] == 'Versatile performance: Comedy'
+    form = SheetForm(page.text)
+    form.values['feature.0'] = 'General feat: Toughness'
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 422
+    assert SheetForm(client.get(path).text).values['feature.0'] == 'Versatile performance: Comedy'
+
+
+
+def test_class_ability_catalog_choices_stay_readonly(env):
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.level = 5
+        record.play_data = {'feature.0': 'Weapon training: Axes'}
+        db.commit()
+    page = env.login(env.player).get(f'/characters/{character.id}')
+    assert 'Weapon training: Axes' in page.text
+    assert 'data-class-ability-input="0"' not in page.text

@@ -113,7 +113,7 @@ def test_wizard_starts_at_sheet_with_abilities_fourth_and_no_dice_step(env):
     assert boot["step"] == boot["step_order"][0]
     assert [boot["steps"][str(key)] for key in boot["step_order"]] == [
         "Character sheet", "Race", "Class", "Ability scores", "Skill ranks", "Feats",
-        "Hit points", "Equipment", "Combat values", "Description", "Starting spells", "Review",
+        "Hit points", "Equipment", "Combat values", "Description", "Review",
     ]
     # A save from an already-open legacy Dice page resumes at Character sheet.
     assert save(env,client,draft_id,version,data,step=0).status_code == 200
@@ -122,7 +122,7 @@ def test_wizard_starts_at_sheet_with_abilities_fourth_and_no_dice_step(env):
 
 
 @pytest.mark.parametrize("saved_step,title,number", [
-    (0,"Character sheet",1), (2,"Ability scores",4), (3,"Race",2), (4,"Class",3), (12,"Review",12),
+    (0,"Character sheet",1), (2,"Ability scores",4), (3,"Race",2), (4,"Class",3), (12,"Review",11),
 ])
 def test_reordered_wizard_resumes_existing_drafts_at_the_same_section(env,saved_step,title,number):
     client,draft_id,_,_ = start(env)
@@ -346,7 +346,7 @@ def test_malformed_or_third_party_draft_inputs_are_rejected(env,override):
     assert save(env,c,draft_id,version,data).status_code==422
 
 
-def test_racial_adjustments_and_first_level_spellbook_requirements(env):
+def test_racial_adjustments_and_first_level_spells_are_optional(env):
     data=defaults(env.player.id)
     data.update(name="Elven wizard",race="elf",class_id="wizard",skills={"spellcraft":1,"knowledge-arcana":1,"perception":1},
                 feats=[{"name":"Iron Will"}],spells=["Mage Armor","Magic Missile","Shield","Sleep"])
@@ -354,7 +354,7 @@ def test_racial_adjustments_and_first_level_spellbook_requirements(env):
     assert not result["errors"] and result["scores"]["int"]==12 and result["scores"]["con"]==8
     assert result["hp"]==6 and result["saves"]["will"]==4 and result["spell_count"]==4
     data["spells"]=[]
-    assert any(error["step"]==11 for error in calculate(clean(data,env.player.id),{})["errors"])
+    assert not calculate(clean(data,env.player.id),{})["errors"]
 
 
 def test_first_level_feat_prerequisites_are_enforced(env):
@@ -475,3 +475,28 @@ def test_migration_removes_retired_fields_and_recalculates_fixed_class_skills(en
     migrate(isolated_database)
     with Session(engine()) as db:
         assert (db.get(Character,character_id).version,db.get(CharacterDraft,pending_id).version) == versions
+
+
+def test_wizard_ignores_spell_payloads_and_preserves_sheet_spells_when_editing(env):
+    from .test_deluxe_sheet import SheetForm
+
+    client, draft_id, version, data = start(env)
+    data = fighter(data)
+    data.update(spells=['Shield'], cantrips=['Light'])
+    saved = save(env, client, draft_id, version, data).json()
+    completed = finish(env, client, draft_id, saved['version'])
+    assert completed.status_code == 200
+    path = completed.json()['location']
+    form = SheetForm(client.get(path).text)
+    assert form.values['spell.1.list'] == '' and form.values['spell.0.list'] == ''
+    form.values.update({'spell.1.list': 'Sleep', 'spell.0.list': 'Light'})
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 303
+    assert client.get(path + '/sheet/edit').status_code == 200
+    with Session(engine()) as db:
+        draft = db.scalar(select(CharacterDraft).where(CharacterDraft.mode == 'edit'))
+        edit_id, edit_version, edit_data = draft.id, draft.version, deepcopy(draft.data)
+    edit_data.update(spells=['Magic Missile'], cantrips=[])
+    saved = save(env, client, edit_id, edit_version, edit_data).json()
+    assert finish(env, client, edit_id, saved['version']).status_code == 200
+    form = SheetForm(client.get(path).text)
+    assert form.values['spell.1.list'] == 'Sleep' and form.values['spell.0.list'] == 'Light'

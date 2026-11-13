@@ -64,3 +64,117 @@ def test_class_ability_catalog_uses_active_class_overrides(env):
     assert response.status_code == 200 and '1 ability' in response.text
     assert 'House ability' in response.text
     assert 'House ability</th>' in response.text
+
+
+def test_sheet_catalog_add_remove_restore_and_autosave_preserve_changes(env):
+    from .test_workspace import seed_character
+    from .test_deluxe_sheet import SheetForm
+
+    character = seed_character(env.player)
+    path = f'/characters/{character.id}'
+    client = env.login(env.player)
+    assert env.login(env.player2).get(path + '/class-abilities').status_code == 404
+    options = client.get(path + '/class-abilities').json()['options']
+    assert options and all(item['class_id'] == 'fighter' for item in options)
+    bravery = next(item for item in options if item['id'] == 'fighter:bravery')
+    assert bravery['owned']
+    page = client.get(path)
+    assert 'id="add-class-ability"' in page.text
+    version = SheetForm(page.text).values['version']
+    remove = {'version': version, 'ability': bravery['id']}
+    assert env.post(client, path + '/class-abilities/remove', remove).status_code == 200
+    assert env.post(client, path + '/class-abilities/remove', remove).status_code == 409
+    page = client.get(path)
+    assert 'data-remove-class-ability="fighter:bravery"' not in page.text
+    form = SheetForm(page.text)
+    form.values['notes'] = 'Keep removal after saving'
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 303
+    page = client.get(path)
+    assert 'data-remove-class-ability="fighter:bravery"' not in page.text
+    version = SheetForm(page.text).values['version']
+    assert env.post(client, path + '/class-abilities', {'version': version, 'ability': 'monk:flurry of blows'}).status_code == 422
+    assert env.post(client, path + '/class-abilities', {'version': version, 'ability': bravery['id']}).status_code == 201
+    page = client.get(path)
+    assert page.text.count('data-remove-class-ability="fighter:bravery"') == 1
+    version = SheetForm(page.text).values['version']
+    assert env.post(client, path + '/class-abilities', {'version': version, 'ability': bravery['id']}).status_code == 409
+    assert env.post(client, path + '/class-abilities', {'version': version, 'ability': 'fighter:weapon mastery'}).status_code == 201
+    assert 'data-remove-class-ability="fighter:weapon mastery"' in client.get(path).text
+
+
+def test_removed_choice_preserves_text_for_restoration(env):
+    from pathkeeper.models import Character
+    from .test_workspace import seed_character
+    from .test_deluxe_sheet import SheetForm
+
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.class_name = 'Bard'
+        record.play_data = {'feature.0': 'Versatile performance: Oratory'}
+        db.commit()
+    path = f'/characters/{character.id}'
+    client = env.login(env.player)
+    form = SheetForm(client.get(path).text)
+    assert env.post(client, path + '/class-abilities/remove', {'version': form.values['version'], 'ability': 'bard:versatile performance'}).status_code == 200
+    page = client.get(path)
+    assert 'data-class-ability-input="0"' not in page.text
+    form = SheetForm(page.text)
+    assert env.post(client, path + '/class-abilities', {'version': form.values['version'], 'ability': 'bard:versatile performance'}).status_code == 201
+    page = client.get(path)
+    assert 'data-ability-label="Versatile performance">Oratory</textarea>' in page.text
+
+
+def test_removing_movement_preserves_manual_speed_modifier(env):
+    from pathkeeper.models import Character
+    from .test_workspace import seed_character
+    from .test_deluxe_sheet import SheetForm
+
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.class_name = 'Barbarian'
+        db.commit()
+    path = f'/characters/{character.id}'
+    client = env.login(env.player)
+    form = SheetForm(client.get(path).text)
+    speed = int(form.values['speed.armor']) + 5
+    form.values['speed.armor'] = str(speed)
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 303
+    form = SheetForm(client.get(path).text)
+    assert env.post(client, path + '/class-abilities/remove', {'version': form.values['version'], 'ability': 'barbarian:fast movement'}).status_code == 200
+    form = SheetForm(client.get(path).text)
+    assert int(form.values['speed.armor']) == speed - 10
+    assert env.post(client, path + '/class-abilities', {'version': form.values['version'], 'ability': 'barbarian:fast movement'}).status_code == 201
+    form = SheetForm(client.get(path).text)
+    assert int(form.values['speed.armor']) == speed
+
+
+def test_added_freeform_ability_gets_an_editable_choice(env):
+    from pathkeeper.models import Character
+    from .test_workspace import seed_character
+    from .test_deluxe_sheet import SheetForm
+
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.class_name, record.level = 'Bard', 1
+        db.commit()
+    path = f'/characters/{character.id}'
+    client = env.login(env.player)
+    form = SheetForm(client.get(path).text)
+    assert env.post(client, path + '/class-abilities', {'version': form.values['version'], 'ability': 'bard:versatile performance'}).status_code == 201
+    page = client.get(path)
+    assert 'data-class-ability-input="0"' in page.text
+    form = SheetForm(page.text)
+    form.values['feature.0'] = 'Versatile performance: Comedy'
+    assert env.post(client, path + '/play-sheet', form.values).status_code == 303
+    assert 'data-ability-label="Versatile performance">Comedy</textarea>' in client.get(path).text
+    form = SheetForm(client.get(path).text)
+    assert env.post(client, path + '/class-abilities/remove', {'version': form.values['version'], 'ability': 'bard:versatile performance'}).status_code == 200
+    page = client.get(path)
+    assert 'data-class-ability-input="0"' not in page.text
+    assert 'data-feature-row="0" hidden' in page.text
+    form = SheetForm(page.text)
+    assert env.post(client, path + '/class-abilities', {'version': form.values['version'], 'ability': 'bard:versatile performance'}).status_code == 201
+    assert 'data-ability-label="Versatile performance">Comedy</textarea>' in client.get(path).text

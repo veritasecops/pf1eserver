@@ -20,6 +20,9 @@ def trait_defenses(character, values):
     rows = {}
 
     def add(situation, checks, feature, url, bonus=None, result=None, formula=""):
+        from .class_abilities import removed_class_ability
+        if class_id and url == class_url and removed_class_ability(character, feature, class_id):
+            return
         for check in checks:
             key = (situation, check)
             row = rows.setdefault(key, {"situation": situation, "check": check, "sources": [], "bonus": 0, "result": "", "formula": ""})
@@ -61,7 +64,7 @@ def trait_defenses(character, values):
         add("Bardic performance, sonic, or language-dependent effects", SAVES, "Well-Versed", class_url, 4)
     if class_id in {"alchemist", "investigator"} and level >= 2:
         if level >= (10 if class_id == "alchemist" else 11):
-            add("Poison", ("Immunity",), "Poison Resistance", class_url, result="Immune")
+            add("Poison", ("Immunity",), "Poison Immunity", class_url, result="Immune")
         else:
             add("Poison", SAVES, "Poison Resistance", class_url, min(6, 2 + 2 * ((level - 2) // 3)))
     if class_id == "druid" and level >= 9:

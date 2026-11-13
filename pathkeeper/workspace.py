@@ -454,6 +454,11 @@ async def read_play_sheet(ctx, character, form=None):
     locked = calculated_fields(character, current, catalog)
     values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),catalog.get('deities',{}),current.get('deity',''))
     if not errors:
+        for editor in sheet_ability_blocks(current, character, catalog)["editable"].values():
+            label, separator, choice = values[f"feature.{editor['row']}"].partition(":")
+            if not separator or label != editor["label"] or len(choice.strip()) > 150:
+                errors.append(f"{editor['label']}: edit only the choice text, up to 150 characters.")
+    if not errors:
         apply_advancement(values, track(campaign))
         sync_equipped(character,values,current)
         from .equipment_effects import validate_armor
@@ -522,7 +527,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation") if key in (character.play_data or {})}
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation","class_ability_changes") if key in (character.play_data or {})}
     if "backpack" in metadata:
         metadata["backpack"] = [
             {**item, "notes": values[f"gear.{row}.notes"]}
@@ -629,6 +634,87 @@ async def character_spell_options(character_id: int, request: Request, db: Sessi
     return JSONResponse({"spells": [{"name": item["name"], "url": safe_weapon_url(item["url"]), "levels": item["levels"]}
                                     for item in entries], "class_name": character.class_name},
                         headers={"Cache-Control": "no-store"})
+
+
+def sheet_class_ability_context(ctx, character):
+    from .class_catalog import class_key, class_profile
+    from .class_abilities import class_abilities
+    from .feature_links import ability_name
+
+    catalog = load_catalog(ctx.db)
+    owner = ctx.db.get(User, character.owner_id)
+    campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
+    values = sheet_values(character, owner, campaign, progression_catalog=catalog)
+    class_id = class_key(character, catalog)
+    entries, _ = class_abilities(catalog, [class_id] if class_id else [])
+    profile = class_profile(catalog, class_id) if class_id else {}
+    freeform = {ability_name(label) for row in profile.get('levels', [])
+                for label in level_up.feature_choices(row)
+                if 'feat' not in label.casefold() and ability_name(label) != 'weapon training'}
+    options = {item['id']: {**item, 'freeform': ability_name(item['name']) in freeform}
+               for item in entries if item['class_id'] == class_id}
+    blocks = sheet_ability_blocks(values, character, catalog)
+    return catalog, owner, campaign, values, options, blocks
+
+
+@router.get("/characters/{character_id}/class-abilities")
+async def character_class_ability_options(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = get_character(ctx, character_id)
+    _, _, _, _, options, blocks = sheet_class_ability_context(ctx, character)
+    owned = {item['id'] for item in blocks['catalog_entries'].values()}
+    return JSONResponse({'options': [{**item, 'owned': key in owned} for key, item in options.items()]},
+                        headers={'Cache-Control': 'no-store'})
+
+
+@router.post("/characters/{character_id}/class-abilities")
+@router.post("/characters/{character_id}/class-abilities/remove")
+async def character_class_ability_update(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    form = await read_form(ctx)
+    character = get_character(ctx, character_id)
+    db.refresh(character, with_for_update=True)
+    get_character(ctx, character_id)
+    verify_version(form, character)
+    catalog, owner, campaign, values, options, blocks = sheet_class_ability_context(ctx, character)
+    key = field(form, 'ability', 500)
+    item = options.get(key)
+    if not item:
+        raise HTTPException(422, 'Choose an ability from this character’s class catalog.')
+    removing = request.url.path.endswith('/remove')
+    owned = {entry['id'] for entry in blocks['catalog_entries'].values()}
+    if removing and key not in owned:
+        raise HTTPException(422, 'Choose a class ability on this sheet.')
+    if not removing and key in owned:
+        raise HTTPException(409, 'That class ability is already on the sheet.')
+    data = {**(character.play_data or {}), **persist_effects(character, values)}
+    state = data.get('class_ability_changes', {})
+    added, removed = set(state.get('added', [])), set(state.get('removed', []))
+    if removing:
+        added.discard(key)
+        removed.add(key)
+    else:
+        added.add(key)
+        removed.discard(key)
+    if not removing and item['freeform']:
+        from .feature_links import ability_name
+        matching = [row for row in range(56)
+                    if ability_name(values[f'feature.{row}'].split(':', 1)[0]) == ability_name(item['name'])]
+        if matching and ':' not in values[f'feature.{matching[0]}']:
+            data[f'feature.{matching[0]}'] = values[f'feature.{matching[0]}'] + ': '
+        if not matching:
+            row = next((row for row in range(56) if not values[f'feature.{row}']), None)
+            if row is None:
+                raise HTTPException(422, 'The feats and abilities section is full.')
+            data[f'feature.{row}'] = item['name'] + ': '
+    data['class_ability_changes'] = {'added': sorted(added), 'removed': sorted(removed)}
+    character.play_data = data
+    updated = sheet_values(character, owner, campaign, progression_catalog=catalog)
+    character.play_data = {**data, **persist_effects(character, updated)}
+    action = 'removed' if removing else 'added'
+    audit(db, ctx.user, 'character.class_ability_' + action, f"{action.capitalize()} {item['name']} for {character.name}.")
+    commit(db)
+    return JSONResponse({'location': f'/characters/{character.id}#abilities-skills'}, status_code=200 if removing else 201)
 
 
 @router.get("/characters/{character_id}/features")

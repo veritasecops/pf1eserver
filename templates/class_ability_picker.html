@@ -1,0 +1,10 @@
+<dialog id="sheet-class-ability-picker" class="pw-weapon-picker" aria-labelledby="class-ability-picker-title" data-endpoint="/characters/{{ character.id }}/class-abilities">
+  <div class="pw-weapon-picker-form">
+    <header class="pw-weapon-picker-heading"><div><h2 id="class-ability-picker-title">Add Class Ability</h2><p>{{ character.class_name }} progression features. Class levels are shown for reference.</p></div><button class="icon-button" type="button" data-class-ability-close aria-label="Close class ability picker">×</button></header>
+    <div class="pw-weapon-filters"><label>Search abilities<input type="search" data-class-ability-search autocomplete="off"></label></div>
+    <p class="pw-weapon-result-count" data-class-ability-status role="status"></p>
+    <p class="error" data-class-ability-error role="alert" hidden></p>
+    <div class="pw-weapon-results"><table><thead><tr><th scope="col">Ability and reference</th><th scope="col">Class levels</th><th scope="col">Add</th></tr></thead><tbody data-class-ability-results></tbody></table><button class="button" type="button" data-class-ability-more hidden>Show more</button></div>
+    <div class="card-body"><button class="button" type="button" data-class-ability-close>Done</button></div>
+  </div>
+</dialog>

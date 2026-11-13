@@ -65,8 +65,6 @@ def plan(ctx, character):
     features = re.split(r",\s*(?![^()]*\))", current["features"]) if current["features"] else []
     choices = ["General feat"] if target % 2 else []
     choices.extend(feature_choices(current))
-    known = {key: count - previous.get("known", {}).get(key, 0) for key, count in current.get("known", {}).items()
-             if count > previous.get("known", {}).get(key, 0)}
     catalog = character_catalog(character)
     trained = set(class_skills(catalog, class_id, sheet_input.get("expert_skills", ())))
     rows = [
@@ -76,21 +74,10 @@ def plan(ctx, character):
          item.get("enabled", True))
         for key, item in skill_rows(catalog)
     ]
-    swaps = {}
-    if profile["spell_swap"] and profile["casting_ability"]:
-        first, frequency, lower = profile["spell_swap"]
-        if target >= first and (target - first) % frequency == 0:
-            casting_score = Decimal(values[f"ability.{profile['casting_ability']}.score"] or 0)
-            known_levels = [int(key) for key in current.get("known", {})]
-            highest = max(known_levels, default=0)
-            for spell_level in sorted(known_levels):
-                if spell_level <= highest - lower and spell_level + 10 <= casting_score:
-                    spells = values[f"spell.{spell_level}.list"].splitlines()
-                    swaps.update({f"{spell_level}.{index}": (spell_level, spell) for index, spell in enumerate(spells) if spell.strip()})
     feat_bab = float(Decimal(values["bab"] or previous["bab"]) + bab)
     return {
-        "class_id": class_id, "swaps": swaps, "profile": profile, "target": target, "values": values, "features": features,
-        "choices": choices, "rows": rows, "known": known, "bab": bab,
+        "class_id": class_id, "profile": profile, "target": target, "values": values, "features": features,
+        "choices": choices, "rows": rows, "bab": bab,
         "saves": [after - before for before, after in zip(previous["saves"], current["saves"])],
         "previous": previous, "current": current,
         "spell_levels": [int(key) for key in current.get("slots", {}) if int(key) > 0],
@@ -354,40 +341,6 @@ def submit(character, advancement, form):
             if key == "hp.total":
                 hp += amount
 
-    replacement = text("replacement_spell", 150)
-    swap = form.get("swap_spell", "")
-    if (swap or replacement) and (swap not in advancement["swaps"] or not replacement):
-        errors.append("Choose one eligible known spell and enter its replacement.")
-    swap_record = None
-    spell_additions = {}
-    writable_levels = set(advancement["known"])
-    if profile["book"]:
-        writable_levels.update(map(str, advancement["spell_levels"]))
-    if swap in advancement["swaps"]:
-        writable_levels.add(str(advancement["swaps"][swap][0]))
-    for level in sorted(writable_levels):
-        existing = values[f"spell.{level}.list"].splitlines()
-        additions = [name.strip() for name in text(f"spells_{level}", 2000).splitlines() if name.strip()]
-        count = advancement["known"].get(level, 0)
-        if advancement["known"] and len(additions) != count:
-            errors.append(f"Enter {count} new level {level} spells or talents.")
-        if swap in advancement["swaps"] and swap.split(".")[0] == level and replacement:
-            index = int(swap.split(".")[1])
-            if replacement.casefold() == existing[index].casefold():
-                errors.append("Choose a different replacement spell.")
-            swap_record = {"level": level, "old": existing[index], "new": replacement}
-            existing[index] = replacement
-        combined = [name for name in existing + additions if name.strip()]
-        if (additions or replacement) and len({name.strip().casefold() for name in combined}) < len(combined):
-            errors.append(f"Choose distinct level {level} spells or talents.")
-        if len("\n".join(combined)) > 10000:
-            errors.append(f"The level {level} spell list is full.")
-        if additions:
-            spell_additions[level] = additions
-        if additions or swap_record and swap_record["level"] == level:
-            changes[f"spell.{level}.list"] = "\n".join(combined)
-    if profile["book"] and sum(map(len, spell_additions.values())) != profile["book"]:
-        errors.append(f"Record {profile['book']} new spellbook, familiar or formula-book entries.")
     for level, slots in current.get("slots", {}).items():
         old_slots = previous.get("slots", {}).get(level, 0)
         key = f"spell.{level}.daily"
@@ -417,7 +370,6 @@ def submit(character, advancement, form):
     entry = {
         "level": target, "class": character.class_name, "hit_die": roll, "hp": hp,
         "favored": favored, "ability": ability, "features": advancement["features"], "choices": selections,
-        "spells": spell_additions, "spell_swap": swap_record,
     }
     if not errors:
         character.play_data = {

@@ -166,7 +166,7 @@ def test_class_progression_tables_cover_all_selectable_classes():
     assert CLASS_PROGRESSIONS["arcanist"]["levels"][0]["prepared"]["0"] == 4
     assert CLASS_PROGRESSIONS["monk-unchained"]["levels"][0]["saves"] == [2, 2, 0]
 
-def test_bard_level_up_requires_new_spells_and_updates_slots(env):
+def test_bard_level_up_preserves_spells_and_updates_slots(env):
     character = seed_character(env.player, name="Advancing bard")
     with Session(engine()) as db:
         record = db.get(Character, character.id)
@@ -185,13 +185,15 @@ def test_bard_level_up_requires_new_spells_and_updates_slots(env):
     data = {"version": version, "target": 2, "hit_die": 4, "favored": "none", "rank_climb": 2,
             "rank_disguise": 2, "rank_bluff": 2, "rank_diplomacy": 1,
             "choice_0": "Oratory", "spells_0": "Light", "reviewed": "1"}
-    assert env.post(client, path + "/level-up", data).status_code == 422
-    assert env.post(client, path + "/level-up", {**data, "spells_1": "Charm Person"}).status_code == 303
+    assert 'name="spells_' not in page.text and 'name="swap_spell"' not in page.text
+    assert env.post(client, path + "/level-up", {**data, "spells_1": "Charm Person",
+                                              "swap_spell": "1.0", "replacement_spell": "Shield"}).status_code == 303
     sheet = SheetForm(client.get(path).text)
     assert sheet.values["level"] == "2"
     assert sheet.values["spell.1.daily"] == "2"
     assert sheet.values["spell.1.bonus"] == "1"
-    assert sheet.values["spell.1.list"] == "Cure Light Wounds\nCharm Person"
+    assert sheet.values["spell.1.list"] == "Cure Light Wounds"
+    assert sheet.values["spell.0.list"] == "Detect Magic"
     assert sheet.values["caster_level"] == "2"
 
 def test_migration_removes_only_retired_advancement_notes(env, isolated_database):

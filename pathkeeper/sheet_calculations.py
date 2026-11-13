@@ -46,7 +46,9 @@ def calculated_fields(character, values, progression_catalog=None):
     locked.update(f'armor.{row}.{part}' for row in range(6) for part in ('name','quantity','type','bonus','max_dex','penalty','failure','speed','weight'))
     locked.update(f"gear.{row}.{part}" for row in range(GEAR_SLOTS) for part in ("name", "weight"))
     locked.update(f"gear.{row}.notes" for row in range(GEAR_SLOTS) if not values.get(f"gear.{row}.name"))
-    locked.update(f'feature.{row}' for row in range(56))
+    from .feature_links import sheet_ability_blocks
+    editable = {item["row"] for item in sheet_ability_blocks(values, character, progression_catalog or catalog)["editable"].values()}
+    locked.update(f'feature.{row}' for row in range(56) if row not in editable)
     locked.update(f'spell.{level}.known' for level in range(10))
     # These are calculated by the first-level wizard. At later levels they need
     # manual advancement because hit-die rolls and class progression aren't recorded.
@@ -116,16 +118,19 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
             write(f'save.{save}.base', bonus)
     dex,strength,intelligence = modifier('dex'),modifier('str'),modifier('int')
     write('initiative.dex',dex)
-    initiative_bonus = (modifier('wis') or 0) if class_id == 'inquisitor' and level >= 2 else 0
+    from .class_abilities import removed_class_ability
+    active = lambda name: not removed_class_ability(character, name, class_id)
+    initiative_bonus = (modifier('wis') or 0) if class_id == 'inquisitor' and level >= 2 and active('Cunning Initiative') else 0
     total('initiative.total',['initiative.dex'],['initiative.misc'],initiative_bonus)
     for save,ability in [('fortitude','con'),('reflex','dex'),('will','wis')]:
         write(f'save.{save}.ability',modifier(ability))
         bonus = int(race_id == 'halfling') - int(starting_race == 'halfling')
-        if level >= 2 and (class_id in {'paladin', 'antipaladin'} or class_id == 'mesmerist' and save == 'will'):
+        grace = active('Divine Grace' if class_id == 'paladin' else 'Unholy Resilience' if class_id == 'antipaladin' else 'Towering Ego')
+        if grace and level >= 2 and (class_id in {'paladin', 'antipaladin'} or class_id == 'mesmerist' and save == 'will'):
             bonus += max(0, modifier('cha') or 0)
         total(f'save.{save}.total',[f'save.{save}.base',f'save.{save}.ability'],[f'save.{save}.magic',f'save.{save}.misc'],bonus)
     for kind in ('cmb','cmd'):
-        write(f'{kind}.bab',level if kind == 'cmb' and class_id == 'monk' and level >= 3 else number('bab'))
+        write(f'{kind}.bab',level if kind == 'cmb' and class_id == 'monk' and level >= 3 and active('Maneuver Training') else number('bab'))
         write(f'{kind}.str',strength)
     write('cmd.dex',dex)
     size = SIZE_MODIFIERS.get(str(values.get('size') or race.get('size', '')).casefold())
@@ -155,7 +160,11 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
             if not row.endswith('-2'):
                 # First-level wizard snapshots already include these racial bonuses.
                 bonus -= racial_skill_bonus(starting_race, key)
-            bonus += class_skill_bonus(class_id, level, key)
+            skill_feature = {'bard': 'Bardic Knowledge', 'skald': 'Bardic Knowledge', 'inquisitor': 'Stern Gaze',
+                             'mesmerist': 'Consummate Liar', 'rogue': 'Trapfinding', 'rogue-unchained': 'Trapfinding',
+                             'investigator': 'Trapfinding'}.get(class_id, '')
+            if active(skill_feature):
+                bonus += class_skill_bonus(class_id, level, key)
             if key == 'stealth' and size is not None:
                 bonus += 4 * size
             total(f'skill.{row}.total',[f'skill.{row}.ability'],[f'skill.{row}.ranks',f'skill.{row}.misc'],bonus)

@@ -13,7 +13,7 @@ from .rule_catalog import load_catalog, equipment, class_skills
 from .deities import deity_choices, choose_deity
 from .models import Campaign, Character, CharacterDraft, DiceRoll, RuleCatalog, User, utcnow
 from .class_catalog import creation_class
-from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, SPELL_SUGGESTIONS, STEPS
+from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, OUTLINE, POINT_COST, RACES, SKILLS, STEPS
 from .security import audit, authenticated, context, get_campaign, get_character, integer, read_form, throttle
 from .ui import redirect, render
 from .workspace import character_options, character_values
@@ -70,7 +70,7 @@ def display_wizard(ctx, draft):
             "computed":calculate(data,rolls,load_catalog(ctx.db)),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":{key:{**creation_class(catalog,key),"skills":class_skills(catalog,key)} for key in CLASSES},"skills":catalog["skills"],"feats":catalog["feats"],"equipment":equipment(catalog),"alignments":ALIGNMENTS,
-            "point_cost":POINT_COST,"spell_suggestions":SPELL_SUGGESTIONS,"monk_bonus":[name for name,meta in catalog["feats"].items() if meta.get("monk") and meta.get("enabled",True)],
+            "point_cost":POINT_COST,"monk_bonus":[name for name,meta in catalog["feats"].items() if meta.get("monk") and meta.get("enabled",True)],
             "campaigns":[{"id":option.id,"name":option.name} for option in campaigns],
             "is_npc":bool(campaign),"return_path":return_path}
     return render(ctx,"character_wizard.html",title="NPC creation" if campaign else "Character creation",
@@ -158,6 +158,8 @@ async def saved_form(ctx,draft):
             payload.update(owner_id=campaign.owner_id, campaign_id=campaign.id)
         elif draft.mode == "create":
             payload["owner_id"] = ctx.user.id
+        for key in ("spells", "cantrips", "spell_notes"):
+            payload[key] = draft.data.get(key, defaults(ctx.user.id)[key])
     data=clean(payload,ctx.user.id,load_catalog(ctx.db))
     data['deity']=choose_deity(data['deity'],load_catalog(ctx.db).get('deities',{}),draft.data.get('deity',''))
     return form,data
@@ -302,7 +304,9 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     if existing:
         current = sheet_values(existing, owner)
         existing.play_data = {**(existing.play_data or {}), **{
-            key: value for key, value in current.items() if key.startswith(("gear.", "weapon.", "armor."))
+            key: value for key, value in current.items()
+            if key.startswith(("gear.", "weapon.", "armor."))
+            or (key.startswith("spell.") and key.endswith(".list")) or key == "spell_notes"
         }}
     old_speed = track(db.get(Campaign, existing.campaign_id)) if existing and existing.campaign_id else "slow"
     character = existing or Character(**values, is_npc=draft.npc_campaign_id is not None)

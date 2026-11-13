@@ -173,29 +173,11 @@
       return;
     }
     const bad = slots.find(slot => !eligible(slot, selected(slot).value));
-    const lines = input => input.value.split('\n').map(line => line.trim()).filter(Boolean);
-    const invalidSpells = [...form.querySelectorAll('[data-spell-count]')]
-      .find(input => lines(input).length !== Number(input.dataset.spellCount));
-    const bookFields = [...form.querySelectorAll('[data-book-spells]')];
-    const bookCount = Number(form.dataset.book);
-    const badBook = bookFields.length && bookFields.flatMap(lines).length !== bookCount;
-    const swap = form.elements.swap_spell;
-    const replacement = form.elements.replacement_spell;
-    const incompleteSwap = swap && Boolean(swap.value) !== Boolean(replacement.value.trim());
     let message = '';
     let focus;
     if (bad) {
       message = 'Choose an eligible feat for each feat slot.';
       focus = bad.querySelector('[data-feat-search]');
-    } else if (invalidSpells) {
-      message = `Enter ${invalidSpells.dataset.spellCount} new spells at that spell level.`;
-      focus = invalidSpells;
-    } else if (badBook) {
-      message = `Enter ${bookCount} new spellbook or formula-book entries.`;
-      focus = bookFields[0];
-    } else if (incompleteSwap) {
-      message = 'Choose a spell to replace and enter its replacement.';
-      focus = replacement;
     }
     if (message) {
       event.preventDefault();

@@ -90,6 +90,13 @@
     });
   }
 
+  for (const input of sheet.querySelectorAll('[data-class-ability-input]')) {
+    input.addEventListener('input', () => {
+      const field = sheet.elements.namedItem(`feature.${input.dataset.classAbilityInput}`);
+      field.value = `${input.dataset.abilityLabel}: ${input.value}`;
+    });
+  }
+
   launcher.addEventListener('click', async () => {
     dialog.showModal();
     catalog = null;

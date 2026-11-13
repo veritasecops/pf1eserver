@@ -68,11 +68,21 @@ def ability_options(character, catalog, include_prompts=True):
 
 
 def sheet_ability_blocks(values, character, catalog):
+    from .class_abilities import class_abilities as catalog_abilities, removed_class_ability
+
     granted, racial = ability_options(character, catalog, include_prompts=False)
     class_choices, _ = ability_options(character, catalog)
+    class_id = class_key(character, catalog)
+    options, _ = catalog_abilities(catalog, [class_id] if class_id else [])
+    options = {item['id']: item for item in options if item['class_id'] == class_id}
+    state = (getattr(character, 'play_data', None) or {}).get('class_ability_changes', {})
+    for key in set(state.get('added', [])) | set(state.get('removed', [])):
+        if item := options.get(key):
+            class_choices[ability_name(item['name'])] = (item['name'], item['url'])
     class_abilities = {key: item for key, item in granted.items() if "feat" not in key.split()}
     feat_names = {normalized(name) for name in catalog["feats"]}
     recorded_class, recorded_racial, slots = {}, {}, set()
+    editable = {}
     for row in range(56):
         name = values[f"feature.{row}"].strip()
         base = re.sub(r"\s+\([^)]*\)$", "", name)
@@ -83,6 +93,9 @@ def sheet_ability_blocks(values, character, catalog):
             recorded_racial.setdefault(key, []).append((name, racial[key][1]))
         elif key in class_choices:
             recorded_class.setdefault(key, []).append((name, class_choices[key][1]))
+            if ":" in name and key != "weapon training":
+                label, choice = name.split(":", 1)
+                editable[name] = {"row": row, "label": label.strip(), "choice": choice.strip()}
         else:
             continue
         slots.add(row)
@@ -91,8 +104,22 @@ def sheet_ability_blocks(values, character, catalog):
         return [item for key in dict.fromkeys([*automatic, *recorded])
                 for item in (recorded[key] if key in recorded else [automatic[key]])]
 
-    return {"class": entries(class_abilities, recorded_class),
-            "racial": entries(racial, recorded_racial), "slots": slots}
+    visible = [(name, url) for name, url in entries(class_abilities, recorded_class)
+               if not removed_class_ability(character, name.split(':', 1)[0], class_id)]
+    present = {ability_name(name.split(':', 1)[0]) for name, _ in visible}
+    for key in state.get('added', []):
+        item = options.get(key)
+        if item and key not in state.get('removed', []) and ability_name(item['name']) not in present:
+            visible.append((item['name'], item['url']))
+            present.add(ability_name(item['name']))
+    catalog_entries = {}
+    for name, _ in visible:
+        key = f"{class_id}:{ability_name(name.split(':', 1)[0])}"
+        if item := options.get(key):
+            catalog_entries[name] = item
+    visible = [(name, catalog_entries[name]['url'] if name in catalog_entries else url) for name, url in visible]
+    return {"class": visible, "racial": entries(racial, recorded_racial), "slots": slots,
+            "editable": editable, "catalog_entries": catalog_entries}
 
 
 def feature_targets(catalog):

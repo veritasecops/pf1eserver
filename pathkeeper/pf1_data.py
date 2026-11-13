@@ -7,7 +7,7 @@ from .reference_links import class_reference
 ABILITIES = {"str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma"}
 POINT_COST = {7: -4, 8: -2, 9: -1, 10: 0, 11: 1, 12: 2, 13: 3, 14: 5, 15: 7, 16: 10, 17: 13, 18: 17}
 # Keys are stable draft/validation identifiers; insertion order controls navigation.
-STEPS = {1: "Character sheet", 3: "Race", 4: "Class", 2: "Ability scores", 5: "Skill ranks", 6: "Feats", 7: "Hit points", 8: "Equipment", 9: "Combat values", 10: "Description", 11: "Starting spells", 12: "Review"}
+STEPS = {1: "Character sheet", 3: "Race", 4: "Class", 2: "Ability scores", 5: "Skill ranks", 6: "Feats", 7: "Hit points", 8: "Equipment", 9: "Combat values", 10: "Description", 12: "Review"}
 OUTLINE = "https://www.aonprd.com/Rules.aspx?ID=83"
 RACES = {
     "human": {"name": "Human", "mods": {}, "flex": True, "size": "Medium", "speed": 30, "languages": "Common", "traits": "A flexible ability bonus, an extra feat, and an extra skill rank."},

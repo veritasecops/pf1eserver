@@ -30,3 +30,15 @@ def class_abilities(catalog, class_ids=None):
                             'url': class_feature_reference(class_id, profile, item['name']),
                             'source': profile.get('source', '')})
     return entries, classes
+
+
+def removed_class_ability(character, name, class_id=None):
+    from .class_catalog import class_key
+    from .rule_catalog import character_catalog
+
+    state = (getattr(character, 'play_data', None) or {}).get('class_ability_changes', {})
+    if not state.get('removed'):
+        return False
+    if class_id is None:
+        class_id = class_key(character, character_catalog(character))
+    return f'{class_id}:{ability_name(name)}' in state['removed']

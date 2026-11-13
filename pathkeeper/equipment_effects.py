@@ -80,12 +80,14 @@ def contributions(character, values, original=False):
     penalty = number(armor.get('acp', 0)) + number(shield.get('acp', 0))
     dodge = 0
     if not original:
+        from .class_abilities import removed_class_ability
+        active = lambda name: not removed_class_ability(character, name, cls)
         level = int(values.get("level") or getattr(character, "level", 1))
         weight = carried_weight(character, values)
         strength = number(values.get('ability.str.temp_score') or values.get('ability.str.score', ''), None)
         size = (values.get('size') or race.get('size', '')).casefold()
         load = load_category(strength, size, weight)
-        training = armor_training(cls, level) if armor else 0
+        training = armor_training(cls, level) if armor and active('Armor Training') else 0
         armor_cap = number(armor.get('max_dex', 100))
         dex = min(modifier('dex'), armor_cap + training, number(shield.get('max_dex', 100)))
         dex = min(dex, LOAD_DEX_CAPS.get(load, 100))
@@ -105,22 +107,23 @@ def contributions(character, values, original=False):
                         (start_armor.get(f'speed_{base + 10}') or speeds.get(base + 10, base + 10))
                         - (start_armor.get(f'speed_{base}') or speeds.get(base, base))
                     )
-        speed = base + (10 if cls in FAST_MOVEMENT and category != 'heavy' and load != 'heavy' else 0)
+        speed = base + (10 if cls in FAST_MOVEMENT and active('Fast Movement') and category != 'heavy' and load != 'heavy' else 0)
         if cls in MONKS and not armor and not shield and load not in {'medium', 'heavy'}:
-            speed += 10 * min(6, level // 3)
-            monk = max(0, modifier('wis')) + level // 4
-        elif cls == 'shifter' and level >= 2 and not armor and not shield and load not in {'medium', 'heavy'}:
+            if active('Fast Movement'):
+                speed += 10 * min(6, level // 3)
+            monk = max(0, modifier('wis')) + level // 4 if active('AC Bonus') else 0
+        elif cls == 'shifter' and active('Defensive Instinct') and level >= 2 and not armor and not shield and load not in {'medium', 'heavy'}:
             monk = max(0, modifier('wis')) + level // 4
         else:
             monk = 0
         monk -= baked_monk
         armor_slows = category in {'medium', 'heavy'} and not (
-            cls == 'fighter' and level >= (3 if category == 'medium' else 7)
+            cls == 'fighter' and active('Armor Training') and level >= (3 if category == 'medium' else 7)
         )
         if armor_slows and race.get('name') != 'Dwarf':
             speed = armor.get('speed_' + str(int(speed))) or max(10 if speed >= 10 else 5, 5 * ((2 * int(speed) + 14) // 15))
         speed -= baked_speed
-        dodge = nimble(cls, level, category, load)
+        dodge = nimble(cls, level, category, load) if active('AC Bonus' if cls == 'brawler' else 'Nimble') else 0
     result = {'ac.armor':armor.get('armor', 0), 'ac.shield':shield.get('shield', 0),
               'ac.dex':dex, 'ac.misc':monk, 'cmd.misc':monk + dodge, 'ac.dodge':dodge, 'speed.armor':speed}
     for key, meta in catalog['skills'].items():

@@ -247,17 +247,12 @@ def calculate(data, rolls, catalog=None):
     spell_count = starting_known.get("1")
     if progression.get("starting_book"):
         spell_count = progression["starting_book"] + max(0, modifiers["int"])
-    if spell_count is not None and len(data["spells"]) != spell_count: error(11, f"Record {spell_count} starting first-level spells or formulae, one per line.")
-    if len(set(name.casefold() for name in data["spells"])) != len(data["spells"]): error(11, "Choose different starting spells rather than repeating the same name.")
     if caster:
         if scores[caster] < 11: warnings.append(f"{ABILITIES[caster]} is below 11; you cannot cast first-level spells using the normal class rules.")
         warnings.append("Confirm spell names, class lists, opposition schools, domain/mystery additions, and prepared spells with your GM.")
     speed = race["speed"] + (10 if data["class_id"] in {"barbarian", "barbarian-unchained"} and armor.get("category") != "heavy" else 0)
     if armor.get("category") in {"medium","heavy"} and data["race"] != "dwarf": speed = armor.get("speed_"+str(speed)) or {20:15,30:20,40:30}.get(speed,speed)
     cantrip_count = starting_known.get("0")
-    if cantrip_count is not None and len(data["cantrips"]) != cantrip_count: error(11, f"Record {cantrip_count} different starting cantrips or orisons.")
-    if len(set(name.casefold() for name in data["cantrips"])) != len(data["cantrips"]): error(11,"Do not repeat cantrip or orison names.")
-    if data["class_id"] == "oracle" and len(data["spells"]) != 2: error(11,"Record two chosen first-level oracle spells; record the free cure/inflict spell separately in spell notes.")
     languages = race["languages"] + (", Druidic" if data["class_id"] == "druid" else "")
     return {"base":base,"racial":racial,"scores":scores,"modifiers":modifiers,"point_spent":point_spent,
             "hp":hp,"skill_budget":skill_budget,"ranks_used":ranks_used,"class_skills":sorted(class_skills),"skill_totals":skill_totals,

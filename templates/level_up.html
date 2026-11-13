@@ -24,7 +24,7 @@
   {% endfor %}
 </nav>
 <form method="post" class="card pw-stage-card" id="level-up-form"
-      data-book="{{ profile.book }}" data-ranks="{{ profile.ranks }}" data-int="{{ advancement['values']['ability.int.score'] }}" data-target="{{ target }}" data-human="{{ 1 if advancement.human else 0 }}">
+      data-ranks="{{ profile.ranks }}" data-int="{{ advancement['values']['ability.int.score'] }}" data-target="{{ target }}" data-human="{{ 1 if advancement.human else 0 }}">
   {{ csrf_input(csrf) }}
   <input type="hidden" name="version" value="{{ character.version }}">
   <input type="hidden" name="target" value="{{ target }}">
@@ -96,25 +96,7 @@
     {% if advancement.current.get('prepared') %}
     <p>Spells prepared · {% for level, count in advancement.current.prepared|dictsort %}{{ level }}: {{ count }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     {% endif %}
-    {% if advancement.known %}<p>Enter new spells known, one per line.</p>{% endif %}
-    {% if profile.book %}<p>Enter {{ profile.book }} new spellbook, familiar, or formula-book entries, one per line, under the appropriate spell levels.</p>{% endif %}
-    {% for level, count in advancement.known|dictsort %}
-    <label class="field"><span>Level {{ level }} · {{ count }} new</span><textarea name="spells_{{ level }}" data-spell-count="{{ count }}" rows="3" maxlength="2000" required>{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
-    {% endfor %}
-    {% if advancement.swaps %}
-      <label class="field"><span>Spell to replace (optional)</span><select name="swap_spell"><option value="">Keep current spells</option>
-        {% for key, (level, spell) in advancement.swaps.items() %}<option value="{{ key }}"{% if submitted.get('swap_spell') == key %} selected{% endif %}>Level {{ level }} · {{ spell }}</option>{% endfor %}
-      </select></label>
-      <label class="field"><span>Replacement spell of the same level</span><input name="replacement_spell" value="{{ submitted.get('replacement_spell', '') }}" maxlength="150">
-        <span class="secondary-text">Confirm the spell can be replaced. Class-granted bonus spells can have restrictions.</span>
-      </label>
-    {% endif %}
-    {% if profile.book %}
-      {% for level in advancement.spell_levels %}
-      <label class="field"><span>Level {{ level }} additions</span><textarea name="spells_{{ level }}" data-book-spells rows="2" maxlength="2000">{{ submitted.get('spells_' ~ level, '') }}</textarea></label>
-      {% endfor %}
-    {% endif %}
-    {% if not advancement.known and not profile.book %}<p>Review newly available spells or implements in the class rules.</p>{% endif %}
+    <p>Add or remove spells from the character sheet after leveling up.</p>
   </section>
   {% endif %}
     <p>Base attack bonus {{ '%+d'|format(advancement.bab) }} · Fortitude {{ '%+d'|format(advancement.saves[0]) }} · Reflex {{ '%+d'|format(advancement.saves[1]) }} · Will {{ '%+d'|format(advancement.saves[2]) }}</p>
@@ -134,4 +116,4 @@
 }|tojson }}</script>
 {% endif %}
 {% endblock %}
-{% block page_scripts %}<script src="/static/level-up.js?v=20261105-validation" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/level-up.js?v=20261107-sheet-spells" defer></script>{% endblock %}
