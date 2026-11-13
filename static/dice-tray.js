@@ -23,6 +23,7 @@
   const meshes={4:mesh([[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]]),6:mesh(cube),8:mesh([[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]),20:mesh(ico)};
   meshes[12]=dual(meshes[20]);meshes[10]=dual(mesh(anti));
   const rotate=(v,x,y,z)=>{let [a,b,c]=v;[b,c]=[b*Math.cos(x)-c*Math.sin(x),b*Math.sin(x)+c*Math.cos(x)];[a,c]=[a*Math.cos(y)+c*Math.sin(y),-a*Math.sin(y)+c*Math.cos(y)];return[a*Math.cos(z)-b*Math.sin(z),a*Math.sin(z)+b*Math.cos(z),c];};
+  const rebound = phase => 1 - 4 * Math.abs((phase % 1) - .5);
   window.PathkeeperDice=class {
     constructor(canvas){this.canvas=canvas;this.captionFont=getComputedStyle(canvas).font;this.ctx=canvas.getContext('2d');this.items=[{sides:20,value:20}];this.busy=false;this.startAt=performance.now();this.finishAt=null;this.frame=null;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.observer=new ResizeObserver(()=>this.draw(performance.now()));this.observer.observe(canvas);this.draw(performance.now());}
     spin(sides,count){this.items=Array.from({length:sides===100?count*2:count},(_,i)=>({sides:sides===100?10:sides,value:null,tens:sides===100&&i%2===0,units:sides===100&&i%2===1}));this.busy=true;this.finishAt=null;this.startAt=performance.now();this.animate();}
@@ -38,10 +39,22 @@
       if(this.canvas.width!==Math.round(width*ratio)||this.canvas.height!==Math.round(height*ratio)){this.canvas.width=Math.round(width*ratio);this.canvas.height=Math.round(height*ratio);}const ctx=this.ctx;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height);
       const glow=ctx.createRadialGradient(width*.5,height*.4,0,width*.5,height*.45,width*.7);glow.addColorStop(0,'#b9813e38');glow.addColorStop(1,'#2d190e00');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
       ctx.strokeStyle='#ffffff08';ctx.lineWidth=1;for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(width*.5+(i-3.5)*18,height*.48);ctx.lineTo((i-3.5)*65+width*.5,height);ctx.stroke();}for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(0,height*.6+i*height*.085);ctx.lineTo(width,height*.6+i*height*.085);ctx.stroke();}
-      const count=this.items.length,cols=count===1?1:count<=4?2:count<=9?3:count<=20?4:6,rows=Math.ceil(count/cols),cellW=width/(cols+.35),cellH=(height-35)/(rows+.2),radius=Math.min(cellW*.38,cellH*.40,74);
-      const elapsed=(now-this.startAt)/1000,progress=this.finishAt===null?0:Math.min(1,(now-this.finishAt)/1200),motion=this.reduced?0:this.busy?1:Math.pow(1-progress,3);
-      this.items.forEach((item,index)=>{const source=meshes[item.sides]||meshes[20],row=Math.floor(index/cols),col=index%cols,last=Math.min(cols,count-row*cols),cx=width*.5+(col-(last-1)*.5)*cellW,cy=(row+.5)*cellH+18-Math.abs(Math.sin(elapsed*8+index))*(motion*23),angle=motion*(elapsed*6+index*1.7);
-        ctx.beginPath();ctx.ellipse(cx,cy+radius*.84,radius*.8,radius*.15,0,0,Math.PI*2);ctx.fillStyle='#00000030';ctx.fill();
+      const count=this.items.length,cols=count===1?1:count<=4?2:count<=9?3:count<=20?4:6,rows=Math.ceil(count/cols),cellW=width/(cols+.35),cellH=(height-35)/(rows+.2);
+      const radius = Math.min(cellW * (count === 1 ? .38 : .30), cellH * .40, 74);
+      const elapsed=(now-this.startAt)/1000,progress=this.finishAt===null?0:Math.min(1,(now-this.finishAt)/1200),motion=this.reduced?0:this.busy?1:(1-progress)**2;
+      const clearance = radius * 1.12 + 4;
+      const travel = Math.max(0, (count === 1 ? width : cellW) / 2 - clearance);
+      this.items.forEach((item,index)=>{
+        const source=meshes[item.sides]||meshes[20],row=Math.floor(index/cols),col=index%cols,last=Math.min(cols,count-row*cols);
+        const restX = width * .5 + (col - (last - 1) * .5) * cellW;
+        const restY = (row + .5) * cellH + 18;
+        const jumpHeight = Math.max(0, Math.min(restY - clearance, cellH * .38));
+        const hop = (elapsed * 3.1 + index * .19) % 1;
+        const lift = 4 * hop * (1 - hop) * jumpHeight * motion;
+        const cx = restX + rebound(elapsed * 1.9 + .25 + index * .17) * travel * motion;
+        const cy = restY - lift;
+        const angle = motion * (elapsed * 8 + index * 1.7);
+        ctx.beginPath();ctx.ellipse(cx,restY+radius*.84,radius*.8,radius*.15,0,0,Math.PI*2);ctx.fillStyle='#00000030';ctx.fill();
         const points=source.vertices.map(v=>rotate(v,.48+angle,.65+angle*.75,.12+angle*.4)),faces=source.faces.map((face,i)=>({...face,index:i,n:rotate(face.normal,.48+angle,.65+angle*.75,.12+angle*.4)})).filter(face=>face.n[2]>0).sort((a,b)=>a.n[2]-b.n[2]),front=faces.at(-1)?.index;
         faces.forEach(face=>{const projected=face.ids.map(i=>{const v=points[i],scale=4/(4-v[2]);return[cx+v[0]*radius*scale,cy-v[1]*radius*scale];});ctx.beginPath();projected.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();const light=Math.round(28+face.n[2]*26);ctx.fillStyle=item.dropped?`hsl(35,8%,${light-5}%)`:item.tens?`hsl(40,36%,${light}%)`:`hsl(18,42%,${light}%)`;ctx.fill();ctx.lineWidth=1;ctx.strokeStyle=item.dropped?'#baa47c45':'#ebcd8aa0';ctx.stroke();
           if(face.index!==front&&face.n[2]<0.45)return;
