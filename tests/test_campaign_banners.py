@@ -104,7 +104,9 @@ def test_player_and_npc_sheets_show_their_campaign_banner_and_live_details(env):
     standalone = seed_character(env.player)
     with Session(engine()) as db:
         db.get(Campaign, campaign.id).xp_speed = "fast"
-        db.get(Character, npc.id).is_npc = True
+        npc_record = db.get(Character, npc.id)
+        npc_record.is_npc = True
+        npc_record.class_name = "Cleric of Shax 5 / Rogue 1"
         db.commit()
 
     gm, player = env.login(env.gm), env.login(env.player)
