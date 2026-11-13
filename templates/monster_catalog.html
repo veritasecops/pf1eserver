@@ -3,7 +3,6 @@
 {% block content %}
 <div class="page-heading"><div><h1>Monsters</h1><p>Pathfinder First Edition stat blocks from the <a href="https://www.aonprd.com/Monsters.aspx" target="_blank" rel="noopener noreferrer">Archives of Nethys</a>.</p></div></div>
 {% include 'admin_tabs.html' %}
-{% include 'rule_catalog_tabs.html' %}
 <section class="card" aria-label="Monsters">
   <nav class="monster-letters" aria-label="Monster index letters">
     {% for label, url in letter_links %}
@@ -11,7 +10,6 @@
     {% endfor %}
   </nav>
   <form method="get" class="filter-bar catalog-toolbar">
-    <input type="hidden" name="kind" value="monsters">
     {% if letter %}<input type="hidden" name="letter" value="{{ letter }}">{% endif %}
     <label class="search-input"><input type="search" name="q" value="{{ search }}" aria-label="Search monsters" placeholder="Search monsters"></label>
     <button class="button" type="submit">Search</button>
@@ -21,7 +19,7 @@
       <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th></tr></thead>
       <tbody>
         {% for key, monster in items %}
-        <tr><th scope="row"><a class="monster-name" href="/administration/catalog/monsters/{{ key }}?{{ back_query }}">{{ monster.name }}</a></th><td>{{ monster.cr or '—' }}</td><td>{{ monster.type or '—' }}</td><td>{{ monster.environment or '—' }}</td></tr>
+        <tr><th scope="row"><a class="monster-name" href="/administration/monsters/{{ key }}?{{ back_query }}">{{ monster.name }}</a></th><td>{{ monster.cr or '—' }}</td><td>{{ monster.type or '—' }}</td><td>{{ monster.environment or '—' }}</td></tr>
         {% else %}<tr><td colspan="4">No matching monsters.</td></tr>{% endfor %}
       </tbody>
     </table>

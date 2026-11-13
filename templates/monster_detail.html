@@ -3,7 +3,6 @@
 {% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=1">{% endblock %}
 {% block content %}
 {% include 'admin_tabs.html' %}
-{% include 'rule_catalog_tabs.html' %}
 <a class="text-button back-link" href="{{ back }}">{{ icon('back') }}Back to Monsters</a>
 <div class="page-heading">
   <div><h1>{{ entry.name }}</h1><p>{{ ['CR ' ~ entry.cr if entry.cr else '', entry.type, entry.environment]|select|join(' · ') }}</p></div>

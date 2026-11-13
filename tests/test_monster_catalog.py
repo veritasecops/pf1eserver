@@ -44,30 +44,42 @@ def test_monster_import_keeps_fields_and_additional_headings():
 
 
 def test_admin_monster_browsing_and_details(env):
-    path = "/administration/catalog"
-    detail_path = f"{path}/monsters/{sha256(b'Akata').hexdigest()}"
+    path = "/administration/monsters"
+    key = sha256(b"Akata").hexdigest()
+    detail_path = f"{path}/{key}"
     player = env.login(env.player)
-    assert player.get(path, params={"kind": "monsters"}).status_code == 403
+    assert player.get(path).status_code == 403
     assert player.get(detail_path).status_code == 403
 
     admin = env.login(env.admin)
-    assert 'kind=monsters">Monsters</a>' in admin.get(path).text
-    all_monsters = admin.get(path, params={"kind": "monsters"})
+    catalog = admin.get("/administration/catalog").text
+    assert 'href="/administration/monsters" >Monsters</a>' in catalog
+    assert 'kind=monsters">Monsters</a>' not in catalog
+    all_monsters = admin.get(path)
     assert all_monsters.status_code == 200
+    active_tab = 'href="/administration/monsters" class="active" aria-current="page">Monsters</a>'
+    assert active_tab in all_monsters.text
+    assert 'aria-label="Catalog lists"' not in all_monsters.text
     assert "3017 monsters" in all_monsters.text and "Page 1 of 61" in all_monsters.text
     for letter in ascii_uppercase:
         assert f"letter={letter}&amp;q=" in all_monsters.text
-    listing = admin.get(path, params={"kind": "monsters", "letter": "a", "q": "akata"})
+    listing = admin.get(path, params={"letter": "a", "q": "akata"})
     assert "1 monster" in listing.text
     assert f'href="{detail_path}?letter=A&amp;q=akata&amp;page=1"' in listing.text
-    wrong_letter = admin.get(path, params={"kind": "monsters", "letter": "B", "q": "akata"})
+    wrong_letter = admin.get(path, params={"letter": "B", "q": "akata"})
     assert "No matching monsters." in wrong_letter.text
 
     detail = admin.get(detail_path, params={"letter": "A", "q": "akata", "page": 2})
     assert detail.status_code == 200
+    assert active_tab in detail.text
     for section in ("Defense", "Offense", "Statistics", "Ecology", "Special Abilities", "Description", "Void Zombie"):
         assert section in detail.text
     assert "15 (2d8+6)" in detail.text
     assert "https://www.aonprd.com/MonsterDisplay.aspx?ItemName=Akata" in detail.text
-    assert 'kind=monsters&amp;letter=A&amp;q=akata&amp;page=2' in detail.text
-    assert admin.get(f"{path}/monsters/missing").status_code == 404
+    assert f'{path}?letter=A&amp;q=akata&amp;page=2' in detail.text
+    assert admin.get(f"{path}/missing").status_code == 404
+
+    old_list = admin.get("/administration/catalog", params={"kind": "monsters", "letter": "A", "q": "akata"})
+    assert old_list.status_code == 303 and old_list.headers["location"] == f"{path}?letter=A&q=akata"
+    old_detail = admin.get(f"/administration/catalog/monsters/{key}", params={"letter": "A"})
+    assert old_detail.status_code == 303 and old_detail.headers["location"] == f"{detail_path}?letter=A"

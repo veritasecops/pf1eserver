@@ -31,10 +31,10 @@ from .ui import redirect, render
 router = APIRouter(prefix='/administration/catalog')
 equipment_router = APIRouter(prefix='/administration/equipment')
 magic_items_router = APIRouter(prefix='/administration/magic-items')
+monsters_router = APIRouter(prefix='/administration/monsters')
 KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
 RULE_TABS = {**{key: KINDS[key] for key in ('feats', 'skills')}, 'spells': 'Spells',
-             **{key: KINDS[key] for key in ('deities', 'classes')}, 'class-abilities': 'Class Abilities',
-             'monsters': 'Monsters'}
+             **{key: KINDS[key] for key in ('deities', 'classes')}, 'class-abilities': 'Class Abilities'}
 SPELL_MARKERS = {'F': 'Special focus', 'M': 'Special material', 'R': 'Religion or ancestry requirement',
                  'T': 'Torag preparation requirement'}
 
@@ -84,7 +84,7 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
     if kind == 'class-abilities':
         return render_class_abilities(ctx, request)
     if kind == 'monsters':
-        return render_monster_catalog(ctx, request)
+        return monster_redirect(request, '/administration/monsters')
     if kind == 'equipment':
         query = urlencode([(key, value) for key, value in request.query_params.multi_items() if key != 'kind'])
         return RedirectResponse('/administration/equipment' + ('?' + query if query else ''), status_code=303)
@@ -191,6 +191,18 @@ def monster_catalog_filters(params):
     return letter, search, page
 
 
+def monster_redirect(request, path):
+    query = urlencode([(key, value) for key, value in request.query_params.multi_items() if key != "kind"])
+    return RedirectResponse(path + ("?" + query if query else ""), status_code=303)
+
+
+@monsters_router.get("")
+async def monsters_page(request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    administrator(ctx)
+    return render_monster_catalog(ctx, request)
+
+
 def render_monster_catalog(ctx, request):
     letter, search, page = monster_catalog_filters(request.query_params)
     term = search.casefold()
@@ -204,18 +216,26 @@ def render_monster_catalog(ctx, request):
     total = len(items)
     pages = max(1, (total + 49) // 50)
     page = min(page, pages)
-    query = urlencode({"kind": "monsters", "letter": letter, "q": search})
+    query = urlencode({"letter": letter, "q": search})
     letter_links = [
-        (label or "All", "?" + urlencode({"kind": "monsters", "letter": label, "q": search}))
+        (label or "All", "?" + urlencode({"letter": label, "q": search}))
         for label in ("", *ascii_uppercase)
     ]
-    return render(ctx, "monster_catalog.html", title="Monsters", kind="monsters", rule_tabs=RULE_TABS,
+    return render(ctx, "monster_catalog.html", title="Monsters",
                   letter=letter, letter_links=letter_links, selected_letter=letter or "All", search=search,
                   items=items[(page - 1) * 50:page * 50], total=total, page=page, pages=pages,
                   query=query, back_query=urlencode({"letter": letter, "q": search, "page": page}))
 
 
 @router.get("/monsters/{key}")
+async def legacy_monster_detail(key: str, request: Request, db: Session = Depends(get_db)):
+    administrator(context(request, db))
+    if not re.fullmatch(r"[a-f0-9]{64}", key):
+        raise HTTPException(404, "Monster not found.")
+    return monster_redirect(request, f"/administration/monsters/{key}")
+
+
+@monsters_router.get("/{key}")
 async def monster_detail(key: str, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     administrator(ctx)
@@ -224,9 +244,9 @@ async def monster_detail(key: str, request: Request, db: Session = Depends(get_d
         raise HTTPException(404, "Monster not found.")
     letter, search, page = monster_catalog_filters(request.query_params)
     entry = next((row for row in monster["rows"] if row["letter"] == letter), monster["rows"][0])
-    back_query = urlencode({"kind": "monsters", "letter": letter, "q": search, "page": page})
-    return render(ctx, "monster_detail.html", title=entry["name"], kind="monsters", rule_tabs=RULE_TABS,
-                  entry=entry, monster=monster, back=f"/administration/catalog?{back_query}")
+    back_query = urlencode({"letter": letter, "q": search, "page": page})
+    return render(ctx, "monster_detail.html", title=entry["name"],
+                  entry=entry, monster=monster, back=f"/administration/monsters?{back_query}")
 
 
 def render_class_abilities(ctx, request):
