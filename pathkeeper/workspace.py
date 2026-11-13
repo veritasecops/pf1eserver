@@ -29,7 +29,7 @@ from .trait_defenses import trait_defenses
 from .equipment_state import combat_gear_rows, equipment_groups, equipped_values, sync_equipped
 from .equipment_effects import EQUIPMENT_AC_FIELDS, contributions, persist_effects
 from .treasure import COINS, record_coin_change, treasure
-from .portraits import DEFAULT_HEADER_BACKGROUND, header_background_url, portrait_url
+from .portraits import DEFAULT_HEADER_BACKGROUND, campaign_banner_url, header_background_url, portrait_url
 
 router = APIRouter()
 
@@ -167,6 +167,7 @@ async def campaign_page(campaign_id: int, request: Request, db: Session = Depend
         ).order_by(CharacterDraft.updated_at.desc(), CharacterDraft.id)))
     return render(ctx, "campaign.html", title=campaign.name, campaign=campaign, manage=manage,
                   characters=characters, members=members, invitations=invitations, owner=owner, now=utcnow(),
+                  banner_url=campaign_banner_url(db, campaign), default_banner_url=DEFAULT_HEADER_BACKGROUND,
                   npcs=npcs, npc_drafts=npc_drafts, draft_classes=CLASSES, draft_races=RACES,
                   character_options=campaign_character_options(ctx))
 

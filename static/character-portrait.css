@@ -37,3 +37,16 @@
 .header-background-picker:focus-within { outline:3px solid #edcd8a; outline-offset:3px; }
 @media(max-width:650px) { .character-sheet-banner { padding:20px; gap:16px; } }
 @media print { .character-sheet-banner { display:none!important; } }
+
+.campaign-hero { position:relative; isolation:isolate; overflow:hidden; }
+.campaign-hero::before { content:""; position:absolute; z-index:-1; inset:0; background:linear-gradient(90deg,#251109ed,#31150bbf 55%,#24120b26); }
+.campaign-hero-copy { min-width:0; overflow-wrap:anywhere; }
+.campaign-hero-actions { display:grid; justify-items:end; gap:8px; flex-shrink:0; }
+.campaign-banner-controls { display:grid; justify-items:end; gap:8px; }
+.campaign-banner-controls [hidden] { display:none; }
+@media(max-width:760px) {
+  .campaign-hero-actions,.campaign-banner-controls { display:flex; flex-wrap:wrap; align-items:center; }
+}
+@media print {
+  .campaign-banner-image,.campaign-hero::before,.campaign-hero-actions { display:none; }
+}

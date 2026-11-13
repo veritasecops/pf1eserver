@@ -67,7 +67,7 @@ def migrate(admin_engine):
     for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction, Rulebook, RulebookIndex, RulebookPage, RulebookDeletion):
         model.__table__.create(admin_engine, checkfirst=True)
     additions = {
-        "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'"},
+        "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'", "banner": "MEDIUMBLOB NULL"},
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
         "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL", "is_npc": "BOOLEAN NOT NULL DEFAULT 0"},
@@ -284,4 +284,7 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 30):
             db.add(SchemaMigration(version=30, name="campaign_npcs"))
             db.commit()
-    print("Database migrations applied through 030 (campaign NPCs).")
+        if not db.get(SchemaMigration, 31):
+            db.add(SchemaMigration(version=31, name="campaign_banners"))
+            db.commit()
+    print("Database migrations applied through 031 (campaign banners).")

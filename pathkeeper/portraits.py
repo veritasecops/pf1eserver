@@ -1,4 +1,4 @@
-"""Private, bounded character portraits, independent of text-sheet revisions."""
+"""Private, bounded images for characters and campaigns."""
 from io import BytesIO
 import secrets
 import warnings
@@ -12,8 +12,8 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 from .database import commit, get_db
-from .models import Character
-from .security import audit, context, get_character, read_form
+from .models import Campaign, Character
+from .security import audit, context, get_campaign, get_character, read_form
 
 router = APIRouter()
 MAX_UPLOAD = 220 * 1024
@@ -43,13 +43,13 @@ def normalize_portrait(content, maximum_side=768):
     raise HTTPException(422,'The image could not be resized. Try another image.')
 
 
-async def uploaded_portrait(ctx, maximum_side=768):
+async def uploaded_portrait(ctx, maximum_side=768, label='character image'):
     if not ctx.request.headers.get('content-length'):
         raise HTTPException(411,'The image upload must specify its length.')
     form = await read_form(ctx,max_fields=4,max_files=1)
     upload = form.get('portrait')
     if not isinstance(upload,UploadFile):
-        raise HTTPException(422,'Choose a character image.')
+        raise HTTPException(422, f'Choose a {label}.')
     try:
         content = await upload.read(MAX_UPLOAD+1)
     finally:
@@ -62,6 +62,41 @@ async def uploaded_portrait(ctx, maximum_side=768):
 def header_background_url(db, character):
     custom = db.scalar(select(Character.id).where(Character.id == character.id,Character.header_background.is_not(None)))
     return f'/characters/{character.id}/header-background' if custom is not None else DEFAULT_HEADER_BACKGROUND
+
+
+def campaign_banner_url(db, campaign):
+    custom = db.scalar(select(Campaign.id).where(Campaign.id == campaign.id, Campaign.banner.is_not(None)))
+    return f'/campaigns/{campaign.id}/banner' if custom is not None else DEFAULT_HEADER_BACKGROUND
+
+
+@router.get('/campaigns/{campaign_id}/banner')
+async def campaign_banner(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    campaign = get_campaign(ctx, campaign_id)
+    return image_response(campaign.banner) if campaign.banner else RedirectResponse(DEFAULT_HEADER_BACKGROUND)
+
+
+@router.post('/campaigns/{campaign_id}/banner')
+async def campaign_banner_upload(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    get_campaign(ctx, campaign_id, manage=True)
+    content = await uploaded_portrait(ctx, maximum_side=1600, label='campaign banner')
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
+    db.execute(update(Campaign).where(Campaign.id == campaign.id).values(banner=content))
+    audit(db, ctx.user, 'campaign.banner_updated', f'Updated the banner for {campaign.name}.')
+    commit(db)
+    return {'url': f'/campaigns/{campaign.id}/banner?v={secrets.token_hex(8)}', 'custom': True}
+
+
+@router.post('/campaigns/{campaign_id}/banner/remove')
+async def campaign_banner_remove(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
+    db.execute(update(Campaign).where(Campaign.id == campaign.id).values(banner=None))
+    audit(db, ctx.user, 'campaign.banner_reset', f'Restored the default banner for {campaign.name}.')
+    commit(db)
+    return {'url': DEFAULT_HEADER_BACKGROUND, 'custom': False}
 
 
 def background_owner(ctx, character_id):

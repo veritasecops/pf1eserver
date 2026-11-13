@@ -1,7 +1,10 @@
 (() => {
   for (const editor of document.querySelectorAll('[data-portrait-editor]')) {
-  const background = editor.dataset.imageKind === 'background';
-  const noun = background ? 'Header background' : 'Character image';
+  const campaignBanner = editor.dataset.imageKind === 'campaign-banner';
+  const background = campaignBanner || editor.dataset.imageKind === 'background';
+  const noun = campaignBanner ? 'Campaign banner' : background ? 'Header background' : 'Character image';
+  const imageSelector = campaignBanner ? '[data-campaign-banner]'
+    : background ? '[data-character-header-background]' : '[data-character-portrait]';
   const input = editor.querySelector('input[type="file"]');
   const remove = editor.querySelector('[data-portrait-remove]');
   const status = document.getElementById(editor.dataset.statusId || 'portrait-status');
@@ -35,7 +38,8 @@
     busy = true;
     input.disabled = true;
     remove.disabled = true;
-    message(file ? `Saving ${noun.toLowerCase()}…` : background ? 'Restoring default background…' : 'Removing character image…');
+    message(file ? `Saving ${noun.toLowerCase()}…` : campaignBanner ? 'Restoring default banner…'
+      : background ? 'Restoring default background…' : 'Removing character image…');
     try {
       const form = new FormData();
       form.set('csrf',editor.dataset.csrf);
@@ -47,7 +51,7 @@
       let result;
       try { result = await response.json(); } catch { throw new Error('The image could not be saved. Try again.'); }
       if (!response.ok) throw new Error(result.detail || 'The image could not be saved.');
-      for (const image of document.querySelectorAll(background ? '[data-character-header-background]' : '[data-character-portrait]')) {
+      for (const image of document.querySelectorAll(imageSelector)) {
         image.hidden = !result.url;
         if (result.url) image.src = result.url;
         else image.removeAttribute('src');
@@ -57,8 +61,9 @@
         document.dispatchEvent(new CustomEvent('characterportraitchange',{detail:{url:result.url}}));
       }
       remove.hidden = background ? !result.custom : !result.url;
-      message(file ? `${noun} saved.` : background ? 'Default background restored.' : 'Character image removed.');
-    } catch (error) { message(error.message || 'Choose a valid character image.'); }
+      message(file ? `${noun} saved.` : campaignBanner ? 'Default banner restored.'
+        : background ? 'Default background restored.' : 'Character image removed.');
+    } catch (error) { message(error.message || `Choose a valid ${noun.toLowerCase()}.`); }
     finally { busy = false; input.disabled = false; remove.disabled = false; input.value = ''; }
   };
   input.addEventListener('change',() => { if (input.files[0]) upload(input.files[0]); });
