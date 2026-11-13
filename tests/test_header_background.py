@@ -23,7 +23,7 @@ def test_only_owner_can_change_header_background(env,actor,status):
     if actor in {'player','gm','admin'}:
         assert page.status_code == 200
         assert DEFAULT_HEADER_BACKGROUND in page.text
-        assert ('Choose header background' in page.text) == (actor == 'player')
+        assert ('aria-label="Choose Header Background"' in page.text) == (actor == 'player')
     assert upload(env,client,path+'/header-background').status_code == status
     assert env.post(client,path+'/header-background/remove').status_code == status
 
