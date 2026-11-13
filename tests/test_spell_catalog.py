@@ -66,3 +66,44 @@ def test_admin_can_edit_spell_and_filters_use_saved_values(env):
         assert set(overrides) == {key}
         assert overrides[key]['name'] == 'House Fireball'
     assert spell_defaults()[key]['name'] == 'Fireball'
+
+
+def test_sheet_spell_catalog_requires_character_access_and_uses_overrides(env):
+    from .test_workspace import seed_character
+
+    character = seed_character(env.player)
+    path = f'/characters/{character.id}/spells'
+    assert env.login(env.player2).get(path).status_code == 404
+    key = next(key for key, spell in spell_defaults().items() if spell['name'] == 'Fireball')
+    with Session(engine()) as db:
+        record = db.get(RuleCatalog, 1) or RuleCatalog(id=1, data={})
+        record.data = {**record.data, 'spell_overrides': {key: {
+            **spell_defaults()[key], 'name': 'House Fireball', 'levels': {'Wizard': [4]},
+        }}}
+        db.add(record)
+        db.commit()
+    response = env.login(env.player).get(path)
+    assert response.status_code == 200
+    entries = response.json()['spells']
+    assert len(entries) == len(spells())
+    assert next(item for item in entries if item['name'] == 'House Fireball')['levels'] == {'Wizard': [4]}
+
+
+def test_saved_spell_descriptions_link_directly_from_character_sheet(env):
+    from .test_workspace import seed_character
+
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        db.get(type(character), character.id).play_data = {
+            'spell.0.list': 'Bleed (DC 12)',
+            'spell.2.list': 'Enthrall (domain, DC 14)\nA custom formula',
+            'spell.3.list': 'Magic Vestment (domain)',
+        }
+        db.commit()
+    response = env.login(env.player).get(f'/characters/{character.id}')
+    assert response.status_code == 200
+    for name, target in [('Bleed (DC 12)', 'Bleed'), ('Enthrall (domain, DC 14)', 'Enthrall'),
+                         ('Magic Vestment (domain)', 'Magic%20Vestment')]:
+        assert (f'href="https://www.aonprd.com/SpellDisplay.aspx?ItemName={target}" '
+                f'target="_blank" rel="noopener noreferrer">{name}</a>') in response.text
+    assert '<li>A custom formula</li>' in response.text

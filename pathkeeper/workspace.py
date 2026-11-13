@@ -11,14 +11,14 @@ from sqlalchemy.orm import Session
 from .advancement import XP_TRACKS, apply_advancement, preserve_xp, remove_campaign_characters, track
 from .database import commit, get_db
 from . import level_up
-from .models import Campaign, Character, CharacterDraft, Invitation, Membership, User, utcnow
+from .models import Campaign, Character, CharacterDraft, Invitation, Membership, RuleCatalog, User, utcnow
 from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
                        field, get_campaign, get_character, integer, is_member, read_form)
 from .ui import redirect, render
 from .notifications import application_link, invitation_email
 from .pf1_data import ABILITIES, CLASSES, RACES, SKILLS
 from .rule_catalog import character_catalog, load_catalog
-from .weapons import sheet_weapon_links
+from .weapons import safe_weapon_url, sheet_weapon_links
 from .feature_links import normalized, sheet_ability_blocks, sheet_feature_links
 from .armor import sheet_armor_links
 from .deluxe_sheet import baseline, parse_sheet, sheet_values, view_context
@@ -410,6 +410,8 @@ async def character_page(character_id: int, request: Request, db: Session = Depe
 
 
 def render_character(ctx, character, values=None, errors=()):
+    from .catalog_admin import character_spell_links
+
     owner = ctx.db.get(User, character.owner_id)
     campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
     gm = ctx.db.get(User, campaign.owner_id) if campaign else None
@@ -429,6 +431,7 @@ def render_character(ctx, character, values=None, errors=()):
                       armor_links=sheet_armor_links(values,character,catalog),
                       weapon_links=sheet_weapon_links(values,character,catalog),
                       feature_links=sheet_feature_links(values, character, catalog),
+                      spell_links=character_spell_links(values, catalog),
                       ability_blocks=ability_blocks,
                       removable_feats=removable_rows(character, values, catalog, ability_blocks),
                       trait_defenses=trait_defenses(character, values),
@@ -612,6 +615,20 @@ def sheet_feat_rules(ctx, character):
     catalog = load_catalog(ctx.db)
     values = sheet_values(character, owner, campaign, progression_catalog=catalog)
     return values, level_up.sheet_feat_context(character, catalog, values)
+
+
+@router.get("/characters/{character_id}/spells")
+async def character_spell_options(character_id: int, request: Request, db: Session = Depends(get_db)):
+    from .catalog_admin import spell_defaults
+
+    ctx = context(request, db)
+    character = get_character(ctx, character_id)
+    record = db.get(RuleCatalog, 1)
+    overrides = record.data.get("spell_overrides", {}) if record else {}
+    entries = [overrides.get(key, spell) for key, spell in spell_defaults().items()]
+    return JSONResponse({"spells": [{"name": item["name"], "url": safe_weapon_url(item["url"]), "levels": item["levels"]}
+                                    for item in entries], "class_name": character.class_name},
+                        headers={"Cache-Control": "no-store"})
 
 
 @router.get("/characters/{character_id}/features")

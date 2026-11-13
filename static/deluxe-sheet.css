@@ -150,3 +150,9 @@
 
 .ds-page .ds-gear th:first-child { width:38%; }
 .ds-page .ds-gear th:nth-child(3) { width:18%; }
+
+.ds-spell-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; }
+.ds-spell-level .ds-spell-heading h3 { margin:0; }
+.ds-spell-entries { list-style:none; padding:0; }
+.ds-spell-entries li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--ds-line); overflow-wrap:anywhere; }
+@media print { .ds-spell-heading button,.ds-remove-spell { display:none !important; } }

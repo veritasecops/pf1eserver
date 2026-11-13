@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .feats import FEAT_CATEGORIES
 from .equipment_index import GROUPS as EQUIPMENT_GROUPS, equipment_categories as catalog_categories, equipment_entries
+from .feature_links import normalized
 from .class_catalog import class_profile
 from .class_editor import editor as class_editor, parse_class
 from .models import Guard, RuleCatalog, utcnow
@@ -105,6 +106,31 @@ def spells():
 @lru_cache
 def spell_defaults():
     return {sha256(spell['url'].encode()).hexdigest(): spell for spell in spells()}
+
+
+def character_spell_links(values, catalog):
+    names = {line.strip() for level in range(10)
+             for line in values.get(f"spell.{level}.list", "").splitlines() if line.strip()}
+    if not names:
+        return {}
+
+    overrides = catalog.get("spell_overrides", {})
+    urls = {}
+    for key, original in spell_defaults().items():
+        entry = overrides.get(key, original)
+        urls[normalized(original["name"])] = safe_weapon_url(entry["url"])
+    for entry in overrides.values():
+        urls[normalized(entry["name"])] = safe_weapon_url(entry["url"])
+
+    links = {}
+    for name in names:
+        key = normalized(name)
+        # Preserve catalog names containing parentheses. Imported stat blocks can
+        # also append casting annotations such as "(domain, DC 14)".
+        base = re.sub(r"\s+\((?:domain(?:,\s*dc\s+\d+)?|dc\s+\d+)\)$", "", key)
+        if url := urls.get(key, urls.get(base, "")):
+            links[name] = url
+    return links
 
 
 @lru_cache

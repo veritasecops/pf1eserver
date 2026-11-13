@@ -1,0 +1,22 @@
+<dialog id="sheet-spell-picker" class="pw-weapon-picker" aria-labelledby="sheet-spell-title" data-endpoint="/characters/{{ character.id }}/spells">
+  <div class="pw-weapon-picker-form">
+    <header class="pw-weapon-picker-heading">
+      <div><h2 id="sheet-spell-title">Add Spells</h2><p data-spell-level></p><p>Confirm class lists, spells known, and book entries with your GM.</p></div>
+      <button type="button" class="icon-button" data-spell-close aria-label="Close spell picker">×</button>
+    </header>
+    <div class="pw-weapon-filters">
+      <label>Search spells<input type="search" data-spell-search autocomplete="off"></label>
+      <label>Class list<select data-spell-class><option value="">All classes</option></select></label>
+    </div>
+    <p class="pw-weapon-result-count" data-spell-status role="status"></p>
+    <p class="error" data-spell-error role="alert" hidden></p>
+    <div class="pw-weapon-results">
+      <table><thead><tr><th scope="col">Spell and reference</th><th scope="col">Class levels</th><th scope="col">Add</th></tr></thead><tbody data-spell-results></tbody></table>
+      <button class="button" type="button" data-spell-more hidden>Show more</button>
+    </div>
+    <div class="card-body stack">
+      <label class="field"><span>Custom spell or formula name</span><input data-spell-custom maxlength="150"></label>
+      <div class="row"><button class="button" type="button" data-spell-add-custom>Add custom spell</button><button class="button primary" type="button" data-spell-close>Done</button></div>
+    </div>
+  </div>
+</dialog>
