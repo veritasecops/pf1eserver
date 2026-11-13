@@ -1,18 +1,15 @@
-{% extends 'base.html' %}
 {% from 'components.html' import icon, empty, csrf_input %}
-{% block content %}
-<a class="text-button back-link" href="/campaigns/{{ campaign.id }}">{{ icon('back') }}{{ campaign.name }}</a>
-<div class="page-heading">
-  <h1>Monster Index</h1>
-  <a class="button primary" href="/campaigns/{{ campaign.id }}/monsters/catalog">{{ icon('plus') }}Add monsters</a>
-</div>
-<section class="card" aria-label="Campaign monsters">
-  {% if entries %}
-  <div class="table-scroll" role="region" aria-label="Saved monsters" tabindex="0">
-    <table>
+<section class="card" id="monster-index" aria-labelledby="monster-index-title">
+  <div class="card-heading">
+    <h2 id="monster-index-title">Monster Index</h2>
+    <a class="button primary small" href="/campaigns/{{ campaign.id }}/monsters/catalog">{{ icon('plus') }}Add monsters</a>
+  </div>
+  {% if monster_entries %}
+  <div class="table-scroll" role="region" aria-labelledby="monster-index-title" tabindex="0">
+    <table aria-labelledby="monster-index-title">
       <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th><th scope="col">Actions</th></tr></thead>
       <tbody>
-      {% for key, entry in entries %}
+      {% for key, entry in monster_entries %}
         <tr>
           <th scope="row">
             {% if entry %}<a class="text-button" href="/campaigns/{{ campaign.id }}/monsters/{{ key }}">{{ entry.name }}</a>
@@ -34,4 +31,3 @@
   {{ empty('No monsters added yet.', 'Choose monsters from the catalog to build this campaign’s index.', 'book') }}
   {% endif %}
 </section>
-{% endblock %}

@@ -13,16 +13,22 @@ def test_campaign_monster_index_reuses_catalog_and_keeps_selections_scoped(env):
     campaign = seed_campaign(env.gm, members=[env.player, env.gm2])
     other_campaign = seed_campaign(env.gm, name="Other campaign")
     campaign_path = f"/campaigns/{campaign.id}"
+    block = f"{campaign_path}#monster-index"
     index = f"{campaign_path}/monsters"
     catalog = f"{index}/catalog"
     key = sha256(b"Akata").hexdigest()
     form = {"monster_key": key}
 
     gm = env.login(env.gm)
-    assert f'href="{index}"' in gm.get(campaign_path).text
-    assert "No monsters added yet." in gm.get(index).text
-    assert "Akata" in gm.get(catalog, params={"letter": "A", "q": "akata"}).text
-    assert "15 (2d8+6)" in gm.get(f"{index}/{key}").text
+    page = gm.get(campaign_path).text
+    assert page.index('id="npcs"') < page.index('id="monster-index"')
+    assert f'href="{catalog}"' in page
+    assert "No monsters added yet." in page
+    assert gm.get(index).headers["location"] == block
+    picker = gm.get(catalog, params={"letter": "A", "q": "akata"}).text
+    assert "Akata" in picker and f'href="{block}"' in picker
+    detail = gm.get(f"{index}/{key}").text
+    assert "15 (2d8+6)" in detail and f'href="{block}"' in detail
     assert env.post(gm, index, form, use_csrf=False).status_code == 403
     assert env.post(gm, index, {"monster_key": "unknown"}).status_code == 404
     add = f"{index}?letter=A&q=akata&page=1"
@@ -31,14 +37,14 @@ def test_campaign_monster_index_reuses_catalog_and_keeps_selections_scoped(env):
         assert response.status_code == 303
         assert response.headers["location"] == f"{catalog}?letter=A&q=akata&page=1"
     assert "Added</span>" in gm.get(catalog, params={"q": "akata"}).text
-    assert "Akata" in gm.get(index).text
-    assert "Akata" not in gm.get(f"/campaigns/{other_campaign.id}/monsters").text
+    assert f'href="{index}/{key}">Akata</a>' in gm.get(campaign_path).text
+    assert "Akata" not in gm.get(f"/campaigns/{other_campaign.id}").text
     with Session(engine()) as db:
         assert db.query(CampaignMonster).count() == 1
 
     for account in (env.player, env.gm2):
         member = env.login(account)
-        assert f'href="{index}"' not in member.get(campaign_path).text
+        assert 'id="monster-index"' not in member.get(campaign_path).text
         assert member.get(index).status_code == 403
         assert member.get(catalog).status_code == 403
         assert member.get(f"{index}/{key}").status_code == 403
@@ -48,9 +54,9 @@ def test_campaign_monster_index_reuses_catalog_and_keeps_selections_scoped(env):
     assert outsider.get(index).status_code == 404
 
     admin = env.login(env.admin)
-    assert "Akata" in admin.get(index).text
-    assert env.post(admin, f"{index}/remove", form).headers["location"] == index
-    assert "No monsters added yet." in gm.get(index).text
+    assert "Akata" in admin.get(campaign_path).text
+    assert env.post(admin, f"{index}/remove", form).headers["location"] == block
+    assert "No monsters added yet." in gm.get(campaign_path).text
     assert env.post(gm, add, form).status_code == 303
     with Session(engine()) as db:
         assert db.get(Campaign, campaign.id).version == campaign.version

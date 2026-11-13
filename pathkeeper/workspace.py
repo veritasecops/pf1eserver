@@ -159,7 +159,7 @@ async def campaign_page(campaign_id: int, request: Request, db: Session = Depend
     members = db.execute(select(User, Membership.joined_at).join(Membership, Membership.user_id == User.id).where(Membership.campaign_id == campaign_id).order_by(User.name)).all()
     invitations = list(db.scalars(select(Invitation).where(Invitation.campaign_id == campaign_id).order_by(Invitation.id.desc()).limit(50))) if manage else []
     owner = db.get(User, campaign.owner_id)
-    npcs, npc_drafts = [], []
+    npcs, npc_drafts, monster_entries = [], [], []
     if manage:
         npcs = list(db.scalars(select(Character).where(
             Character.campaign_id == campaign.id, Character.is_npc.is_(True)).order_by(Character.name, Character.id)))
@@ -167,10 +167,12 @@ async def campaign_page(campaign_id: int, request: Request, db: Session = Depend
             CharacterDraft.npc_campaign_id == campaign.id, CharacterDraft.actor_id == ctx.user.id,
             CharacterDraft.mode == "create", CharacterDraft.finalized_at.is_(None)
         ).order_by(CharacterDraft.updated_at.desc(), CharacterDraft.id)))
+        monster_entries = campaign_monster_entries(db, campaign.id)
     return render(ctx, "campaign.html", title=campaign.name, campaign=campaign, manage=manage,
                   characters=characters, members=members, invitations=invitations, owner=owner, now=utcnow(),
                   banner_url=campaign_banner_url(db, campaign), default_banner_url=DEFAULT_HEADER_BACKGROUND,
                   npcs=npcs, npc_drafts=npc_drafts, draft_classes=CLASSES, draft_races=RACES,
+                  monster_entries=monster_entries,
                   character_options=campaign_character_options(ctx))
 
 
@@ -183,15 +185,21 @@ async def campaign_add_character(campaign_id: int, request: Request, db: Session
     return redirect(ctx, f"/campaigns/{campaign.id}", "Character added to the campaign.")
 
 
+def campaign_monster_entries(db, campaign_id):
+    keys = list(db.scalars(select(CampaignMonster.monster_key).where(CampaignMonster.campaign_id == campaign_id)))
+    if not keys:
+        return []
+    catalog = monsters()
+    entries = [(key, catalog[key]["rows"][0] if key in catalog else None) for key in keys]
+    entries.sort(key=lambda item: (item[1] is None, item[1]["name"].casefold() if item[1] else "", item[0]))
+    return entries
+
+
 @router.get("/campaigns/{campaign_id}/monsters")
 async def campaign_monster_index(campaign_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     campaign = get_campaign(ctx, campaign_id, manage=True)
-    catalog = monsters()
-    keys = db.scalars(select(CampaignMonster.monster_key).where(CampaignMonster.campaign_id == campaign.id))
-    entries = [(key, catalog[key]["rows"][0] if key in catalog else None) for key in keys]
-    entries.sort(key=lambda item: (item[1] is None, item[1]["name"].casefold() if item[1] else "", item[0]))
-    return render(ctx, "campaign_monsters.html", title="Monster Index", campaign=campaign, entries=entries)
+    return redirect(ctx, f"/campaigns/{campaign.id}#monster-index")
 
 
 @router.get("/campaigns/{campaign_id}/monsters/catalog")
@@ -201,7 +209,8 @@ async def campaign_monster_catalog(campaign_id: int, request: Request, db: Sessi
     selected = set(db.scalars(select(CampaignMonster.monster_key).where(CampaignMonster.campaign_id == campaign.id)))
     index_url = f"/campaigns/{campaign.id}/monsters"
     return render(ctx, "monster_catalog.html", title="Add monsters", campaign=campaign, selected=selected,
-                  detail_base=index_url, **monster_catalog_context(request.query_params))
+                  detail_base=index_url, index_back=f"/campaigns/{campaign.id}#monster-index",
+                  **monster_catalog_context(request.query_params))
 
 
 @router.get("/campaigns/{campaign_id}/monsters/{key}")
@@ -217,7 +226,7 @@ async def campaign_monster_detail(campaign_id: int, key: str, request: Request, 
     entry = next((row for row in monster["rows"] if row["letter"] == letter), monster["rows"][0])
     query = urlencode({"letter": letter, "q": search, "page": page})
     return render(ctx, "monster_detail.html", title=entry["name"], campaign=campaign, monster=monster,
-                  entry=entry, back=f"{index_url}/catalog?{query}" if from_catalog else index_url,
+                  entry=entry, back=f"{index_url}/catalog?{query}" if from_catalog else f"/campaigns/{campaign.id}#monster-index",
                   back_label="Back to catalog" if from_catalog else "Back to Monster Index")
 
 
@@ -253,7 +262,7 @@ async def campaign_monster_remove(campaign_id: int, request: Request, db: Sessio
         monster = monsters().get(key)
         name = monster["rows"][0]["name"] if monster else key
         audit(db, ctx.user, "campaign.monster_removed", f"Removed {name} from {campaign.name}.")
-    return redirect(ctx, f"/campaigns/{campaign.id}/monsters", "Monster removed from the campaign.")
+    return redirect(ctx, f"/campaigns/{campaign.id}#monster-index", "Monster removed from the campaign.")
 
 
 @router.get("/campaigns/{campaign_id}/edit")

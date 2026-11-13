@@ -3,7 +3,7 @@
 {% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=1">{% endblock %}
 {% block content %}
 {% if campaign %}
-<a class="text-button back-link" href="{{ detail_base }}">{{ icon('back') }}Monster Index</a>
+<a class="text-button back-link" href="{{ index_back }}">{{ icon('back') }}Monster Index</a>
 <div class="page-heading"><div><h1>Add monsters</h1><p>{{ campaign.name }}</p></div></div>
 {% else %}
 <div class="page-heading"><div><h1>Monsters</h1><p>Pathfinder First Edition stat blocks from the <a href="https://www.aonprd.com/Monsters.aspx" target="_blank" rel="noopener noreferrer">Archives of Nethys</a>.</p></div></div>
