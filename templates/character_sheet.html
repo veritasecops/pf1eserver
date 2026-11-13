@@ -90,7 +90,28 @@
 </section>
 <div class="ds-weapon-heading"><h3 id="weapons-and-attacks" tabindex="-1">Weapons And Attacks</h3><button class="button primary" type="button" id="add-sheet-weapons">Add Equipment</button></div><p class="ds-equation">Purchases use on-hand PP, GP, SP, and CP. Weapon and armor statistics are read-only; Notes remain editable. Equipped items apply supported combat, skill, and speed modifiers. Equip one suit of armor and one shield; manual modifier adjustments are retained.</p>{{ table('weapon',weapon_columns,6) }}
 <h3 id="armor-and-protection" tabindex="-1">Armor And Protection</h3>{{ table('armor',armor_columns,6) }}
-<div class="ds-columns ds-campaign"><div><h3 id="languages" tabindex="-1">Languages</h3>{{ control('languages',bare=true,rows=5) }}</div><div><h3 id="campaign-information" tabindex="-1">Campaign Information</h3><div class="ds-fields ds-three">{{ control('campaign') }}{{ control('campaign_traits',rows=3) }}{{ control('gm') }}<p class="ds-record-note">Use Manage Character to change campaign membership.</p></div></div></div><footer class="ds-footer">PATHKEEPER <span>Combat & Identity · 1 / 4</span></footer>
+<div class="ds-columns ds-campaign">
+  <div><h3 id="languages" tabindex="-1">Languages</h3>{{ control('languages',bare=true,rows=5) }}</div>
+  <div>
+    <h3 id="campaign-information" tabindex="-1">Campaign</h3>
+    {% if campaign %}
+    <div class="ds-campaign-banner">
+      <img src="{{ campaign_banner }}" alt="">
+      <div>
+        <a href="/campaigns/{{ campaign.id }}">{{ campaign.name }}</a>
+        <p>World: {{ campaign.setting or 'Setting to be discovered' }}</p>
+        {% if campaign_gm %}<p>Game Master: {{ campaign_gm.name }}</p>{% endif %}
+        <p>{{ xp_speed|capitalize }} XP advancement</p>
+      </div>
+    </div>
+    {% else %}
+    <p class="ds-record-note">No campaign assigned.</p>
+    {% endif %}
+    <div hidden>{{ control('campaign') }}{{ control('gm') }}</div>
+    {{ control('campaign_traits',rows=3) }}
+  </div>
+</div>
+<footer class="ds-footer">PATHKEEPER <span>Combat & Identity · 1 / 4</span></footer>
 </section>
 <section class="ds-page" id="abilities-skills" aria-labelledby="skills-title">
 <h2 id="skills-title" class="ds-bar">Feats, Class, And Racial Abilities</h2>

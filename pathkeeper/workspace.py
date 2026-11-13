@@ -509,7 +509,11 @@ def render_character(ctx, character, values=None, errors=()):
     if values is None:
         values = sheet_values(character, owner, campaign, gm, progression_catalog=catalog)
     ability_blocks = sheet_ability_blocks(values, character, catalog)
+    banner = DEFAULT_HEADER_BACKGROUND
+    if campaign and is_member(ctx.db, ctx.user, campaign):
+        banner = campaign_banner_url(ctx.db, campaign)
     response = render(ctx, "character.html", title=character.name, character=character, owner=owner, campaign=campaign,
+                      campaign_banner=banner, campaign_gm=gm,
                       can_delete=can_delete_character(ctx.user, character),
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       header_background_url=header_background_url(ctx.db,character),default_header_background=DEFAULT_HEADER_BACKGROUND,

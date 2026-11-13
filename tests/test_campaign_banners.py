@@ -6,10 +6,11 @@ from sqlalchemy.orm import Session
 
 from pathkeeper.database import engine
 from pathkeeper.migrations import migrate
-from pathkeeper.models import Campaign, SchemaMigration
+from pathkeeper.models import Campaign, Character, SchemaMigration
 from pathkeeper.portraits import DEFAULT_HEADER_BACKGROUND
 from .test_portraits import picture, upload
-from .test_workspace import seed_campaign
+from .test_deluxe_sheet import SheetForm, autosave
+from .test_workspace import seed_campaign, seed_character
 
 
 def test_campaign_banner_visibility_and_permissions(env):
@@ -78,6 +79,7 @@ def test_campaign_cards_show_saved_banners_and_return_to_default_on_reset(env):
     for listing in ("/", "/campaigns"):
         assert cover not in member.get(listing).text
 
+
     assert upload(env, gm, banner, picture("navy")).status_code == 200
     for listing in ("/", "/campaigns"):
         for client in (gm, member):
@@ -93,3 +95,40 @@ def test_campaign_cards_show_saved_banners_and_return_to_default_on_reset(env):
     assert env.post(gm, f"{banner}/remove").status_code == 200
     for listing in ("/", "/campaigns"):
         assert cover not in member.get(listing).text
+
+
+def test_player_and_npc_sheets_show_their_campaign_banner_and_live_details(env):
+    campaign = seed_campaign(env.gm, name="Into the Marches", members=[env.player])
+    character = seed_character(env.player, campaign)
+    npc = seed_character(env.gm, campaign, name="Campaign NPC")
+    standalone = seed_character(env.player)
+    with Session(engine()) as db:
+        db.get(Campaign, campaign.id).xp_speed = "fast"
+        db.get(Character, npc.id).is_npc = True
+        db.commit()
+
+    gm, player = env.login(env.gm), env.login(env.player)
+    banner = f"/campaigns/{campaign.id}/banner"
+    assert upload(env, gm, banner, picture("navy")).status_code == 200
+
+    for client, record in ((player, character), (gm, npc)):
+        path = f"/characters/{record.id}"
+        page = client.get(path)
+        assert page.status_code == 200
+        block = page.text.split('id="campaign-information"', 1)[1].split('name="campaign_traits"', 1)[0]
+        assert '>Campaign</h3>' in block
+        assert f'<img src="{banner}" alt="">' in block
+        assert f'<a href="/campaigns/{campaign.id}">Into the Marches</a>' in block
+        assert "World: The Marches" in block
+        assert "Game Master: Test Gm" in block
+        assert "Fast XP advancement" in block
+        values = SheetForm(page.text).values
+        values["campaign_traits"] = "A campaign trait"
+        assert autosave(client, path, values).status_code == 200
+        assert "A campaign trait" in client.get(path).text
+
+    assert env.post(gm, f"{banner}/remove").status_code == 200
+    assert f'<img src="{DEFAULT_HEADER_BACKGROUND}" alt="">' in gm.get(f"/characters/{npc.id}").text
+    page = player.get(f"/characters/{standalone.id}")
+    assert "No campaign assigned." in page.text
+    assert 'class="ds-campaign-banner"' not in page.text
