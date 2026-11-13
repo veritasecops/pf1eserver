@@ -2,6 +2,7 @@ import json
 import re
 import secrets
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -11,7 +12,8 @@ from sqlalchemy.orm import Session
 from .advancement import XP_TRACKS, apply_advancement, preserve_xp, remove_campaign_characters, track
 from .database import commit, get_db
 from . import level_up
-from .models import Campaign, Character, CharacterDraft, Invitation, Membership, RuleCatalog, User, utcnow
+from .models import Campaign, CampaignMonster, Character, CharacterDraft, Invitation, Membership, RuleCatalog, User, utcnow
+from .monsters import monster_catalog_context, monster_catalog_filters, monsters
 from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
                        field, get_campaign, get_character, integer, is_member, read_form)
 from .ui import redirect, render
@@ -179,6 +181,79 @@ async def campaign_add_character(campaign_id: int, request: Request, db: Session
     campaign = get_campaign(ctx, campaign_id, lock=True)
     assign_campaign_character(ctx, campaign, form)
     return redirect(ctx, f"/campaigns/{campaign.id}", "Character added to the campaign.")
+
+
+@router.get("/campaigns/{campaign_id}/monsters")
+async def campaign_monster_index(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    campaign = get_campaign(ctx, campaign_id, manage=True)
+    catalog = monsters()
+    keys = db.scalars(select(CampaignMonster.monster_key).where(CampaignMonster.campaign_id == campaign.id))
+    entries = [(key, catalog[key]["rows"][0] if key in catalog else None) for key in keys]
+    entries.sort(key=lambda item: (item[1] is None, item[1]["name"].casefold() if item[1] else "", item[0]))
+    return render(ctx, "campaign_monsters.html", title="Monster Index", campaign=campaign, entries=entries)
+
+
+@router.get("/campaigns/{campaign_id}/monsters/catalog")
+async def campaign_monster_catalog(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    campaign = get_campaign(ctx, campaign_id, manage=True)
+    selected = set(db.scalars(select(CampaignMonster.monster_key).where(CampaignMonster.campaign_id == campaign.id)))
+    index_url = f"/campaigns/{campaign.id}/monsters"
+    return render(ctx, "monster_catalog.html", title="Add monsters", campaign=campaign, selected=selected,
+                  detail_base=index_url, **monster_catalog_context(request.query_params))
+
+
+@router.get("/campaigns/{campaign_id}/monsters/{key}")
+async def campaign_monster_detail(campaign_id: int, key: str, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    campaign = get_campaign(ctx, campaign_id, manage=True)
+    monster = monsters().get(key)
+    if monster is None:
+        raise HTTPException(404, "Monster not found.")
+    index_url = f"/campaigns/{campaign.id}/monsters"
+    from_catalog = request.query_params.get("browse") == "1"
+    letter, search, page = monster_catalog_filters(request.query_params)
+    entry = next((row for row in monster["rows"] if row["letter"] == letter), monster["rows"][0])
+    query = urlencode({"letter": letter, "q": search, "page": page})
+    return render(ctx, "monster_detail.html", title=entry["name"], campaign=campaign, monster=monster,
+                  entry=entry, back=f"{index_url}/catalog?{query}" if from_catalog else index_url,
+                  back_label="Back to catalog" if from_catalog else "Back to Monster Index")
+
+
+@router.post("/campaigns/{campaign_id}/monsters")
+async def campaign_monster_add(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    form = await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
+    key = field(form, "monster_key", 64)
+    monster = monsters().get(key)
+    if monster is None:
+        raise HTTPException(404, "Monster not found.")
+    name = monster["rows"][0]["name"]
+    membership = db.get(CampaignMonster, (campaign.id, key))
+    if membership is None:
+        db.add(CampaignMonster(campaign_id=campaign.id, monster_key=key))
+        audit(db, ctx.user, "campaign.monster_added", f"Added {name} to {campaign.name}.")
+    letter, search, page = monster_catalog_filters(request.query_params)
+    query = urlencode({"letter": letter, "q": search, "page": page})
+    message = f"{name} added to the campaign." if membership is None else f"{name} is already in the Monster Index."
+    return redirect(ctx, f"/campaigns/{campaign.id}/monsters/catalog?{query}", message)
+
+
+@router.post("/campaigns/{campaign_id}/monsters/remove")
+async def campaign_monster_remove(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    form = await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
+    key = field(form, "monster_key", 64)
+    membership = db.get(CampaignMonster, (campaign.id, key))
+    if membership is not None:
+        db.delete(membership)
+        monster = monsters().get(key)
+        name = monster["rows"][0]["name"] if monster else key
+        audit(db, ctx.user, "campaign.monster_removed", f"Removed {name} from {campaign.name}.")
+    return redirect(ctx, f"/campaigns/{campaign.id}/monsters", "Monster removed from the campaign.")
 
 
 @router.get("/campaigns/{campaign_id}/edit")

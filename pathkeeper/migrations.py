@@ -2,7 +2,7 @@
 from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
-from .models import AccountToken, Campaign, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RULEBOOK_ROLE_BITS, Rulebook, RulebookDeletion, RulebookIndex, RulebookPage, RuleCatalog, SchemaMigration, User
+from .models import AccountToken, Campaign, CampaignMonster, Character, CharacterDraft, CoinTransaction, DiceRoll, EmailConfiguration, EmailDelivery, EmailOutbox, RULEBOOK_ROLE_BITS, Rulebook, RulebookDeletion, RulebookIndex, RulebookPage, RuleCatalog, SchemaMigration, User
 
 
 def remove_manual_class_fields(db):
@@ -66,6 +66,7 @@ def migrate(admin_engine):
     # transaction, so snapshot isolation cannot retain pre-DDL table definitions.
     for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction, Rulebook, RulebookIndex, RulebookPage, RulebookDeletion):
         model.__table__.create(admin_engine, checkfirst=True)
+    CampaignMonster.__table__.create(admin_engine, checkfirst=True)
     additions = {
         "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'", "banner": "MEDIUMBLOB NULL"},
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
@@ -287,4 +288,7 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 31):
             db.add(SchemaMigration(version=31, name="campaign_banners"))
             db.commit()
-    print("Database migrations applied through 031 (campaign banners).")
+        if not db.get(SchemaMigration, 32):
+            db.add(SchemaMigration(version=32, name="campaign_monster_index"))
+            db.commit()
+    print("Database migrations applied through 032 (campaign monster index).")

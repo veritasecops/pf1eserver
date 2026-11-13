@@ -75,6 +75,12 @@ class Campaign(Base):
     __mapper_args__ = {"version_id_col": version}
 
 
+class CampaignMonster(Base):
+    __tablename__ = "campaign_monsters"
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), primary_key=True)
+    monster_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+
+
 class Membership(Base):
     __tablename__ = "memberships"
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), primary_key=True)

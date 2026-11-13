@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% from 'components.html' import icon, empty, csrf_input %}
+{% block content %}
+<a class="text-button back-link" href="/campaigns/{{ campaign.id }}">{{ icon('back') }}{{ campaign.name }}</a>
+<div class="page-heading">
+  <h1>Monster Index</h1>
+  <a class="button primary" href="/campaigns/{{ campaign.id }}/monsters/catalog">{{ icon('plus') }}Add monsters</a>
+</div>
+<section class="card" aria-label="Campaign monsters">
+  {% if entries %}
+  <div class="table-scroll" role="region" aria-label="Saved monsters" tabindex="0">
+    <table>
+      <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th><th scope="col">Actions</th></tr></thead>
+      <tbody>
+      {% for key, entry in entries %}
+        <tr>
+          <th scope="row">
+            {% if entry %}<a class="text-button" href="/campaigns/{{ campaign.id }}/monsters/{{ key }}">{{ entry.name }}</a>
+            {% else %}Unavailable catalog entry{% endif %}
+          </th>
+          <td>{{ entry.cr or '—' }}</td><td>{{ entry.type or '—' }}</td><td>{{ entry.environment or '—' }}</td>
+          <td>
+            <form method="post" action="/campaigns/{{ campaign.id }}/monsters/remove">
+              {{ csrf_input(csrf) }}<input type="hidden" name="monster_key" value="{{ key }}">
+              <button class="button small" aria-label="Remove {{ entry.name if entry else 'unavailable catalog entry' }}">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  {{ empty('No monsters added yet.', 'Choose monsters from the catalog to build this campaign’s index.', 'book') }}
+  {% endif %}
+</section>
+{% endblock %}

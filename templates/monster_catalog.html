@@ -1,8 +1,14 @@
 {% extends 'base.html' %}
+{% from 'components.html' import icon, csrf_input %}
 {% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=1">{% endblock %}
 {% block content %}
+{% if campaign %}
+<a class="text-button back-link" href="{{ detail_base }}">{{ icon('back') }}Monster Index</a>
+<div class="page-heading"><div><h1>Add monsters</h1><p>{{ campaign.name }}</p></div></div>
+{% else %}
 <div class="page-heading"><div><h1>Monsters</h1><p>Pathfinder First Edition stat blocks from the <a href="https://www.aonprd.com/Monsters.aspx" target="_blank" rel="noopener noreferrer">Archives of Nethys</a>.</p></div></div>
 {% include 'admin_tabs.html' %}
+{% endif %}
 <section class="card" aria-label="Monsters">
   <nav class="monster-letters" aria-label="Monster index letters">
     {% for label, url in letter_links %}
@@ -16,11 +22,22 @@
   </form>
   <div class="table-scroll">
     <table class="catalog-table">
-      <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th></tr></thead>
+      <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th>{% if campaign %}<th scope="col">Campaign</th>{% endif %}</tr></thead>
       <tbody>
         {% for key, monster in items %}
-        <tr><th scope="row"><a class="monster-name" href="/administration/monsters/{{ key }}?{{ back_query }}">{{ monster.name }}</a></th><td>{{ monster.cr or '—' }}</td><td>{{ monster.type or '—' }}</td><td>{{ monster.environment or '—' }}</td></tr>
-        {% else %}<tr><td colspan="4">No matching monsters.</td></tr>{% endfor %}
+        <tr>
+          <th scope="row"><a class="monster-name" href="{{ detail_base }}/{{ key }}?{{ back_query }}{% if campaign %}&amp;browse=1{% endif %}">{{ monster.name }}</a></th>
+          <td>{{ monster.cr or '—' }}</td><td>{{ monster.type or '—' }}</td><td>{{ monster.environment or '—' }}</td>
+          {% if campaign %}<td>
+            {% if key in selected %}<span class="badge green">Added</span>{% else %}
+            <form method="post" action="{{ detail_base }}?{{ back_query }}">
+              {{ csrf_input(csrf) }}<input type="hidden" name="monster_key" value="{{ key }}">
+              <button class="button small" aria-label="Add {{ monster.name }}">Add</button>
+            </form>
+            {% endif %}
+          </td>{% endif %}
+        </tr>
+        {% else %}<tr><td colspan="{{ 5 if campaign else 4 }}">No matching monsters.</td></tr>{% endfor %}
       </tbody>
     </table>
   </div>

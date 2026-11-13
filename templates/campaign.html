@@ -4,6 +4,7 @@
 <div class="campaign-hero-copy"><span class="overline">{{ campaign.setting or 'A WORLD OF YOUR OWN' }}</span><h1>{{ campaign.name }}</h1><p>{{ campaign.description or 'Your story is waiting to be written.' }}</p><span class="badge">Game Master: {{ owner.name }}</span> <span class="badge">{{ campaign.xp_speed|capitalize }} XP advancement</span></div>{% if manage %}
 <div class="campaign-hero-actions">
   <a class="button" href="/campaigns/{{ campaign.id }}/edit">{{ icon('edit') }}Edit campaign</a>
+  <a class="button" href="/campaigns/{{ campaign.id }}/monsters">{{ icon('book') }}Monster Index</a>
   <div class="campaign-banner-controls" data-portrait-editor data-image-kind="campaign-banner" data-status-id="campaign-banner-status" data-maximum-side="1600" data-endpoint="/campaigns/{{ campaign.id }}/banner" data-csrf="{{ csrf }}">
     <label class="button header-background-picker">{{ icon('edit') }}Change banner<input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Change campaign banner"></label>
     <button class="button" type="button" data-portrait-remove{% if banner_url == default_banner_url %} hidden{% endif %}>Use default banner</button>
