@@ -86,6 +86,7 @@ class Character(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True, index=True)
+    is_npc: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     name: Mapped[str] = mapped_column(String(150))
     ancestry: Mapped[str] = mapped_column(String(100), default="")
     class_name: Mapped[str] = mapped_column(String(100), default="")
@@ -216,6 +217,8 @@ class CharacterDraft(Base):
     __tablename__ = "character_drafts"
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
     actor_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    npc_campaign_id: Mapped[int | None] = mapped_column(
+        ForeignKey("campaigns.id", name="fk_character_drafts_npc_campaign", ondelete="CASCADE"), nullable=True)
     mode: Mapped[str] = mapped_column(String(10), default="create")
     editing_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
     existing_version: Mapped[int | None] = mapped_column(Integer, nullable=True)

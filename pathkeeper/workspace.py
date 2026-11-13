@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
-from .advancement import XP_TRACKS, apply_advancement, detach_characters, preserve_xp, track
+from .advancement import XP_TRACKS, apply_advancement, preserve_xp, remove_campaign_characters, track
 from .database import commit, get_db
 from . import level_up
 from .models import Campaign, Character, CharacterDraft, Invitation, Membership, User, utcnow
@@ -50,7 +50,7 @@ def campaigns_query(account):
 
 
 def characters_query(account):
-    query = select(Character)
+    query = select(Character).where(Character.is_npc.is_(False))
     if account.role == "admin":
         return query
     if account.role == "player":
@@ -70,7 +70,8 @@ async def home(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     account = authenticated(ctx)
     campaigns = list(db.scalars(campaigns_query(account).order_by(Campaign.id.desc())))
-    owned = list(db.scalars(select(Character).where(Character.owner_id == account.id).order_by(Character.name)))
+    owned = list(db.scalars(select(Character).where(
+        Character.owner_id == account.id, Character.is_npc.is_(False)).order_by(Character.name)))
     accessible = db.scalar(select(func.count()).select_from(characters_query(account).subquery()))
     return render(ctx, "dashboard.html", title="Your workspace", campaigns=campaigns[:6], characters=owned[:6],
                   counts={"characters": len(owned), "campaigns": len(campaigns), "managed": sum(c.owner_id == account.id for c in campaigns), "accessible": accessible})
@@ -85,7 +86,7 @@ async def campaigns_page(request: Request, db: Session = Depends(get_db)):
 
 
 def available_campaign_characters(account):
-    query = select(Character).where(Character.campaign_id.is_(None))
+    query = select(Character).where(Character.campaign_id.is_(None), Character.is_npc.is_(False))
     if account.role != "admin":
         query = query.where(Character.owner_id == account.id)
     return query
@@ -156,8 +157,17 @@ async def campaign_page(campaign_id: int, request: Request, db: Session = Depend
     members = db.execute(select(User, Membership.joined_at).join(Membership, Membership.user_id == User.id).where(Membership.campaign_id == campaign_id).order_by(User.name)).all()
     invitations = list(db.scalars(select(Invitation).where(Invitation.campaign_id == campaign_id).order_by(Invitation.id.desc()).limit(50))) if manage else []
     owner = db.get(User, campaign.owner_id)
+    npcs, npc_drafts = [], []
+    if manage:
+        npcs = list(db.scalars(select(Character).where(
+            Character.campaign_id == campaign.id, Character.is_npc.is_(True)).order_by(Character.name, Character.id)))
+        npc_drafts = list(db.scalars(select(CharacterDraft).where(
+            CharacterDraft.npc_campaign_id == campaign.id, CharacterDraft.actor_id == ctx.user.id,
+            CharacterDraft.mode == "create", CharacterDraft.finalized_at.is_(None)
+        ).order_by(CharacterDraft.updated_at.desc(), CharacterDraft.id)))
     return render(ctx, "campaign.html", title=campaign.name, campaign=campaign, manage=manage,
                   characters=characters, members=members, invitations=invitations, owner=owner, now=utcnow(),
+                  npcs=npcs, npc_drafts=npc_drafts, draft_classes=CLASSES, draft_races=RACES,
                   character_options=campaign_character_options(ctx))
 
 
@@ -184,17 +194,28 @@ async def campaign_update(campaign_id: int, request: Request, db: Session = Depe
     form = await read_form(ctx)
     campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
     verify_version(form, campaign)
+    owner_id = campaign.owner_id
     if ctx.user.role == "admin":
         owner = db.get(User, integer(form, "owner_id", 1, 2**63 - 1))
         if not owner or not owner.active or owner.role not in {"gm", "admin"}:
             raise HTTPException(422, "Choose an active Game Master or Admin as owner.")
-        campaign.owner_id = owner.id
+        owner_id = owner.id
     speed = campaign_xp_speed(form, campaign.xp_speed)
-    if speed != campaign.xp_speed:
-        for character in db.scalars(select(Character).where(Character.campaign_id == campaign.id).order_by(Character.id).with_for_update()):
-            preserve_xp(character, campaign.xp_speed)
-            character.version += 1
-        campaign.xp_speed = speed
+    if speed != campaign.xp_speed or owner_id != campaign.owner_id:
+        query = select(Character).where(Character.campaign_id == campaign.id)
+        if speed == campaign.xp_speed:
+            query = query.where(Character.is_npc.is_(True))
+        for character in db.scalars(query.order_by(Character.id).with_for_update()):
+            if speed != campaign.xp_speed:
+                preserve_xp(character, campaign.xp_speed)
+                character.version += 1
+            if character.is_npc and owner_id != campaign.owner_id:
+                character.owner_id = owner_id
+                if character.sheet_data:
+                    character.sheet_data = {**character.sheet_data, "input": {
+                        **character.sheet_data["input"], "owner_id": owner_id}}
+    campaign.owner_id = owner_id
+    campaign.xp_speed = speed
     campaign.name = field(form, "name")
     campaign.setting = field(form, "setting", 150, False)
     campaign.description = field(form, "description", 20000, False)
@@ -210,10 +231,10 @@ async def campaign_delete(campaign_id: int, request: Request, db: Session = Depe
     verify_version(form, campaign)
     if field(form, "confirm_name") != campaign.name:
         raise HTTPException(422, "Type the campaign's name to confirm deletion.")
-    audit(db, ctx.user, "campaign.deleted", f"Deleted campaign {campaign.name}. Characters were detached, not deleted.")
-    detach_characters(db, campaign)
+    audit(db, ctx.user, "campaign.deleted", f"Deleted campaign {campaign.name} and its NPCs. Player characters were detached.")
+    remove_campaign_characters(db, campaign)
     db.delete(campaign)
-    return redirect(ctx, "/campaigns", "Campaign deleted. Its characters remain with their owners.")
+    return redirect(ctx, "/campaigns", "Campaign deleted. Player characters remain with their owners.")
 
 
 @router.post("/campaigns/{campaign_id}/invitations")
@@ -298,7 +319,7 @@ async def member_remove(campaign_id: int, user_id: int, request: Request, db: Se
     if user_id == campaign.owner_id:
         raise HTTPException(422, "The campaign owner cannot be removed.")
     db.execute(delete(Membership).where(Membership.campaign_id == campaign_id, Membership.user_id == user_id))
-    detach_characters(db, campaign, user_id)
+    remove_campaign_characters(db, campaign, user_id)
     audit(db, ctx.user, "member.removed", "Removed a campaign member and detached their characters.")
     return redirect(ctx, f"/campaigns/{campaign.id}", "Member removed. Their characters remain in their account.")
 
@@ -316,7 +337,7 @@ async def characters_page(request: Request, db: Session = Depends(get_db)):
         query = query.where(or_(Character.name.ilike(f"%{search}%"), Character.class_name.ilike(f"%{search}%")))
     characters = db.execute(query.order_by(Character.name)).all()
     drafts = list(db.scalars(select(CharacterDraft).where(
-        CharacterDraft.actor_id == account.id, CharacterDraft.mode == "create",
+        CharacterDraft.actor_id == account.id, CharacterDraft.mode == "create", CharacterDraft.npc_campaign_id.is_(None),
         CharacterDraft.finalized_at.is_(None)).order_by(CharacterDraft.updated_at.desc(), CharacterDraft.id)))
     if search:
         term = search.casefold()
@@ -335,7 +356,12 @@ def character_options(ctx, include_owners=True):
     return {"campaigns": campaigns, "owners": owners}
 
 
-def character_values(ctx, form, existing=None):
+def character_values(ctx, form, existing=None, *, npc_campaign_id=None):
+    if existing and existing.is_npc:
+        npc_campaign_id = existing.campaign_id
+    if npc_campaign_id is not None:
+        campaign = get_campaign(ctx, npc_campaign_id, manage=True, lock=True)
+        return character_fields(form, campaign.owner_id, campaign.id, existing.level if existing else 1)
     if existing and ctx.user.role == "admin":
         owner_id = integer(form, "owner_id", 1, 2**63 - 1)
     else:
@@ -352,9 +378,14 @@ def character_values(ctx, form, existing=None):
             raise HTTPException(404, "Campaign not found.")
         if ctx.user.role != "admin" and owner_id == ctx.user.id and not is_member(ctx.db, ctx.user, campaign):
             raise HTTPException(403, "Join the campaign before assigning a character.")
+    level = existing.level if existing else integer(form, "level", 1, 20)
+    return character_fields(form, owner_id, campaign_id, level)
+
+
+def character_fields(form, owner_id, campaign_id, level):
     return {"name": field(form, "name"), "owner_id": owner_id, "campaign_id": campaign_id,
             "ancestry": field(form, "ancestry", 100, False), "class_name": field(form, "class_name", 100, False),
-            "level": existing.level if existing else integer(form, "level", 1, 20), "notes": field(form, "notes", 20000, False)}
+            "level": level, "notes": field(form, "notes", 20000, False)}
 
 
 @router.post("/characters")
@@ -390,8 +421,9 @@ def render_character(ctx, character, values=None, errors=()):
                       can_delete=can_delete_character(ctx.user, character),
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       header_background_url=header_background_url(ctx.db,character),default_header_background=DEFAULT_HEADER_BACKGROUND,
-                      can_edit_header_background=ctx.user.id == character.owner_id,
-                      can_level_up=ctx.user.id == character.owner_id and level_up.available(character, campaign, catalog),
+                      can_edit_header_background=character.is_npc or ctx.user.id == character.owner_id,
+                      can_level_up=(character.is_npc or ctx.user.id == character.owner_id)
+                      and level_up.available(character, campaign, catalog),
                       backpack_items=(character.play_data or {}).get("backpack", []),
                       advancement_history=(character.play_data or {}).get("advancement_history", []),
                       armor_links=sheet_armor_links(values,character,catalog),
@@ -520,7 +552,8 @@ def autosave_response(ctx, character):
     locked = calculated_fields(character,values,catalog)
     groups = equipment_groups(character, values)
     return JSONResponse({'version':character.version,'name':character.name,
-                         'can_level_up':ctx.user.id == character.owner_id and level_up.available(character, campaign, catalog),'equipment_groups':groups,'equipment_state':equipped_values(values),
+                         'can_level_up':(character.is_npc or ctx.user.id == character.owner_id)
+                         and level_up.available(character, campaign, catalog),'equipment_groups':groups,'equipment_state':equipped_values(values),
                          'combat_gear_rows':combat_gear_rows(character, groups),
                          'values':{key:values[key] for key in locked},'readonly':sorted(locked),'formulas':sheet_formulas(character,values,catalog),
                          'equipment_fields':{key:values[key] for key in contributions(character,values)}, 'equipment_effects':contributions(character,values),
@@ -648,7 +681,7 @@ async def character_feature_remove(character_id: int, request: Request, db: Sess
 
 def level_up_character(ctx, character_id):
     character = get_character(ctx, character_id)
-    if character.owner_id != ctx.user.id:
+    if not character.is_npc and character.owner_id != ctx.user.id:
         raise HTTPException(403, "Only the character's owner can advance their level.")
     return character
 
@@ -677,10 +710,13 @@ async def character_level_up_submit(character_id: int, request: Request, db: Ses
     form = await read_form(ctx, max_fields=200)
     campaign_id = character.campaign_id
     if campaign_id:
-        db.get(Campaign, campaign_id, with_for_update=True, populate_existing=True)
+        if character.is_npc:
+            get_campaign(ctx, campaign_id, manage=True, lock=True)
+        else:
+            db.get(Campaign, campaign_id, with_for_update=True, populate_existing=True)
     db.refresh(character, with_for_update=True)
     verify_version(form, character)
-    if character.campaign_id != campaign_id or character.owner_id != ctx.user.id:
+    if character.campaign_id != campaign_id or (not character.is_npc and character.owner_id != ctx.user.id):
         raise HTTPException(409, "The character's campaign or owner changed. Reload the wizard.")
     advancement = level_up.plan(ctx, character)
     if not advancement or integer(form, "target", 2, 20) != advancement["target"]:
@@ -699,7 +735,9 @@ async def character_level_up_submit(character_id: int, request: Request, db: Ses
 async def character_edit(character_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     character = get_character(ctx, character_id)
-    return render(ctx, "character_form.html", title="Edit character", character=character, **character_options(ctx))
+    options = {} if character.is_npc else character_options(ctx)
+    return render(ctx, "character_form.html", title="Edit NPC" if character.is_npc else "Edit character",
+                  character=character, **options)
 
 
 @router.post("/characters/{character_id}")
@@ -736,4 +774,6 @@ async def character_delete(character_id: int, request: Request, db: Session = De
         raise HTTPException(422, "Type the character's name to confirm deletion.")
     audit(db, ctx.user, "character.deleted", f"Deleted character {character.name}.")
     db.delete(character)
+    if character.is_npc:
+        return redirect(ctx, f"/campaigns/{character.campaign_id}#npcs", "NPC permanently deleted.")
     return redirect(ctx, "/characters", "Character permanently deleted.")

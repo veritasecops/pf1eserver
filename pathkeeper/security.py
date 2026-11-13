@@ -287,6 +287,9 @@ def can_delete_character(account, character):
 
 
 def can_manage_character(db, account, character):
+    if character.is_npc:
+        campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
+        return bool(campaign and can_manage_campaign(account, campaign))
     if account.role == "admin" or character.owner_id == account.id:
         return True
     if account.role != "gm" or character.campaign_id is None:

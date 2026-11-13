@@ -66,7 +66,7 @@ def header_background_url(db, character):
 
 def background_owner(ctx, character_id):
     character = get_character(ctx,character_id)
-    if character.owner_id != ctx.user.id:
+    if not character.is_npc and character.owner_id != ctx.user.id:
         raise HTTPException(403,'Only the character owner can change the header background.')
     return character
 

@@ -26,10 +26,16 @@ DICE = (4,6,8,10,12,20,100)
 def get_draft(ctx, draft_id, lock=False):
     authenticated(ctx)
     query = select(CharacterDraft).where(CharacterDraft.id == draft_id)
-    if lock: query = query.with_for_update().execution_options(populate_existing=True)
     draft = ctx.db.scalar(query)
     if not draft or draft.actor_id != ctx.user.id:
         raise HTTPException(404, "Character draft not found.")
+    if draft.npc_campaign_id is not None:
+        # Campaign removal also deletes NPC drafts, so lock the campaign first.
+        get_campaign(ctx, draft.npc_campaign_id, manage=True, lock=lock)
+    if lock:
+        draft = ctx.db.scalar(query.with_for_update().execution_options(populate_existing=True))
+        if not draft:
+            raise HTTPException(404, "Character draft not found.")
     if draft.mode == "edit":
         if not draft.editing_id: raise HTTPException(404, "The character being edited was deleted.")
         get_character(ctx, draft.editing_id)
@@ -48,9 +54,13 @@ def roll_history(db, draft_id):
 
 
 def display_wizard(ctx, draft):
-    options = character_options(ctx,include_owners=False)
+    campaign = get_campaign(ctx, draft.npc_campaign_id, manage=True) if draft.npc_campaign_id is not None else None
+    campaigns = [campaign] if campaign else character_options(ctx, include_owners=False)["campaigns"]
+    return_path = f"/campaigns/{campaign.id}#npcs" if campaign else "/characters"
     rolls = roll_history(ctx.db, draft.id)
     data = {**draft.data,"owner_id":ctx.user.id} if draft.mode == "create" else draft.data
+    if campaign:
+        data = {**data, "owner_id": campaign.owner_id, "campaign_id": campaign.id}
     catalog = load_catalog(ctx.db)
     deities,selected_deity=deity_choices(catalog.get('deities',{}),data.get('deity',''))
     data={**data,'deity':selected_deity}
@@ -61,8 +71,10 @@ def display_wizard(ctx, draft):
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":{key:{**creation_class(catalog,key),"skills":class_skills(catalog,key)} for key in CLASSES},"skills":catalog["skills"],"feats":catalog["feats"],"equipment":equipment(catalog),"alignments":ALIGNMENTS,
             "point_cost":POINT_COST,"spell_suggestions":SPELL_SUGGESTIONS,"monk_bonus":[name for name,meta in catalog["feats"].items() if meta.get("monk") and meta.get("enabled",True)],
-            "campaigns":[{"id":campaign.id,"name":campaign.name} for campaign in options["campaigns"]]}
-    return render(ctx,"character_wizard.html",title="Character creation",draft=draft,boot=boot,outline=OUTLINE,
+            "campaigns":[{"id":option.id,"name":option.name} for option in campaigns],
+            "is_npc":bool(campaign),"return_path":return_path}
+    return render(ctx,"character_wizard.html",title="NPC creation" if campaign else "Character creation",
+                  draft=draft,boot=boot,outline=OUTLINE,npc_campaign=campaign,
                   portrait_url=image_url,portrait_endpoint=f"/api/character-drafts/{draft.id}/portrait")
 
 
@@ -73,8 +85,21 @@ async def start(request: Request, db: Session = Depends(get_db)):
     data = defaults(account.id)
     if request.query_params.get("campaign_id"):
         data["campaign_id"] = get_campaign(ctx,integer(request.query_params,"campaign_id",1,2**63-1)).id
-    draft = CharacterDraft(id=secrets.token_hex(16),actor_id=account.id,data=data)
-    db.add(draft)
+    return start_draft(ctx, data)
+
+
+@router.get("/campaigns/{campaign_id}/npcs/new")
+async def start_npc(campaign_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
+    data = defaults(campaign.owner_id)
+    data["campaign_id"] = campaign.id
+    return start_draft(ctx, data, npc_campaign_id=campaign.id)
+
+
+def start_draft(ctx, data, *, npc_campaign_id=None):
+    draft = CharacterDraft(id=secrets.token_hex(16), actor_id=ctx.user.id, data=data, npc_campaign_id=npc_campaign_id)
+    ctx.db.add(draft)
     return redirect(ctx,f"/characters/drafts/{draft.id}")
 
 
@@ -94,6 +119,9 @@ async def resume(draft_id: str,request: Request,db: Session = Depends(get_db)):
 async def edit_sheet(character_id: int,request: Request,db: Session = Depends(get_db)):
     ctx = context(request,db)
     character = get_character(ctx,character_id)
+    if character.is_npc:
+        get_campaign(ctx, character.campaign_id, manage=True, lock=True)
+        character = get_character(ctx, character_id)
     if not character.sheet_data or character.level != 1:
         raise HTTPException(422,"This wizard edits first-level creation sheets. Use the basic editor for legacy or higher-level records.")
     draft = db.scalar(select(CharacterDraft).where(CharacterDraft.actor_id == ctx.user.id,CharacterDraft.editing_id == character.id,CharacterDraft.finalized_at.is_(None)).order_by(CharacterDraft.updated_at.desc()).limit(1))
@@ -102,6 +130,7 @@ async def edit_sheet(character_id: int,request: Request,db: Session = Depends(ge
         data["deity"]=(character.play_data or {}).get("deity",data.get("deity",""))
         data.update(name=character.name,notes=character.notes,owner_id=character.owner_id,campaign_id=character.campaign_id)
         draft = CharacterDraft(id=secrets.token_hex(16),actor_id=ctx.user.id,mode="edit",editing_id=character.id,
+                               npc_campaign_id=character.campaign_id if character.is_npc else None,
                                existing_version=character.version,data=data,portrait=character.portrait)
         db.add(draft)
         db.flush()
@@ -123,8 +152,12 @@ async def saved_form(ctx,draft):
         raise HTTPException(409,"This draft changed in another window. Reload to continue with the latest version.")
     try: payload = json.loads(str(form.get("payload","")))
     except (ValueError,TypeError): raise HTTPException(422,"The character draft could not be read.") from None
-    if draft.mode == "create" and isinstance(payload,dict):
-        payload["owner_id"] = ctx.user.id
+    if isinstance(payload, dict):
+        if draft.npc_campaign_id is not None:
+            campaign = get_campaign(ctx, draft.npc_campaign_id, manage=True)
+            payload.update(owner_id=campaign.owner_id, campaign_id=campaign.id)
+        elif draft.mode == "create":
+            payload["owner_id"] = ctx.user.id
     data=clean(payload,ctx.user.id,load_catalog(ctx.db))
     data['deity']=choose_deity(data['deity'],load_catalog(ctx.db).get('deities',{}),draft.data.get('deity',''))
     return form,data
@@ -250,7 +283,8 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     existing = get_character(ctx,draft.editing_id) if draft.mode == "edit" else None
     if existing and existing.version != draft.existing_version: raise HTTPException(409,"The character changed after this draft began. Start a fresh editing draft.")
     values = character_values(ctx,{"name":data["name"],"owner_id":str(data["owner_id"]),"campaign_id":str(data["campaign_id"] or ""),
-                                  "ancestry":RACES[data["race"]]["name"],"class_name":creation_class(load_catalog(db), data["class_id"])["name"],"level":"1","notes":data["notes"]},existing)
+                                  "ancestry":RACES[data["race"]]["name"],"class_name":creation_class(load_catalog(db), data["class_id"])["name"],"level":"1","notes":data["notes"]},
+                              existing, npc_campaign_id=draft.npc_campaign_id)
     data["owner_id"],data["campaign_id"] = values["owner_id"],values["campaign_id"]
     from .advancement import preserve_xp, track
 
@@ -271,7 +305,7 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
             key: value for key, value in current.items() if key.startswith(("gear.", "weapon.", "armor."))
         }}
     old_speed = track(db.get(Campaign, existing.campaign_id)) if existing and existing.campaign_id else "slow"
-    character = existing or Character(**values)
+    character = existing or Character(**values, is_npc=draft.npc_campaign_id is not None)
     if existing:
         for key,value in values.items(): setattr(character,key,value)
     preserve_xp(character, old_speed)
@@ -312,9 +346,10 @@ async def discard(draft_id: str,request: Request,db: Session = Depends(get_db)):
     draft = get_draft(ctx,draft_id,True)
     await read_form(ctx)
     if draft.finalized_at: raise HTTPException(409,"A completed character cannot be discarded as a draft.")
+    location = f"/campaigns/{draft.npc_campaign_id}#npcs" if draft.npc_campaign_id is not None else "/characters"
     db.delete(draft)
     commit(db)
-    return {"location":"/characters"}
+    return {"location":location}
 
 
 @router.get('/api/character-drafts/{draft_id}/portrait')

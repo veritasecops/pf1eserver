@@ -195,9 +195,9 @@ async def delete_user(user_id: int, request: Request, db: Session = Depends(get_
         raise HTTPException(422, "Type the target user's email to confirm deletion.")
     own = target.id == ctx.user.id
     audit(db, None if own else ctx.user, "user.deleted", f"Admin {ctx.user.name} deleted {target.email}, their owned characters, and owned campaigns.")
-    from .advancement import detach_characters
+    from .advancement import remove_campaign_characters
     for campaign in db.scalars(select(Campaign).where(Campaign.owner_id == target.id).order_by(Campaign.id).with_for_update()):
-        detach_characters(db, campaign)
+        remove_campaign_characters(db, campaign)
     db.delete(target)
     if own:
         commit(db)

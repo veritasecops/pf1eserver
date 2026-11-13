@@ -1,0 +1,31 @@
+<section class="card" id="npcs" aria-labelledby="campaign-npcs-title">
+  <div class="card-heading">
+    <h2 id="campaign-npcs-title">Non-player characters</h2>
+    <a class="button primary small" href="/campaigns/{{ campaign.id }}/npcs/new">{{ icon('plus') }}Create NPC</a>
+  </div>
+  {% if npcs or npc_drafts %}
+  <div class="table-scroll" tabindex="0" role="region" aria-labelledby="campaign-npcs-title">
+    <table aria-labelledby="campaign-npcs-title">
+      <thead><tr><th scope="col">Name</th><th scope="col">Ancestry</th><th scope="col">Class</th><th scope="col">Level</th><th scope="col">Status</th></tr></thead>
+      <tbody>
+        {% for npc in npcs %}
+        <tr>
+          <td><a class="text-button" href="/characters/{{ npc.id }}">{{ npc.name }}</a></td>
+          <td>{{ npc.ancestry or '—' }}</td><td>{{ npc.class_name or '—' }}</td><td>{{ npc.level }}</td><td>Complete</td>
+        </tr>
+        {% endfor %}
+        {% for draft in npc_drafts %}
+        <tr>
+          <td><a class="text-button" href="/characters/drafts/{{ draft.id }}">{{ draft.data.name or 'Unnamed NPC' }}</a></td>
+          <td>{{ draft_races.get(draft.data.race, {}).get('name', '—') }}</td>
+          <td>{{ draft_classes.get(draft.data.class_id, {}).get('name', '—') }}</td>
+          <td>1</td><td><span class="badge">Draft</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  {{ empty('No NPCs yet.', 'Create an NPC to add it to this campaign.', 'user') }}
+  {% endif %}
+</section>

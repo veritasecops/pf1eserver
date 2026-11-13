@@ -70,8 +70,15 @@ def migrate(admin_engine):
         "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'"},
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
-        "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL"},
-        "character_drafts": {"portrait": "MEDIUMBLOB NULL", "portrait_changed": "BOOLEAN NOT NULL DEFAULT 0"},
+        "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL", "is_npc": "BOOLEAN NOT NULL DEFAULT 0"},
+        "character_drafts": {
+            "portrait": "MEDIUMBLOB NULL",
+            "portrait_changed": "BOOLEAN NOT NULL DEFAULT 0",
+            "npc_campaign_id": (
+                "BIGINT NULL, ADD CONSTRAINT `fk_character_drafts_npc_campaign` "
+                "FOREIGN KEY (`npc_campaign_id`) REFERENCES `campaigns` (`id`) ON DELETE CASCADE"
+            ),
+        },
         "rulebooks": {"access_mask": "INT NOT NULL DEFAULT 0", "category": "VARCHAR(16) NULL"},
     }
     for table, columns in additions.items():
@@ -274,4 +281,7 @@ def migrate(admin_engine):
             migrate_sources(db)
             db.add(SchemaMigration(version=29, name="aon_publication_sources"))
             db.commit()
-    print("Database migrations applied through 029 (AoN publication sources).")
+        if not db.get(SchemaMigration, 30):
+            db.add(SchemaMigration(version=30, name="campaign_npcs"))
+            db.commit()
+    print("Database migrations applied through 030 (campaign NPCs).")

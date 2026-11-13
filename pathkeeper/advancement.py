@@ -46,14 +46,17 @@ def preserve_xp(character, old_speed):
     character.play_data = {**(character.play_data or {}), "experience": str(xp)}
 
 
-def detach_characters(db, campaign, owner_id=None):
+def remove_campaign_characters(db, campaign, owner_id=None):
     from sqlalchemy import select
     from .models import Character
 
     query = select(Character).where(Character.campaign_id == campaign.id)
     if owner_id is not None:
-        query = query.where(Character.owner_id == owner_id)
+        query = query.where(Character.owner_id == owner_id, Character.is_npc.is_(False))
     for character in db.scalars(query.order_by(Character.id).with_for_update()):
+        if character.is_npc:
+            db.delete(character)
+            continue
         preserve_xp(character, campaign.xp_speed)
         character.campaign_id = None
 

@@ -2,8 +2,8 @@
 {% block extra_head %}<link rel="stylesheet" href="/static/searchable-select.css?v=20261105-dropdowns"><link rel="stylesheet" href="/static/character-portrait.css?v=20261104-header-pencil-1"><link rel="stylesheet" href="/static/character-wizard.css?v=20261104-equipment-flow-1"><link rel="stylesheet" href="/static/weapon-picker.css?v=20261104-equipment-2">{% endblock %}
 {% block content %}
 <div class="pw-root" data-character-wizard data-csrf="{{ csrf }}">
-  <a class="text-button back-link" href="/characters">{{ icon('back') }}Characters</a>
-  <div class="page-heading pw-heading"><div class="character-name-header">{% include 'character_portrait.html' %}<div><span class="overline">A NEW STORY AT YOUR TABLE</span><h1 id="pw-header-name">{{ boot.data.name or 'New character' }}</h1><p>A guided Pathfinder First Edition character sheet.</p></div></div><div class="pw-save-state"><span class="pw-save-dot"></span><span id="pw-save-status" role="status">Draft saved</span></div></div>
+  <a class="text-button back-link" href="{{ boot.return_path }}">{{ icon('back') }}{{ npc_campaign.name ~ ' NPCs' if npc_campaign else 'Characters' }}</a>
+  <div class="page-heading pw-heading"><div class="character-name-header">{% include 'character_portrait.html' %}<div><span class="overline">A NEW STORY AT YOUR TABLE</span><h1 id="pw-header-name">{{ boot.data.name or ('New NPC' if npc_campaign else 'New character') }}</h1><p>A guided Pathfinder First Edition {{ 'NPC' if npc_campaign else 'character' }} sheet.</p></div></div><div class="pw-save-state"><span class="pw-save-dot"></span><span id="pw-save-status" role="status">Draft saved</span></div></div>
   <p id="portrait-status" class="character-portrait-status" role="status" hidden></p>
   <nav class="pw-steps" id="pw-steps" aria-label="Character creation steps"></nav>
   <div class="pw-message" id="pw-message" role="alert" hidden></div>
@@ -18,8 +18,8 @@
     </div>
     <aside class="pw-aside">
       {% include 'dice_tray.html' %}
-      <section class="card pw-preview"><header><div class="pw-preview-identity"><img data-character-portrait {% if portrait_url %}src="{{ portrait_url }}"{% endif %} alt="Character portrait"{% if not portrait_url %} hidden{% endif %}><div><span class="overline">YOUR CHARACTER</span><h2 id="pw-preview-name">An unwritten legend</h2><p id="pw-preview-class">Choose a race and class</p></div></div></header><div id="pw-preview-abilities" class="pw-mini-abilities"></div><div id="pw-preview-stats" class="pw-preview-stats"></div></section>
-      <details class="card pw-roll-history"><summary>Recent rolls <span id="pw-roll-count">0</span></summary><ol id="pw-roll-history"></ol><p>Results are saved with this draft. Your GM decides which methods and rerolls to allow.</p></details>
+      <section class="card pw-preview"><header><div class="pw-preview-identity"><img data-character-portrait {% if portrait_url %}src="{{ portrait_url }}"{% endif %} alt="Character portrait"{% if not portrait_url %} hidden{% endif %}><div><span class="overline">{{ 'YOUR NPC' if npc_campaign else 'YOUR CHARACTER' }}</span><h2 id="pw-preview-name">An unwritten legend</h2><p id="pw-preview-class">Choose a race and class</p></div></div></header><div id="pw-preview-abilities" class="pw-mini-abilities"></div><div id="pw-preview-stats" class="pw-preview-stats"></div></section>
+      <details class="card pw-roll-history"><summary>Recent rolls <span id="pw-roll-count">0</span></summary><ol id="pw-roll-history"></ol><p>Results are saved with this draft.{% if not npc_campaign %} Your GM decides which methods and rerolls to allow.{% endif %}</p></details>
     </aside>
   </div>
   <dialog id="pw-weapon-picker" class="pw-weapon-picker" aria-labelledby="pw-weapon-picker-title" aria-describedby="pw-weapon-picker-description"></dialog>
@@ -27,4 +27,4 @@
   <script type="application/json" id="pw-bootstrap">{{ boot|tojson }}</script>
 </div>
 {% endblock %}
-{% block page_scripts %}<script src="/static/character-portrait.js?v=20261104-header-pencil-1" defer></script><script src="/static/searchable-select.js?v=20261105-feat-index" defer></script><script src="/static/weapon-picker.js?v=aon-weapon-details" defer></script><script src="/static/character-wizard.js?v=20261105-feat-index" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/character-portrait.js?v=20261104-header-pencil-1" defer></script><script src="/static/searchable-select.js?v=20261105-feat-index" defer></script><script src="/static/weapon-picker.js?v=aon-weapon-details" defer></script><script src="/static/character-wizard.js?v=campaign-npcs" defer></script>{% endblock %}
