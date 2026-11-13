@@ -66,3 +66,30 @@ def test_campaign_banner_migration_preserves_existing_campaigns(env, isolated_da
         stored = db.get(Campaign, campaign.id)
         assert stored.name == campaign.name and stored.banner is None
         assert db.get(SchemaMigration, 31)
+
+
+def test_campaign_cards_show_saved_banners_and_return_to_default_on_reset(env):
+    campaign = seed_campaign(env.gm, members=[env.player])
+    default = seed_campaign(env.gm, name="Default cover", members=[env.player])
+    gm, member, outsider = (env.login(account) for account in (env.gm, env.player, env.player2))
+    banner = f"/campaigns/{campaign.id}/banner"
+    cover = f'class="campaign-cover-image" src="{banner}"'
+
+    for listing in ("/", "/campaigns"):
+        assert cover not in member.get(listing).text
+
+    assert upload(env, gm, banner, picture("navy")).status_code == 200
+    for listing in ("/", "/campaigns"):
+        for client in (gm, member):
+            page = client.get(listing).text
+            assert cover in page
+            assert f'src="/campaigns/{default.id}/banner"' not in page
+        assert cover not in outsider.get(listing).text
+    first = member.get(banner)
+    assert first.status_code == 200 and "no-store" in first.headers["cache-control"]
+    assert upload(env, gm, banner, picture("green")).status_code == 200
+    assert member.get(banner).content != first.content
+
+    assert env.post(gm, f"{banner}/remove").status_code == 200
+    for listing in ("/", "/campaigns"):
+        assert cover not in member.get(listing).text

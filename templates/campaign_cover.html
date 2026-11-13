@@ -1,0 +1,9 @@
+{% from 'components.html' import icon %}
+<div class="campaign-cover">
+  {% if has_banner %}
+  <img class="campaign-cover-image" src="/campaigns/{{ campaign.id }}/banner" alt="">
+  {% else %}
+  <span class="cover-symbol">{{ icon('flag') }}</span>
+  {% endif %}
+  <span class="badge">{{ cover_role }}</span>
+</div>

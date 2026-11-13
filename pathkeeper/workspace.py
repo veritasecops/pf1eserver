@@ -71,19 +71,24 @@ def verify_version(form, record):
 async def home(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     account = authenticated(ctx)
-    campaigns = list(db.scalars(campaigns_query(account).order_by(Campaign.id.desc())))
+    campaigns = db.execute(campaigns_query(account)
+                           .add_columns(Campaign.banner.is_not(None))
+                           .order_by(Campaign.id.desc())).all()
     owned = list(db.scalars(select(Character).where(
         Character.owner_id == account.id, Character.is_npc.is_(False)).order_by(Character.name)))
     accessible = db.scalar(select(func.count()).select_from(characters_query(account).subquery()))
     return render(ctx, "dashboard.html", title="Your workspace", campaigns=campaigns[:6], characters=owned[:6],
-                  counts={"characters": len(owned), "campaigns": len(campaigns), "managed": sum(c.owner_id == account.id for c in campaigns), "accessible": accessible})
+                  counts={"characters": len(owned), "campaigns": len(campaigns), "managed": sum(c.owner_id == account.id for c, _ in campaigns), "accessible": accessible})
 
 
 @router.get("/campaigns")
 async def campaigns_page(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     account = authenticated(ctx)
-    campaigns = db.execute(campaigns_query(account).add_columns(User.name).join(User, User.id == Campaign.owner_id).order_by(Campaign.id.desc())).all()
+    campaigns = db.execute(campaigns_query(account)
+                           .add_columns(User.name, Campaign.banner.is_not(None))
+                           .join(User, User.id == Campaign.owner_id)
+                           .order_by(Campaign.id.desc())).all()
     return render(ctx, "campaigns.html", title="Campaigns", campaigns=campaigns)
 
 
