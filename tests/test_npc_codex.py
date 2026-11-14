@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 
 from pathkeeper.database import engine
 from pathkeeper.models import Character
-from pathkeeper.npc_codex import entries
+from pathkeeper.npc_codex import browse, entries
+from pathkeeper.npc_codex_editor import editor_values, parse_entry
 
 from .test_deluxe_sheet import SheetForm
 from .test_workspace import seed_campaign
@@ -21,6 +22,19 @@ def test_published_npc_codex_coverage():
     assert all(len(item["scores"]) == 6 and item["hp"] > 0 and
                (sum(level for _, level in item["classes"]) == item["level"] or item.get("companion_level"))
                for item in codex.values())
+    assert all(parse_entry(editor_values(item), item, {})["scores"] == item["scores"] for item in codex.values())
+
+
+def test_codex_filters_combine_and_match_companion_level_ranges():
+    result = browse({"ancestry": "Human", "level": "1", "cr": "1/2", "category": "Core class"})
+    assert "savage-mercenary" in dict(result["items"])
+    assert all(item["ancestry"] == "Human" and item["level"] == 1 and item["cr"] == "1/2"
+               for _, item in result["items"])
+    assert result["filter_options"]["cr"][:3] == ["1/3", "1/2", "1"]
+    for level in ("10", "11"):
+        result = browse({"ancestry": "Animal", "level": level, "cr": "none", "q": "horse"})
+        assert list(dict(result["items"])) == ["horse-10-11"]
+    assert browse({"ancestry": "invalid", "level": "-1", "cr": "invalid"})["total"] == 388
 
 
 def test_npc_codex_access_filters_and_editable_campaign_copies(env):
@@ -36,15 +50,20 @@ def test_npc_codex_access_filters_and_editable_campaign_copies(env):
     admin_page = admin.get("/administration/npc-codex").text
     assert 'href="/administration/npc-codex" class="active"' in admin_page
     assert "388 entries" in admin_page
+    assert '<th scope="col">Page</th>' not in admin_page
     assert "33 entries" in admin.get("/administration/npc-codex", params={"category": "Iconic"}).text
     assert admin.get("/administration/npc-codex/not-found").status_code == 404
     assert player.get(catalog_path).status_code == 403
     assert env.post(player, catalog_path, {"npc_key": "savage-mercenary"}).status_code == 403
     assert gm.post(catalog_path, data={"npc_key": "savage-mercenary"}).status_code == 403
     assert env.post(gm, catalog_path, {"npc_key": "missing"}).status_code == 404
-    selection = gm.get(catalog_path, params={"q": "savage mercenary"})
+    selection = gm.get(catalog_path, params={"q": "savage mercenary", "ancestry": "Human", "level": "1", "cr": "1/2"})
     assert "1 entry" in selection.text and "Savage Mercenary" in selection.text
-    detail = gm.get(catalog_path + "/savage-mercenary")
+    assert '<th scope="col">Page</th>' not in selection.text
+    filters = "q=savage+mercenary&amp;ancestry=Human&amp;level=1&amp;cr=1%2F2&amp;page=1"
+    assert f'href="{catalog_path}/savage-mercenary?{filters}"' in selection.text
+    detail = gm.get(catalog_path + "/savage-mercenary", params={"q": "savage mercenary", "ancestry": "Human", "level": 1, "cr": "1/2"})
+    assert f'href="{catalog_path}?{filters}"' in detail.text
     assert "NPC Codex, p. 10" in detail.text and "greatsword" in detail.text
 
     added = env.post(gm, catalog_path, {"npc_key": "savage-mercenary"})
@@ -88,3 +107,29 @@ def test_prestige_stat_block_retains_separate_casters(env):
     assert sheet.values["bab"] == "8"
     assert sheet.values["save.will.total"] == "20"
     assert env.post(gm, added.headers["location"] + "/play-sheet", sheet.values).status_code == 303
+
+
+def test_admin_edits_codex_templates_without_changing_existing_campaign_copies(env):
+    campaign = seed_campaign(env.gm)
+    gm, admin = env.login(env.gm), env.login(env.admin)
+    catalog = f"/campaigns/{campaign.id}/npcs/catalog"
+    detail = "/administration/npc-codex/savage-mercenary"
+    edit = detail + "/edit"
+    assert "Edit NPC" in admin.get(detail).text
+    assert admin.get(edit).status_code == 200
+    assert gm.get(edit).status_code == 403
+    before = env.post(gm, catalog, {"npc_key": "savage-mercenary"}).headers["location"]
+    item = entries()["savage-mercenary"]
+    values = {**editor_values(item), "version": 0, "name": "Veteran mercenary", "hp": 28}
+    assert env.post(gm, edit, values).status_code == 403
+    assert admin.post(edit, data=values).status_code == 403
+    invalid = env.post(admin, edit, {**values, "Statistics": "Feats: Cleave"})
+    assert invalid.status_code == 422 and "Keep the Base Atk line" in invalid.text
+    values["Offense"] = values["Offense"].replace("Speed: 30 ft.", "Speed: 40 ft.")
+    assert env.post(admin, edit, values).status_code == 303
+    assert env.post(admin, edit, values).status_code == 409
+    assert "Veteran mercenary" in gm.get(catalog, params={"q": "veteran mercenary"}).text
+    after = env.post(gm, catalog, {"npc_key": "savage-mercenary"}).headers["location"]
+    old, new = [SheetForm(gm.get(path).text).values for path in (before, after)]
+    assert (old["name"], old["hp.total"]) == ("Savage Mercenary", "17")
+    assert (new["name"], new["hp.total"], new["speed.armor"]) == ("Veteran mercenary", "28", "40")

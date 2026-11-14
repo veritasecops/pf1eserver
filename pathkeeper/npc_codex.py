@@ -1,5 +1,6 @@
 """Published NPC templates and their projection into editable campaign sheets."""
 from decimal import Decimal
+from fractions import Fraction
 from functools import lru_cache
 import json
 from pathlib import Path
@@ -35,23 +36,45 @@ def entries():
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def browse(params):
-    category = params.get("category", "")
-    if category not in CATEGORIES:
-        category = ""
+def display_levels(item):
+    if "companion_level" in item:
+        limits = item["companion_level"].split("–")
+        return range(int(limits[0]), int(limits[-1]) + 1)
+    return (item["level"],)
+
+
+def codex_entries(catalog):
+    return {**entries(), **{key: edit["entry"] for key, edit in catalog.get("npc_codex_overrides", {}).items()}}
+
+
+def browse(params, items=None):
+    items = entries() if items is None else items
+    options = {
+        "category": CATEGORIES,
+        "ancestry": sorted({item["ancestry"] for item in items.values()}),
+        "level": [str(level) for level in sorted({level for item in items.values() for level in display_levels(item)})],
+        "cr": [*sorted({item["cr"] for item in items.values() if item["cr"]}, key=Fraction), "none"],
+    }
+    selected = {key: params.get(key, "") for key in options}
+    selected = {key: value if value in options[key] else "" for key, value in selected.items()}
+    category, ancestry, level, cr = (selected[key] for key in options)
+    level = int(level) if level else None
     search = params.get("q", "").strip()[:100]
     try:
         page = int(params.get("page", "1"))
     except ValueError:
         page = 1
-    matches = [(key, item) for key, item in entries().items()
+    matches = [(key, item) for key, item in items.items()
                if (not category or item["category"] == category)
+               and (not ancestry or item["ancestry"] == ancestry)
+               and (level is None or level in display_levels(item))
+               and (not cr or (item["cr"] or "none") == cr)
                and search.casefold() in " ".join([item["name"], item["ancestry"], class_label(item)]).casefold()]
     matches.sort(key=lambda pair: (pair[1]["name"].casefold(), pair[1]["level"]))
     pages = max(1, (len(matches) + PAGE_SIZE - 1) // PAGE_SIZE)
     page = min(max(1, page), pages)
-    return dict(items=matches[(page - 1) * PAGE_SIZE:page * PAGE_SIZE], categories=CATEGORIES,
-                category=category, search=search, page=page, pages=pages, total=len(matches))
+    return dict(items=matches[(page - 1) * PAGE_SIZE:page * PAGE_SIZE], filter_options=options,
+                selected=selected, search=search, page=page, pages=pages, total=len(matches))
 
 
 def class_label(item):
@@ -188,8 +211,8 @@ def make_character(item, campaign, catalog):
     offense = dict(item["sections"]["Offense"])
     statistics = dict(item["sections"]["Statistics"])
     header = dict(item["sections"].get("Identity", []))
-    if deity := next((name.split(" Of ", 1)[1] for name, _ in item["classes"]
-                      if name.startswith(("Cleric Of ", "Paladin Of "))), ""):
+    if deity := next((name.split(" ", 2)[2] for name, _ in item["classes"]
+                      if re.match(r"(?i)^(?:cleric|paladin) of ", name)), ""):
         from .deities import deity_key
         data["deity"] = deity_key(deity, catalog.get("deities", {})) or deity
     if languages := statistics.get("Languages"):

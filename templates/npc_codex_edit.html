@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% from 'components.html' import csrf_input, icon %}
+{% set detail = '/administration/npc-codex/' ~ key %}
+{% block content %}
+<a class="text-button back-link" href="{{ detail }}">{{ icon('back') }}Back to {{ item.name }}</a>
+<div class="page-heading"><div><h1>Edit {{ item.name }}</h1><p>Edits apply to new campaign copies.</p></div></div>
+{% include 'admin_tabs.html' %}
+<form method="post" class="card padded stack">
+  {{ csrf_input(csrf) }}<input type="hidden" name="version" value="{{ version }}">
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <div class="form-grid">
+    <label class="field"><span>Name</span><input name="name" value="{{ values.name }}" maxlength="150" required></label>
+    <label class="field"><span>Ancestry</span><input name="ancestry" value="{{ values.ancestry }}" maxlength="100" required></label>
+    <label class="field"><span>Alignment</span><select name="alignment" required>
+      {% for id, label in alignments.items() %}<option value="{{ id }}"{% if values.alignment == id %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label>
+    <label class="field"><span>Size</span><select name="size" required>
+      {% for size in sizes %}<option value="{{ size|capitalize }}"{% if values.size|lower == size %} selected{% endif %}>{{ size|capitalize }}</option>{% endfor %}
+    </select></label>
+    <label class="field"><span>{{ 'Hit Dice' if item.companion_level else 'Level' }}</span><input type="number" name="level" value="{{ values.level }}" min="1" max="20" required></label>
+    <label class="field"><span>Hit Points</span><input type="number" name="hp" value="{{ values.hp }}" min="1" max="10000" required></label>
+    {% if item.companion_level %}
+    <label class="field"><span>Effective druid level</span><input name="companion_level" value="{{ values.companion_level }}" maxlength="8" required></label>
+    {% else %}
+    <label class="field"><span>Category</span><select name="category" required>
+      {% for category in categories %}<option{% if values.category == category %} selected{% endif %}>{{ category }}</option>{% endfor %}
+    </select></label>
+    <label class="field"><span>CR</span><input name="cr" value="{{ values.cr }}" maxlength="5" required></label>
+    <label class="field"><span>XP award</span><input type="number" name="xp_award" value="{{ values.xp_award }}" min="0" max="1000000000" required></label>
+    {% endif %}
+  </div>
+  {% if not item.companion_level %}
+  <label class="field"><span>Classes</span><textarea name="classes" rows="3" maxlength="300" required>{{ values.classes }}</textarea><span class="hint">Enter one class per line, with its level after its name.</span></label>
+  {% endif %}
+  <div class="form-grid">
+    {% for id, label in abilities.items() %}
+    <label class="field"><span>{{ label }}</span><input type="number" name="{{ id }}" value="{{ values[id] }}" min="1" max="100" required></label>
+    {% endfor %}
+  </div>
+  <h2>Stat block</h2>
+  <p class="hint">Enter one label and value per line, separated by a colon. Keep the AC, Fort, Speed, and Base Atk labels for campaign imports.</p>
+  {% for section in sections %}
+  <label class="field"><span>{{ section }}</span><textarea name="{{ section }}" rows="{{ 7 if section in ['Defense', 'Offense', 'Statistics'] else 3 }}" maxlength="7000">{{ values[section] }}</textarea></label>
+  {% endfor %}
+  <div class="row"><button class="button primary">Save NPC</button><a class="button" href="{{ detail }}">Cancel</a></div>
+</form>
+{% endblock %}
