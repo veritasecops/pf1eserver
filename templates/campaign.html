@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% from 'components.html' import icon, empty, field, csrf_input, role_badge %}{% block extra_head %}<link rel="stylesheet" href="/static/character-portrait.css?v=campaign-banner">{% endblock %}
+{% extends 'base.html' %}{% from 'components.html' import icon, empty, field, csrf_input, role_badge %}{% block extra_head %}<link rel="stylesheet" href="/static/character-portrait.css?v=campaign-banner">{% if manage %}<link rel="stylesheet" href="/static/monsters.css?v=3">{% endif %}{% endblock %}
 {% block content %}<a class="text-button back-link" href="/campaigns">{{ icon('back') }}All campaigns</a><header class="campaign-hero">
 <img class="character-sheet-background campaign-banner-image" data-campaign-banner src="{{ banner_url }}" alt="">
 <div class="campaign-hero-copy"><span class="overline">{{ campaign.setting or 'A WORLD OF YOUR OWN' }}</span><h1>{{ campaign.name }}</h1><p>{{ campaign.description or 'Your story is waiting to be written.' }}</p><span class="badge">Game Master: {{ owner.name }}</span> <span class="badge">{{ campaign.xp_speed|capitalize }} XP advancement</span></div>{% if manage %}

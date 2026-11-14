@@ -75,6 +75,17 @@ def test_campaign_monster_index_adds_separate_copies_and_keeps_them_scoped(env):
     assert "15 (2d8+6)" in other_copy and "Found in the ruins." not in other_copy
     assert "15 (2d8+6)" in gm.get(f"{index}/{key}").text
     assert gm.get(f"/campaigns/{other_campaign.id}/monsters/roster/{ids[0]}").status_code == 404
+    notes_url = f"{index}/roster/{ids[0]}/notes"
+    roster = gm.get(campaign_path).text
+    assert "Found in the ruins." in roster and f'action="{notes_url}"' in roster
+    with Session(engine()) as db:
+        version = db.get(CampaignMonster, ids[0]).version
+    notes_update = {"version": version, "notes": "Guarding the ruins."}
+    assert env.post(gm, notes_url, notes_update).headers["location"] == block
+    assert env.post(gm, notes_url, notes_update).status_code == 409
+    assert "Guarding the ruins." in gm.get(campaign_path).text
+    assert "9 (2d8+6)" in gm.get(response.headers["location"]).text
+    assert "Guarding the ruins." not in gm.get(f"{index}/roster/{ids[1]}").text
 
     for account in (env.player, env.gm2):
         member = env.login(account)
@@ -86,6 +97,7 @@ def test_campaign_monster_index_adds_separate_copies_and_keeps_them_scoped(env):
         assert env.post(member, f"{index}/remove", remove).status_code == 403
         assert member.get(edit).status_code == 403
         assert env.post(member, edit, update).status_code == 403
+        assert env.post(member, notes_url, notes_update).status_code == 403
     outsider = env.login(env.player2)
     assert outsider.get(index).status_code == 404
 

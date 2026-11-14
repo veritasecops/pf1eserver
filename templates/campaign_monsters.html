@@ -7,13 +7,25 @@
   {% if monster_entries %}
   <div class="table-scroll" role="region" aria-labelledby="monster-index-title" tabindex="0">
     <table aria-labelledby="monster-index-title">
-      <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th><th scope="col">Actions</th></tr></thead>
+      <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th><th scope="col">Notes</th><th scope="col">Actions</th></tr></thead>
       <tbody>
       {% for copy, entry in monster_entries %}
         {% set detail_url = '/campaigns/' ~ campaign.id ~ '/monsters/roster/' ~ copy.id %}
         <tr>
           <th scope="row"><a class="text-button" href="{{ detail_url }}">{{ entry.name }}</a></th>
           <td>{{ entry.cr or '—' }}</td><td>{{ entry.type or '—' }}</td><td>{{ entry.environment or '—' }}</td>
+          <td class="monster-roster-notes">
+            {% if copy.stat_block.notes %}<div class="monster-notes">{{ copy.stat_block.notes }}</div>{% endif %}
+            <details>
+              <summary>{{ 'Edit notes' if copy.stat_block.notes else 'Add notes' }}</summary>
+              <form class="stack" method="post" action="{{ detail_url }}/notes">
+                {{ csrf_input(csrf) }}
+                <input type="hidden" name="version" value="{{ copy.version }}">
+                <textarea name="notes" rows="3" maxlength="20000" aria-label="Notes for {{ entry.name }}">{{ copy.stat_block.notes }}</textarea>
+                <button class="button small" type="submit">Save notes</button>
+              </form>
+            </details>
+          </td>
           <td>
             <form class="row" method="post" action="/campaigns/{{ campaign.id }}/monsters/remove">
               {{ csrf_input(csrf) }}<input type="hidden" name="monster_id" value="{{ copy.id }}">

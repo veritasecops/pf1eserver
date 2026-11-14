@@ -306,6 +306,19 @@ async def campaign_monster_add(campaign_id: int, request: Request, db: Session =
     return redirect(ctx, f"/campaigns/{campaign.id}/monsters/catalog?{query}", f"{label} added to the campaign.")
 
 
+@router.post("/campaigns/{campaign_id}/monsters/roster/{copy_id}/notes")
+async def campaign_monster_notes(campaign_id: int, copy_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    form = await read_form(ctx)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
+    copy = get_monster_copy(db, campaign, copy_id)
+    verify_version(form, copy)
+    copy.stat_block = {**copy.stat_block, "notes": field(form, "notes", 20000, False)}
+    name = copy.stat_block["entry"]["name"]
+    audit(db, ctx.user, "campaign.monster_updated", f"Updated notes for {name} in {campaign.name}.")
+    return redirect(ctx, f"/campaigns/{campaign.id}#monster-index", "Monster notes saved.")
+
+
 @router.post("/campaigns/{campaign_id}/monsters/remove")
 async def campaign_monster_remove(campaign_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
