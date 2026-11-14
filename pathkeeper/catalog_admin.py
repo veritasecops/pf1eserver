@@ -31,9 +31,10 @@ router = APIRouter(prefix='/administration/catalog')
 equipment_router = APIRouter(prefix='/administration/equipment')
 magic_items_router = APIRouter(prefix='/administration/magic-items')
 monsters_router = APIRouter(prefix='/administration/monsters')
+deities_router = APIRouter(prefix='/administration/deities')
 KINDS = {'feats':'Feats','skills':'Skills','weapons':'Weapons','armor':'Armor','equipment':'Equipment','deities':'Deities','classes':'Character Classes'}
 RULE_TABS = {**{key: KINDS[key] for key in ('feats', 'skills')}, 'spells': 'Spells',
-             **{key: KINDS[key] for key in ('deities', 'classes')}, 'class-abilities': 'Class Abilities'}
+             'classes': KINDS['classes'], 'class-abilities': 'Class Abilities'}
 SPELL_MARKERS = {'F': 'Special focus', 'M': 'Special material', 'R': 'Religion or ancestry requirement',
                  'T': 'Torag preparation requirement'}
 
@@ -56,6 +57,8 @@ def kind_check(kind):
 
 
 def catalog_location(kind, group=""):
+    if kind == "deities":
+        return "/administration/deities"
     group = {"weapons": "Weapons", "armor": "Armor"}.get(kind, group)
     if kind in {"equipment", "weapons", "armor"}:
         return "/administration/equipment" + ("?" + urlencode({"equipment_group": group}) if group else "")
@@ -84,9 +87,9 @@ async def catalog_page(request: Request, db: Session = Depends(get_db)):
         return render_class_abilities(ctx, request)
     if kind == 'monsters':
         return monster_redirect(request, '/administration/monsters')
-    if kind == 'equipment':
+    if kind in {'equipment', 'deities'}:
         query = urlencode([(key, value) for key, value in request.query_params.multi_items() if key != 'kind'])
-        return RedirectResponse('/administration/equipment' + ('?' + query if query else ''), status_code=303)
+        return RedirectResponse(catalog_location(kind) + ('?' + query if query else ''), status_code=303)
     return render_catalog(ctx, request, kind)
 
 
@@ -95,6 +98,13 @@ async def equipment_page(request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     administrator(ctx)
     return render_catalog(ctx, request, 'equipment')
+
+
+@deities_router.get('')
+async def deities_page(request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    administrator(ctx)
+    return render_catalog(ctx, request, 'deities')
 
 
 @lru_cache
@@ -367,7 +377,8 @@ def render_catalog(ctx, request, kind):
     page = min(int(raw_page), pages) if re.fullmatch(r'[1-9][0-9]{0,5}', raw_page) else 1
     if kind in {'feats', 'equipment'}:
         items = items[(page - 1) * 100:page * 100]
-    return render(ctx,'catalog.html',title='Equipment' if kind == 'equipment' else 'Rules catalog',kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories,
+    title = KINDS[kind] if kind in {'equipment', 'deities'} else 'Rules catalog'
+    return render(ctx,'catalog.html',title=title,kinds=KINDS,kind=kind,items=items,search=search,total=total,page=page,pages=pages,version=record.version,weapon_url=safe_weapon_url,weapon_groups=WEAPON_GROUPS,weapon_categories=WEAPON_CATEGORIES,group_filter=group,category_filter=category,feat_category=feat_category,feat_categories=FEAT_CATEGORIES,equipment_groups=EQUIPMENT_GROUPS,equipment_group=equipment_group,equipment_category=equipment_category,equipment_categories=equipment_categories,
                   equipment_counts=equipment_counts,equipment_status=equipment_status,weapon_items=record.data.get('weapons', {}),rule_tabs=RULE_TABS)
 
 

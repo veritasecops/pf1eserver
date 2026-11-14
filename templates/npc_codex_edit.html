@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
 {% from 'components.html' import csrf_input, icon %}
-{% set detail = '/administration/npc-codex/' ~ key %}
 {% block content %}
-<a class="text-button back-link" href="{{ detail }}">{{ icon('back') }}Back to {{ item.name }}</a>
+<a class="text-button back-link" href="{{ back_url }}">{{ icon('back') }}Back to NPC Codex</a>
 <div class="page-heading"><div><h1>Edit {{ item.name }}</h1><p>Edits apply to new campaign copies.</p></div></div>
 {% include 'admin_tabs.html' %}
 <form method="post" class="card padded stack">
@@ -42,6 +41,6 @@
   {% for section in sections %}
   <label class="field"><span>{{ section }}</span><textarea name="{{ section }}" rows="{{ 7 if section in ['Defense', 'Offense', 'Statistics'] else 3 }}" maxlength="7000">{{ values[section] }}</textarea></label>
   {% endfor %}
-  <div class="row"><button class="button primary">Save NPC</button><a class="button" href="{{ detail }}">Cancel</a></div>
+  <div class="row"><button class="button primary">Save NPC</button><a class="button" href="{{ back_url }}">Cancel</a></div>
 </form>
 {% endblock %}

@@ -1,6 +1,7 @@
+{% set in_deities = kind|default("") == "deities" %}
 {% set in_equipment = kind|default("") == "equipment" or equipment_editor|default(false) %}
 <nav class="tabs" aria-label="Administration sections">
-  {% for label,href in [('Users','/administration'),('Roles & permissions','/administration/permissions'),('Email Configuration','/administration/email'),('Rules catalog','/administration/catalog'),('Equipment','/administration/equipment'),('Magic Items','/administration/magic-items'),('Monsters','/administration/monsters'),('NPC Codex','/administration/npc-codex'),('Activity log','/administration/audit')] %}
-  <a href="{{ href }}" {% if (label == "Equipment" and in_equipment) or ((path == href or (href in ["/administration/catalog", "/administration/monsters", "/administration/npc-codex"] and path.startswith(href ~ "/"))) and not in_equipment) %}class="active" aria-current="page"{% endif %}>{{ label }}</a>
+  {% for label,href in [('Users','/administration'),('Roles & permissions','/administration/permissions'),('Email Configuration','/administration/email'),('Rules catalog','/administration/catalog'),('Equipment','/administration/equipment'),('Magic Items','/administration/magic-items'),('Monsters','/administration/monsters'),('NPC Codex','/administration/npc-codex'),('Deities','/administration/deities'),('Activity log','/administration/audit')] %}
+  <a href="{{ href }}" {% if (label == "Equipment" and in_equipment) or (label == "Deities" and in_deities) or ((path == href or (href in ["/administration/catalog", "/administration/monsters", "/administration/npc-codex"] and path.startswith(href ~ "/"))) and not in_equipment and not in_deities) %}class="active" aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}
 </nav>

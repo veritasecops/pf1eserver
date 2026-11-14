@@ -50,6 +50,7 @@ def test_npc_codex_access_filters_and_editable_campaign_copies(env):
     admin_page = admin.get("/administration/npc-codex").text
     assert 'href="/administration/npc-codex" class="active"' in admin_page
     assert "388 entries" in admin_page
+    assert "/edit?from=list&amp;page=1" in admin_page
     assert '<th scope="col">Page</th>' not in admin_page
     assert "33 entries" in admin.get("/administration/npc-codex", params={"category": "Iconic"}).text
     assert admin.get("/administration/npc-codex/not-found").status_code == 404
@@ -60,6 +61,7 @@ def test_npc_codex_access_filters_and_editable_campaign_copies(env):
     selection = gm.get(catalog_path, params={"q": "savage mercenary", "ancestry": "Human", "level": "1", "cr": "1/2"})
     assert "1 entry" in selection.text and "Savage Mercenary" in selection.text
     assert '<th scope="col">Page</th>' not in selection.text
+    assert "/edit?from=list" not in selection.text
     filters = "q=savage+mercenary&amp;ancestry=Human&amp;level=1&amp;cr=1%2F2&amp;page=1"
     assert f'href="{catalog_path}/savage-mercenary?{filters}"' in selection.text
     detail = gm.get(catalog_path + "/savage-mercenary", params={"q": "savage mercenary", "ancestry": "Human", "level": 1, "cr": "1/2"})
@@ -133,3 +135,22 @@ def test_admin_edits_codex_templates_without_changing_existing_campaign_copies(e
     old, new = [SheetForm(gm.get(path).text).values for path in (before, after)]
     assert (old["name"], old["hp.total"]) == ("Savage Mercenary", "17")
     assert (new["name"], new["hp.total"], new["speed.armor"]) == ("Veteran mercenary", "28", "40")
+
+
+def test_editing_from_codex_list_keeps_filters_and_page(env):
+    admin = env.login(env.admin)
+    base = "/administration/npc-codex"
+    params = "ancestry=Human&page=2"
+    result = browse({"ancestry": "Human", "page": "2"})
+    key, item = result["items"][0]
+    edit = f"{base}/{key}/edit?from=list&{params}"
+    back = f'{base}?ancestry=Human&amp;page=2'
+    page = admin.get(f"{base}?{params}")
+    assert f'href="{edit.replace("&", "&amp;")}"' in page.text
+    form = admin.get(edit)
+    assert form.status_code == 200 and f'href="{back}">Cancel' in form.text
+    values = {**editor_values(item), "version": 0, "hp": item["hp"] + 1}
+    invalid = env.post(admin, edit, {**values, "hp": 0})
+    assert invalid.status_code == 422 and f'href="{back}">Cancel' in invalid.text
+    saved = env.post(admin, edit, values)
+    assert saved.status_code == 303 and saved.headers["location"] == f"{base}?{params}"

@@ -20,16 +20,25 @@ ADMIN_CODEX = "/administration/npc-codex"
 CAMPAIGN_CODEX = "/campaigns/{campaign_id}/npcs/catalog"
 
 
+def filter_query(filters):
+    return urlencode({key: value for key, value in {"q": filters["search"], **filters["selected"]}.items() if value})
+
+
+def page_query(filters):
+    query = filter_query(filters)
+    return f"{query}&page={filters['page']}" if query else f"page={filters['page']}"
+
+
 def render_codex(ctx, campaign=None, key=None):
     items = codex_entries(load_catalog(ctx.db))
     filters = browse(ctx.request.query_params, items)
     base = CAMPAIGN_CODEX.format(campaign_id=campaign.id) if campaign else ADMIN_CODEX
-    query = urlencode({key: value for key, value in {"q": filters["search"], **filters["selected"]}.items() if value})
     entry = items.get(key) if key is not None else None
     if key is not None and entry is None:
         raise HTTPException(404, "NPC codex entry not found.")
     return render(ctx, "npc_codex.html", title=entry["name"] if entry else "NPC Codex", campaign=campaign,
-                  base=base, entry=entry, entry_key=key, query=query, class_label=class_label, **filters)
+                  base=base, entry=entry, entry_key=key, list_query=page_query(filters), query=filter_query(filters),
+                  class_label=class_label, **filters)
 
 
 @router.get(ADMIN_CODEX)
@@ -41,13 +50,23 @@ async def admin_codex(request: Request, key: str | None = None, db: Session = De
 
 
 def render_editor(ctx, key, item, version, values=None, error=None):
+    return_url = editor_return_url(ctx)
     response = render(ctx, "npc_codex_edit.html", title=f"Edit {item['name']}", key=key, item=item,
                       values=editor_values(item) if values is None else values, version=version,
                       sections=SECTIONS, categories=CATEGORIES[:-1], abilities=ABILITIES,
-                      alignments=ALIGNMENTS, sizes=SIZE_MODIFIERS, error=error)
+                      alignments=ALIGNMENTS, sizes=SIZE_MODIFIERS, error=error,
+                      back_url=return_url or f"{ADMIN_CODEX}/{key}")
     if error:
         response.status_code = 422
     return response
+
+
+def editor_return_url(ctx):
+    params = ctx.request.query_params
+    if params.get("from") != "list":
+        return None
+    filters = browse(params, codex_entries(load_catalog(ctx.db)))
+    return f"{ADMIN_CODEX}?{page_query(filters)}"
 
 
 def editable_entry(key, catalog):
@@ -84,7 +103,7 @@ async def save_codex_npc(key: str, request: Request, db: Session = Depends(get_d
     record.updated_by = ctx.user.id
     record.updated_at = utcnow()
     audit(db, ctx.user, "npc_codex.updated", f"Updated {updated['name']} in the NPC Codex.")
-    return redirect(ctx, f"{ADMIN_CODEX}/{key}", "NPC Codex entry saved.")
+    return redirect(ctx, editor_return_url(ctx) or f"{ADMIN_CODEX}/{key}", "NPC Codex entry saved.")
 
 
 @router.get(CAMPAIGN_CODEX)

@@ -9,7 +9,7 @@
 {% endmacro %}
 {% block content %}
 {% if entry %}
-<a class="text-button back-link" href="{{ base }}?{% if query %}{{ query }}&amp;{% endif %}page={{ page }}">{{ icon('back') }}Back to NPC Codex</a>
+<a class="text-button back-link" href="{{ base }}?{{ list_query }}">{{ icon('back') }}Back to NPC Codex</a>
 {% elif campaign %}
 <a class="text-button back-link" href="/campaigns/{{ campaign.id }}#npcs">{{ icon('back') }}Back to {{ campaign.name }} NPCs</a>
 {% endif %}
@@ -50,16 +50,17 @@
   </form>
   <div class="table-scroll" tabindex="0" role="region" aria-label="NPC Codex entries">
     <table class="catalog-table">
-      <thead><tr><th scope="col">Name</th><th scope="col">Ancestry</th><th scope="col">Class</th><th scope="col">Level</th><th scope="col">CR</th>{% if campaign %}<th scope="col">Campaign</th>{% endif %}</tr></thead>
+      <thead><tr><th scope="col">Name</th><th scope="col">Ancestry</th><th scope="col">Class</th><th scope="col">Level</th><th scope="col">CR</th><th scope="col">Actions</th></tr></thead>
       <tbody>
         {% for key, item in items %}
         <tr>
-          <th scope="row"><a href="{{ base }}/{{ key }}?{% if query %}{{ query }}&amp;{% endif %}page={{ page }}">{{ item.name }}</a></th>
+          <th scope="row"><a href="{{ base }}/{{ key }}?{{ list_query }}">{{ item.name }}</a></th>
           <td>{{ item.ancestry }}</td><td>{{ class_label(item) }}</td>
           <td>{{ item.companion_level if item.companion_level else item.level }}</td><td>{{ item.cr or '—' }}</td>
-          {% if campaign %}<td>{{ add_button(key, item.name) }}</td>{% endif %}
+          <td>{% if campaign %}{{ add_button(key, item.name) }}
+            {% else %}<a class="button small" href="{{ base }}/{{ key }}/edit?from=list&amp;{{ list_query }}" aria-label="Edit {{ item.name }}">Edit NPC</a>{% endif %}</td>
         </tr>
-        {% else %}<tr><td colspan="{{ 6 if campaign else 5 }}">No matching NPCs.</td></tr>{% endfor %}
+        {% else %}<tr><td colspan="6">No matching NPCs.</td></tr>{% endfor %}
       </tbody>
     </table>
   </div>

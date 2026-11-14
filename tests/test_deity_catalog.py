@@ -32,10 +32,20 @@ def test_requested_deity_sections_and_individual_links():
 
 def test_admin_deity_create_edit_archive_and_safety(env):
     admin=env.login(env.admin)
-    assert admin.get('/administration/catalog?kind=deities').status_code==200
-    assert admin.get('/administration/catalog/deities/new').status_code==200
+    page = admin.get('/administration/deities')
+    assert page.status_code == 200
+    assert '<h1>Deities</h1>' in page.text
+    assert 'href="/administration/deities" class="active" aria-current="page">Deities</a>' in page.text
+    rules = admin.get('/administration/catalog')
+    assert '?kind=deities' not in rules.text
+    old = admin.get('/administration/catalog?kind=deities&q=Sarenrae')
+    assert old.status_code == 303 and old.headers['location'] == '/administration/deities?q=Sarenrae'
+    editor = admin.get('/administration/catalog/deities/new')
+    assert editor.status_code == 200
+    assert 'href="/administration/deities" class="active"' in editor.text
     payload=dict(key='house-patron',new='1',version=1,name='House Patron',url='https://example.com/patron',enabled='on')
-    assert env.post(admin,'/administration/catalog/deities',payload).status_code==303
+    saved = env.post(admin,'/administration/catalog/deities',payload)
+    assert saved.status_code == 303 and saved.headers['location'] == '/administration/deities'
     payload.update(new='0',version=2,name='House Protector')
     assert env.post(admin,'/administration/catalog/deities',payload).status_code==303
     with Session(engine()) as db:
