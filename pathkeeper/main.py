@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from . import backpack, equipment_disposal, character_weapons, character_dice
-from . import account_email, administration, catalog_admin, auth, character_wizard, email_admin, portraits, workspace
+from . import account_email, administration, catalog_admin, auth, character_wizard, email_admin, npc_codex_routes, portraits, workspace
 from . import rulebooks, aon_sources
 from .config import ROOT, settings
 from .database import engine
@@ -81,6 +81,7 @@ app.include_router(catalog_admin.router)
 app.include_router(catalog_admin.equipment_router)
 app.include_router(catalog_admin.magic_items_router)
 app.include_router(catalog_admin.monsters_router)
+app.include_router(npc_codex_routes.router)
 app.include_router(email_admin.router)
 app.include_router(character_wizard.router)
 app.include_router(character_weapons.router)

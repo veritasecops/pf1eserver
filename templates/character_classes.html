@@ -29,8 +29,13 @@
 </form>
 {% else %}
 <section class="card padded narrow">
+  {% if (character.play_data or {}).get('manual_class_progression') %}
+  <p>{{ character.class_name }}</p>
+  <p>Edit published statistics on the character sheet.</p>
+  {% else %}
   <p>Add another class or advance an existing one in the Level Up wizard when this character reaches the next XP threshold.</p>
   <ul>{% for key, name in options if key in levels %}<li>{{ name }} {{ levels[key] }}</li>{% endfor %}</ul>
+  {% endif %}
 </section>
 {% endif %}
 {% endblock %}

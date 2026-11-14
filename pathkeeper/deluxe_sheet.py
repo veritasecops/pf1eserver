@@ -52,7 +52,7 @@ for ability,label in ABILITIES.items():
         register(f'ability.{ability}.{part}',f'{label}: {title}','number')
 for key,label in [('hp.total','Total hit points'),('hp.current','Current hit points'),('hp.nonlethal','Nonlethal damage'),('bab','Base attack bonus'),('initiative.total','Initiative total'),('initiative.dex','Initiative Dexterity modifier'),('initiative.misc','Initiative miscellaneous modifier')]:
     register(key,label,'number')
-for key,label in [('base','Base speed'),('armor','Speed with armor'),('fly','Fly speed'),('climb','Climb speed'),('burrow','Burrow speed')]:
+for key,label in [('base','Base speed'),('armor','Speed with armor'),('fly','Fly speed'),('climb','Climb speed'),('swim','Swim speed'),('burrow','Burrow speed')]:
     register('speed.'+key,label+' (ft.)','number')
 register('speed.maneuverability','Fly maneuverability')
 for key,label,_ in SAVES:
@@ -309,10 +309,15 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
         ability = profile["casting_ability"]
         modifier = values.get(f"ability.{ability}.mod")
         caster_level = max(1, level - profile["caster_delay"]) if row.get("slots") or row.get("known") else None
+        published = (character.play_data or {}).get("published_caster_levels", {}).get(key, {})
+        caster_level = published.get("caster_level", caster_level)
+        modifier = int(modifier) if modifier else None
+        concentration = caster_level + modifier if caster_level is not None and modifier is not None else None
         class_rows.append(dict(id=key, name=profile["name"], url=safe_weapon_url(profile["url"]),
                                level=level, favored=key in favored, bab=row["bab"], saves=row["saves"],
                                casting=ability, slots=row.get("slots", {}), known=row.get("known", {}),
-                               caster_level=caster_level, casting_modifier=int(modifier) if modifier else None))
+                               caster_level=caster_level, casting_modifier=modifier,
+                               concentration=published.get("concentration", concentration)))
     skill_links = {key: safe_weapon_url(live_skills.get(key, meta).get('url', ''))
                    for key, meta in catalog['skills'].items()}
     casters = [row for row in class_rows if row["casting"]]

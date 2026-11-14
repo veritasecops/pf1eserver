@@ -143,6 +143,8 @@ def casting_class_keys(catalog, classes):
 
 
 def class_save_bonuses(character, catalog):
+    if (getattr(character, "play_data", None) or {}).get("manual_class_progression"):
+        return None
     rows = [class_progression_row(character, catalog, key, level)["saves"]
             for key, level in character_classes(character, catalog).items() if 1 <= level <= 20]
     return [sum(values) for values in zip(*rows)] if rows else None

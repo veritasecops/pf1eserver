@@ -6,6 +6,8 @@ Every new character belongs to the signed-in creator, including Game Masters and
 
 ## Own records and GM access
 
+Open **Add NPC** next to **Create NPC** on a campaign’s NPC panel to search published stat blocks and copy one into the campaign. **NPC Codex** in Administration browses the shared reference. Each copy opens on the standard editable character sheet. The sheet’s notes retain the published statistics and source page. Prestige-class and animal-companion sheets use their published progression statistics with manual adjustments.
+
 You always have full management access to your own characters. A Game Master gains management access to another user's character only when that user is a joined member and the character is assigned to a campaign owned by that GM.
 
 Joining a campaign alone does not expose all the player's characters. A GM does not gain access to the member's standalone or other-campaign records. Admins can manage every character.

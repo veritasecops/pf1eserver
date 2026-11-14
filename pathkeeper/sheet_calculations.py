@@ -34,7 +34,7 @@ def calculated_fields(character, values, progression_catalog=None):
         locked.update({f'save.{save}.total',f'save.{save}.ability'})
     if class_save_bonuses(character, progression_catalog if progression_catalog is not None else catalog) is not None:
         locked.update(f'save.{save}.base' for save in ('fortitude','reflex','will'))
-    if len(character_classes(character, progression_catalog or catalog)) > 1:
+    if not (character.play_data or {}).get("manual_class_progression") and len(character_classes(character, progression_catalog or catalog)) > 1:
         locked.add("bab")
     for kind in ('cmb','cmd'):
         locked.update(f'{kind}.{part}' for part in ('bab','str'))
@@ -115,7 +115,7 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
         write('hp.total',None if con is None else max(Decimal(1),Decimal(cls['hd'])+con)+extra_hp)
         write('bab',snapshot['computed'].get('bab',cls['bab']))
         write('skill_points.base',cls['ranks'])
-    if len(classes) > 1:
+    if len(classes) > 1 and not (character.play_data or {}).get("manual_class_progression"):
         write("bab", sum(class_progression_row(character, progression, key, level)["bab"]
                          for key, level in classes.items()))
     save_bonuses = class_save_bonuses(character, progression)
@@ -163,6 +163,9 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
     parts = [number(part,Decimal(0)) for part in ac_parts if part not in {'ac.dex','ac.dodge'}]
     ac_dex = number('ac.dex',Decimal(0))
     write('ac.flat',None if ac_dex is None or any(p is None for p in parts) else Decimal(10)+sum(parts)+min(Decimal(0),ac_dex))
+    for field, adjustment in (character.play_data or {}).get("published_ac_adjustments", {}).items():
+        if field in {"ac.touch", "ac.flat"} and (current := number(field)) is not None:
+            write(field, current + adjustment)
     class_skills = combined_class_skills(character, catalog, classes)
     for key,meta in SKILLS.items():
         for row in (key,key+'-2') if key in {'craft','perform','profession'} else (key,):

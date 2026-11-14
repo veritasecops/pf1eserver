@@ -1,7 +1,10 @@
 <section class="card" id="npcs" aria-labelledby="campaign-npcs-title">
   <div class="card-heading">
     <h2 id="campaign-npcs-title">Non-player characters</h2>
-    <a class="button primary small" href="/campaigns/{{ campaign.id }}/npcs/new">{{ icon('plus') }}Create NPC</a>
+    <div class="row">
+      <a class="button small" href="/campaigns/{{ campaign.id }}/npcs/catalog">{{ icon('plus') }}Add NPC</a>
+      <a class="button primary small" href="/campaigns/{{ campaign.id }}/npcs/new">{{ icon('plus') }}Create NPC</a>
+    </div>
   </div>
   {% if npcs or npc_drafts %}
   <div class="table-scroll" tabindex="0" role="region" aria-labelledby="campaign-npcs-title">
@@ -26,6 +29,6 @@
     </table>
   </div>
   {% else %}
-  {{ empty('No NPCs yet.', 'Create an NPC to add it to this campaign.', 'user') }}
+  {{ empty('No NPCs yet.', 'Add an NPC from the codex or create your own.', 'user') }}
   {% endif %}
 </section>

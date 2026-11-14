@@ -44,7 +44,8 @@ def feature_choices(level):
 
 
 def available(character, campaign, catalog):
-    return eligible(character, campaign) and bool(character_classes(character, catalog))
+    return (not (character.play_data or {}).get("manual_class_progression")
+            and eligible(character, campaign) and bool(character_classes(character, catalog)))
 
 
 EXCLUSIVE_CLASSES = ({"rogue", "rogue-unchained", "ninja"}, {"cavalier", "samurai"},
@@ -79,6 +80,8 @@ def plan(ctx, character, selected_class=None, specialization=None):
     db = ctx.db
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
     current_catalog = load_catalog(db)
+    if (character.play_data or {}).get("manual_class_progression"):
+        return None
     classes = character_classes(character, current_catalog)
     speed = track(campaign)
     eligible_level = level_for(saved_xp(character, speed), speed)

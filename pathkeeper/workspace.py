@@ -686,7 +686,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation","class_ability_changes","class_levels","favored_classes","vigilante_specialization") if key in (character.play_data or {})}
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation","class_ability_changes","class_levels","favored_classes","vigilante_specialization","manual_class_progression","published_caster_levels","published_ac_adjustments") if key in (character.play_data or {})}
     if "backpack" in metadata:
         metadata["backpack"] = [
             {**item, "notes": values[f"gear.{row}.notes"]}
@@ -962,7 +962,8 @@ async def character_class_levels_page(character_id: int, request: Request, db: S
     catalog = load_catalog(db)
     levels = character_classes(character, catalog)
     options = sorted(((key, class_profile(catalog, key)["name"]) for key in CLASSES), key=lambda item: item[1].casefold())
-    editable = not character.sheet_data and not (character.play_data or {}).get("advancement_history")
+    data = character.play_data or {}
+    editable = not character.sheet_data and not (data.get("advancement_history") or data.get("manual_class_progression"))
     return render(ctx, "character_classes.html", title="Class Levels", character=character, levels=levels,
                   options=options, editable=editable, can_level_up=level_up.available(
                       character, db.get(Campaign, character.campaign_id) if character.campaign_id else None, catalog))
@@ -979,6 +980,8 @@ async def character_class_levels_save(character_id: int, request: Request, db: S
     character = level_up_character(ctx, character_id)
     verify_version(form, character)
     data = character.play_data or {}
+    if data.get("manual_class_progression"):
+        raise HTTPException(409, "This NPC’s published class progression is recorded on its sheet.")
     if character.sheet_data or data.get("advancement_history"):
         raise HTTPException(409, "Use the level-up wizard to advance this character’s class levels.")
     levels = {}

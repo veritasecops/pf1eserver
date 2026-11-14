@@ -89,4 +89,7 @@ def sheet_formulas(character, values, progression_catalog=None):
         for part in ("name", "weight"):
             formulas[f"gear.{row}.{part}"] = "This information comes from the backpack."
         formulas[f"gear.{row}.notes"] = "Add an item to this slot before entering a note."
+    for key, adjustment in (character.play_data or {}).get("published_ac_adjustments", {}).items():
+        if key in formulas:
+            formulas[key] += f" The published NPC stat block contributes a {adjustment:+d} adjustment."
     return {key:formulas[key] for key in locked}
