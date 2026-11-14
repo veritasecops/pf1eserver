@@ -9,17 +9,16 @@
     <table aria-labelledby="monster-index-title">
       <thead><tr><th scope="col">Monster</th><th scope="col">CR</th><th scope="col">Type</th><th scope="col">Environment</th><th scope="col">Actions</th></tr></thead>
       <tbody>
-      {% for key, entry in monster_entries %}
+      {% for copy, entry in monster_entries %}
+        {% set detail_url = '/campaigns/' ~ campaign.id ~ '/monsters/roster/' ~ copy.id %}
         <tr>
-          <th scope="row">
-            {% if entry %}<a class="text-button" href="/campaigns/{{ campaign.id }}/monsters/{{ key }}">{{ entry.name }}</a>
-            {% else %}Unavailable catalog entry{% endif %}
-          </th>
+          <th scope="row"><a class="text-button" href="{{ detail_url }}">{{ entry.name }}</a></th>
           <td>{{ entry.cr or '—' }}</td><td>{{ entry.type or '—' }}</td><td>{{ entry.environment or '—' }}</td>
           <td>
-            <form method="post" action="/campaigns/{{ campaign.id }}/monsters/remove">
-              {{ csrf_input(csrf) }}<input type="hidden" name="monster_key" value="{{ key }}">
-              <button class="button small" aria-label="Remove {{ entry.name if entry else 'unavailable catalog entry' }}">Remove</button>
+            <form class="row" method="post" action="/campaigns/{{ campaign.id }}/monsters/remove">
+              {{ csrf_input(csrf) }}<input type="hidden" name="monster_id" value="{{ copy.id }}">
+              <a class="button small" href="{{ detail_url }}/edit" aria-label="Edit {{ entry.name }}">Edit</a>
+              <button class="button small" aria-label="Remove {{ entry.name }}">Remove</button>
             </form>
           </td>
         </tr>

@@ -1,13 +1,25 @@
 {% extends 'base.html' %}
 {% from 'components.html' import icon %}
-{% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=1">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=2">{% endblock %}
 {% block content %}
 {% if not campaign %}{% include 'admin_tabs.html' %}{% endif %}
 <a class="text-button back-link" href="{{ back }}">{{ icon('back') }}{{ back_label|default('Back to Monsters') }}</a>
 <div class="page-heading">
   <div><h1>{{ entry.name }}</h1><p>{{ ['CR ' ~ entry.cr if entry.cr else '', entry.type, entry.environment]|select|join(' · ') }}</p></div>
-  <a class="button" href="{{ monster.url }}" target="_blank" rel="noopener noreferrer">View on Archives of Nethys {{ icon('arrow') }}</a>
+  <div class="row">
+    {% if edit_url %}<a class="button primary" href="{{ edit_url }}">Edit monster</a>{% endif %}
+    {% if monster.url %}<a class="button" href="{{ monster.url }}" target="_blank" rel="noopener noreferrer">View on Archives of Nethys {{ icon('arrow') }}</a>{% endif %}
+  </div>
 </div>
+{% if edit_url %}
+<section class="card padded" aria-labelledby="campaign-monster-notes-title">
+  <div class="card-heading">
+    <h2 id="campaign-monster-notes-title">Campaign notes</h2>
+    <a class="button small" href="{{ edit_url }}#campaign-monster-notes">{{ 'Edit notes' if monster.notes else 'Add notes' }}</a>
+  </div>
+  {% if monster.notes %}<p class="monster-notes">{{ monster.notes }}</p>{% endif %}
+</section>
+{% endif %}
 {% if monster.sections %}
 <div class="monster-stat-block">
   {% for section in monster.sections %}
@@ -28,7 +40,7 @@
     {% endif %}
   {% endfor %}
 </div>
-{% else %}
+{% elif monster.url %}
 <p class="card padded">Open the source page to view this monster’s stat block.</p>
 {% endif %}
 {% endblock %}

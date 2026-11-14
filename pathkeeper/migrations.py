@@ -67,8 +67,16 @@ def migrate(admin_engine):
     for model in (SchemaMigration, EmailConfiguration, EmailDelivery, AccountToken, EmailOutbox, CharacterDraft, DiceRoll, RuleCatalog, CoinTransaction, Rulebook, RulebookIndex, RulebookPage, RulebookDeletion):
         model.__table__.create(admin_engine, checkfirst=True)
     CampaignMonster.__table__.create(admin_engine, checkfirst=True)
+    if "id" not in {column["name"] for column in inspect(admin_engine).get_columns("campaign_monsters")}:
+        with admin_engine.begin() as connection:
+            connection.execute(text(
+                "ALTER TABLE campaign_monsters "
+                "ADD INDEX ix_campaign_monsters_campaign_key (campaign_id, monster_key), "
+                "DROP PRIMARY KEY, ADD COLUMN id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY"
+            ))
     additions = {
         "campaigns": {"xp_speed": "VARCHAR(6) NOT NULL DEFAULT 'slow'", "banner": "MEDIUMBLOB NULL"},
+        "campaign_monsters": {"stat_block": "JSON NULL", "version": "INT NOT NULL DEFAULT 1"},
         "users": {"email_verified_at": "DATETIME NULL", "email_verification_required": "BOOLEAN NOT NULL DEFAULT 0"},
         "email_configuration": {"public_base_url": "VARCHAR(300) NOT NULL DEFAULT ''"},
         "characters": {"sheet_data": "JSON NULL", "play_data": "JSON NULL", "portrait": "MEDIUMBLOB NULL", "header_background": "MEDIUMBLOB NULL", "is_npc": "BOOLEAN NOT NULL DEFAULT 0"},
@@ -291,4 +299,13 @@ def migrate(admin_engine):
         if not db.get(SchemaMigration, 32):
             db.add(SchemaMigration(version=32, name="campaign_monster_index"))
             db.commit()
-    print("Database migrations applied through 032 (campaign monster index).")
+        if not db.get(SchemaMigration, 33):
+            from .monsters import monster_snapshot, monsters
+
+            copies = db.scalars(select(CampaignMonster).where(CampaignMonster.stat_block.is_(None)))
+            catalog = monsters()
+            for copy in copies:
+                copy.stat_block = monster_snapshot(catalog.get(copy.monster_key))
+            db.add(SchemaMigration(version=33, name="campaign_monster_copies"))
+            db.commit()
+    print("Database migrations applied through 033 (campaign monster copies).")

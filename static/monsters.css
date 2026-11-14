@@ -10,6 +10,21 @@
   min-width: 36px;
 }
 
+.monster-add-form,
+.monster-add-form label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.monster-add-form {
+  flex-wrap: wrap;
+}
+
+.monster-add-form input {
+  width: 4.5rem;
+}
+
 .monster-name,
 .monster-section a {
   text-decoration: underline;
@@ -40,6 +55,11 @@
 
 .monster-fields strong {
   margin-right: .4em;
+}
+
+.monster-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'components.html' import icon, field, csrf_input %}
+{% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=2">{% endblock %}
+{% block content %}
+{% set entry = copy.stat_block.entry %}
+<a class="text-button back-link" href="{{ detail_url }}">{{ icon('back') }}Back to {{ entry.name }}</a>
+<div class="page-heading"><div><h1>Edit {{ entry.name }}</h1><p>Changes apply to this monster only.</p></div></div>
+<form class="stack" method="post" action="{{ detail_url }}/edit">
+  {{ csrf_input(csrf) }}
+  <input type="hidden" name="version" value="{{ copy.version }}">
+  <section class="card padded stack">
+    <h2>Monster details</h2>
+    <div class="form-grid">
+      {{ field('Name', 'name', entry.name, required=true, attrs='maxlength="150"') }}
+      {{ field('CR', 'cr', entry.cr, attrs='maxlength="30"') }}
+      {{ field('Type', 'type', entry.type, attrs='maxlength="150"') }}
+      {{ field('Environment', 'environment', entry.environment, attrs='maxlength="300"') }}
+    </div>
+    <label class="field" for="campaign-monster-notes">
+      <span>Campaign notes</span>
+      <textarea id="campaign-monster-notes" name="notes" rows="5" maxlength="20000">{{ copy.stat_block.notes }}</textarea>
+    </label>
+  </section>
+  {% if copy.stat_block.sections %}
+  <div class="monster-stat-block">
+    {% for section in copy.stat_block.sections %}
+    {% set section_index = loop.index0 %}
+    {% if section.fields %}
+    <section class="card padded monster-section stack">
+      <h2>{{ section.heading }}</h2>
+      {% for label, value in section.fields %}
+      <label class="field"><span>{{ label or 'Text ' ~ loop.index }}</span><textarea name="stat_{{ section_index }}_{{ loop.index0 }}" rows="{{ 3 if value|length > 100 else 1 }}" maxlength="5000">{{ value }}</textarea></label>
+      {% endfor %}
+    </section>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="form-actions"><a class="button" href="{{ detail_url }}">Cancel</a><button class="button primary">{{ icon('check') }}Save monster</button></div>
+</form>
+{% endblock %}

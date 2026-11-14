@@ -14,7 +14,7 @@ from .database import commit, get_db
 from . import level_up
 from .class_catalog import casting_class_keys, character_classes, class_profile, class_summary
 from .models import Campaign, CampaignMonster, Character, CharacterDraft, Invitation, Membership, RuleCatalog, User, utcnow
-from .monsters import monster_catalog_context, monster_catalog_filters, monsters
+from .monsters import monster_catalog_context, monster_catalog_filters, monster_snapshot, monsters
 from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
                        field, get_campaign, get_character, integer, is_member, read_form)
 from .ui import redirect, render
@@ -35,6 +35,7 @@ from .treasure import COINS, record_coin_change, treasure
 from .portraits import DEFAULT_HEADER_BACKGROUND, campaign_banner_url, header_background_url, portrait_url
 
 router = APIRouter()
+MAX_MONSTERS_PER_ADD = 100
 
 
 def campaign_xp_speed(form, default="slow"):
@@ -192,12 +193,9 @@ async def campaign_add_character(campaign_id: int, request: Request, db: Session
 
 
 def campaign_monster_entries(db, campaign_id):
-    keys = list(db.scalars(select(CampaignMonster.monster_key).where(CampaignMonster.campaign_id == campaign_id)))
-    if not keys:
-        return []
-    catalog = monsters()
-    entries = [(key, catalog[key]["rows"][0] if key in catalog else None) for key in keys]
-    entries.sort(key=lambda item: (item[1] is None, item[1]["name"].casefold() if item[1] else "", item[0]))
+    copies = db.scalars(select(CampaignMonster).where(CampaignMonster.campaign_id == campaign_id))
+    entries = [(copy, copy.stat_block["entry"]) for copy in copies]
+    entries.sort(key=lambda item: (item[1]["name"].casefold(), item[0].id))
     return entries
 
 
@@ -212,9 +210,11 @@ async def campaign_monster_index(campaign_id: int, request: Request, db: Session
 async def campaign_monster_catalog(campaign_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     campaign = get_campaign(ctx, campaign_id, manage=True)
-    selected = set(db.scalars(select(CampaignMonster.monster_key).where(CampaignMonster.campaign_id == campaign.id)))
+    counts = dict(db.execute(select(CampaignMonster.monster_key, func.count()).where(
+        CampaignMonster.campaign_id == campaign.id).group_by(CampaignMonster.monster_key)).all())
     index_url = f"/campaigns/{campaign.id}/monsters"
-    return render(ctx, "monster_catalog.html", title="Add monsters", campaign=campaign, selected=selected,
+    return render(ctx, "monster_catalog.html", title="Add monsters", campaign=campaign,
+                  roster_counts=counts, max_quantity=MAX_MONSTERS_PER_ADD,
                   detail_base=index_url, index_back=f"/campaigns/{campaign.id}#monster-index",
                   **monster_catalog_context(request.query_params))
 
@@ -236,6 +236,56 @@ async def campaign_monster_detail(campaign_id: int, key: str, request: Request, 
                   back_label="Back to catalog" if from_catalog else "Back to Monster Index")
 
 
+def get_monster_copy(db, campaign, copy_id):
+    copy = db.scalar(select(CampaignMonster).where(
+        CampaignMonster.id == copy_id, CampaignMonster.campaign_id == campaign.id))
+    if copy is None:
+        raise HTTPException(404, "Monster not found in this campaign.")
+    return copy
+
+
+@router.get("/campaigns/{campaign_id}/monsters/roster/{copy_id}")
+async def campaign_monster_copy(campaign_id: int, copy_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    campaign = get_campaign(ctx, campaign_id, manage=True)
+    copy = get_monster_copy(db, campaign, copy_id)
+    entry = copy.stat_block["entry"]
+    return render(ctx, "monster_detail.html", title=entry["name"], campaign=campaign, entry=entry,
+                  monster=copy.stat_block, edit_url=f"{request.url.path}/edit",
+                  back=f"/campaigns/{campaign.id}#monster-index", back_label="Back to Monster Index")
+
+
+@router.get("/campaigns/{campaign_id}/monsters/roster/{copy_id}/edit")
+async def campaign_monster_edit(campaign_id: int, copy_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    campaign = get_campaign(ctx, campaign_id, manage=True)
+    copy = get_monster_copy(db, campaign, copy_id)
+    return render(ctx, "campaign_monster_form.html", title="Edit monster", copy=copy,
+                  detail_url=f"/campaigns/{campaign.id}/monsters/roster/{copy.id}")
+
+
+@router.post("/campaigns/{campaign_id}/monsters/roster/{copy_id}/edit")
+async def campaign_monster_update(campaign_id: int, copy_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    form = await read_form(ctx, max_fields=500)
+    campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
+    copy = get_monster_copy(db, campaign, copy_id)
+    verify_version(form, copy)
+    saved = copy.stat_block
+    entry = {**saved["entry"], "name": field(form, "name"), "cr": field(form, "cr", 30, False),
+             "type": field(form, "type", 150, False), "environment": field(form, "environment", 300, False)}
+    sections = []
+    for i, section in enumerate(saved["sections"]):
+        fields = []
+        for j, (label, value) in enumerate(section["fields"]):
+            key = f"stat_{i}_{j}"
+            fields.append([label, field(form, key, 5000, False) if key in form else value])
+        sections.append({**section, "fields": fields})
+    copy.stat_block = {**saved, "entry": entry, "sections": sections, "notes": field(form, "notes", 20000, False)}
+    audit(db, ctx.user, "campaign.monster_updated", f"Updated {entry['name']} in {campaign.name}.")
+    return redirect(ctx, f"/campaigns/{campaign.id}/monsters/roster/{copy.id}", "Monster saved.")
+
+
 @router.post("/campaigns/{campaign_id}/monsters")
 async def campaign_monster_add(campaign_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
@@ -245,15 +295,15 @@ async def campaign_monster_add(campaign_id: int, request: Request, db: Session =
     monster = monsters().get(key)
     if monster is None:
         raise HTTPException(404, "Monster not found.")
-    name = monster["rows"][0]["name"]
-    membership = db.get(CampaignMonster, (campaign.id, key))
-    if membership is None:
-        db.add(CampaignMonster(campaign_id=campaign.id, monster_key=key))
-        audit(db, ctx.user, "campaign.monster_added", f"Added {name} to {campaign.name}.")
     letter, search, page = monster_catalog_filters(request.query_params)
+    snapshot = monster_snapshot(monster, letter)
+    name = snapshot["entry"]["name"]
+    quantity = integer(form, "quantity", 1, MAX_MONSTERS_PER_ADD) if "quantity" in form else 1
+    db.add_all(CampaignMonster(campaign_id=campaign.id, monster_key=key, stat_block=snapshot) for _ in range(quantity))
+    label = name if quantity == 1 else f"{quantity} × {name}"
+    audit(db, ctx.user, "campaign.monster_added", f"Added {label} to {campaign.name}.")
     query = urlencode({"letter": letter, "q": search, "page": page})
-    message = f"{name} added to the campaign." if membership is None else f"{name} is already in the Monster Index."
-    return redirect(ctx, f"/campaigns/{campaign.id}/monsters/catalog?{query}", message)
+    return redirect(ctx, f"/campaigns/{campaign.id}/monsters/catalog?{query}", f"{label} added to the campaign.")
 
 
 @router.post("/campaigns/{campaign_id}/monsters/remove")
@@ -261,13 +311,11 @@ async def campaign_monster_remove(campaign_id: int, request: Request, db: Sessio
     ctx = context(request, db)
     form = await read_form(ctx)
     campaign = get_campaign(ctx, campaign_id, manage=True, lock=True)
-    key = field(form, "monster_key", 64)
-    membership = db.get(CampaignMonster, (campaign.id, key))
-    if membership is not None:
-        db.delete(membership)
-        monster = monsters().get(key)
-        name = monster["rows"][0]["name"] if monster else key
-        audit(db, ctx.user, "campaign.monster_removed", f"Removed {name} from {campaign.name}.")
+    copy_id = integer(form, "monster_id", 1, 2**63 - 1)
+    copy = get_monster_copy(db, campaign, copy_id)
+    db.delete(copy)
+    name = copy.stat_block["entry"]["name"]
+    audit(db, ctx.user, "campaign.monster_removed", f"Removed {name} from {campaign.name}.")
     return redirect(ctx, f"/campaigns/{campaign.id}#monster-index", "Monster removed from the campaign.")
 
 

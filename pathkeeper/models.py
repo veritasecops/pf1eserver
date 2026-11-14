@@ -77,8 +77,13 @@ class Campaign(Base):
 
 class CampaignMonster(Base):
     __tablename__ = "campaign_monsters"
-    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), primary_key=True)
-    monster_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    __table_args__ = (Index("ix_campaign_monsters_campaign_key", "campaign_id", "monster_key"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"))
+    monster_key: Mapped[str] = mapped_column(String(64))
+    stat_block: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    __mapper_args__ = {"version_id_col": version}
 
 
 class Membership(Base):

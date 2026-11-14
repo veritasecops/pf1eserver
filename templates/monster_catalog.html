@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components.html' import icon, csrf_input %}
-{% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=1">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/monsters.css?v=2">{% endblock %}
 {% block content %}
 {% if campaign %}
 <a class="text-button back-link" href="{{ index_back }}">{{ icon('back') }}Monster Index</a>
@@ -29,12 +29,12 @@
           <th scope="row"><a class="monster-name" href="{{ detail_base }}/{{ key }}?{{ back_query }}{% if campaign %}&amp;browse=1{% endif %}">{{ monster.name }}</a></th>
           <td>{{ monster.cr or '—' }}</td><td>{{ monster.type or '—' }}</td><td>{{ monster.environment or '—' }}</td>
           {% if campaign %}<td>
-            {% if key in selected %}<span class="badge green">Added</span>{% else %}
-            <form method="post" action="{{ detail_base }}?{{ back_query }}">
+            <form class="monster-add-form" method="post" action="{{ detail_base }}?{{ back_query }}">
               {{ csrf_input(csrf) }}<input type="hidden" name="monster_key" value="{{ key }}">
+              <label>Qty <input type="number" name="quantity" min="1" max="{{ max_quantity }}" step="1" value="1" required aria-label="Quantity of {{ monster.name }}"></label>
               <button class="button small" aria-label="Add {{ monster.name }}">Add</button>
+              {% if key in roster_counts %}<span class="badge green">{{ roster_counts[key] }} in roster</span>{% endif %}
             </form>
-            {% endif %}
           </td>{% endif %}
         </tr>
         {% else %}<tr><td colspan="{{ 5 if campaign else 4 }}">No matching monsters.</td></tr>{% endfor %}

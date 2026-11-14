@@ -1,4 +1,5 @@
 """The bundled Archives of Nethys Pathfinder First Edition monster catalog."""
+from copy import deepcopy
 from functools import lru_cache
 import json
 from pathlib import Path
@@ -10,6 +11,14 @@ from urllib.parse import urlencode
 @lru_cache(maxsize=1)
 def monsters():
     return json.loads((Path(__file__).parent / "data" / "monsters.json").read_text(encoding="utf-8"))
+
+
+def monster_snapshot(monster, letter=""):
+    if monster is None:
+        return {"entry": {"name": "Unavailable catalog entry", "cr": "", "type": "", "environment": ""},
+                "url": "", "sections": [], "notes": ""}
+    entry = next((row for row in monster["rows"] if row["letter"] == letter), monster["rows"][0])
+    return {"entry": entry.copy(), "url": monster["url"], "sections": deepcopy(monster["sections"]), "notes": ""}
 
 
 def monster_catalog_filters(params):

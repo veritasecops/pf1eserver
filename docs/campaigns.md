@@ -16,6 +16,10 @@ Use personal invitations to add members. The campaign page shows joined accounts
 
 Removing a member detaches their characters from that campaign. The owner can assign a character elsewhere, and an Admin can manage assignments globally.
 
+## Monsters
+
+In the campaign’s **Monster Index**, choose **Add monsters**. Set the quantity next to a catalog entry and select **Add**. Each copy gets its own roster row. Use **Edit** to change its name, stats, or campaign notes without affecting other copies or the catalog.
+
 ## Delete
 
 Only the owning GM or an Admin can delete a campaign. Open Edit campaign, type its name in the deletion form, and submit. The campaign, memberships, and invitations are permanently deleted. Characters survive with no campaign assignment.
