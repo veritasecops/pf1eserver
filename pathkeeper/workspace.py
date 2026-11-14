@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from .advancement import XP_TRACKS, apply_advancement, preserve_xp, remove_campaign_characters, track
 from .database import commit, get_db
 from . import level_up
+from .class_catalog import casting_class_keys, character_classes, class_profile, class_summary
 from .models import Campaign, CampaignMonster, Character, CharacterDraft, Invitation, Membership, RuleCatalog, User, utcnow
 from .monsters import monster_catalog_context, monster_catalog_filters, monsters
 from .security import (audit, authenticated, can_delete_character, can_manage_campaign, context, digest, email_field,
@@ -514,6 +515,7 @@ def render_character(ctx, character, values=None, errors=()):
         banner = campaign_banner_url(ctx.db, campaign)
     response = render(ctx, "character.html", title=character.name, character=character, owner=owner, campaign=campaign,
                       campaign_banner=banner, campaign_gm=gm,
+                      can_manage_class_levels=character.is_npc or ctx.user.id == character.owner_id,
                       can_delete=can_delete_character(ctx.user, character),
                       portrait_url=portrait_url(ctx.db,character),portrait_endpoint=f"/characters/{character.id}/portrait",
                       header_background_url=header_background_url(ctx.db,character),default_header_background=DEFAULT_HEADER_BACKGROUND,
@@ -538,7 +540,7 @@ def render_character(ctx, character, values=None, errors=()):
 async def read_play_sheet(ctx, character, form=None):
     db = ctx.db
     if form is None:
-        form = await read_form(ctx, max_fields=2048)
+        form = await read_form(ctx, max_fields=3000)
     verify_version(form, character)
     owner = db.get(User, character.owner_id)
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
@@ -546,7 +548,9 @@ async def read_play_sheet(ctx, character, form=None):
     catalog = load_catalog(db)
     current = sheet_values(character, owner, campaign, gm, progression_catalog=catalog)
     locked = calculated_fields(character, current, catalog)
-    values, errors = parse_sheet(form, {key:current[key] for key in locked}, character_catalog(character),catalog.get('deities',{}),current.get('deity',''))
+    values, errors = parse_sheet(form, {key: current[key] for key in locked}, character_catalog(character),
+                                 catalog.get("deities", {}), current.get("deity", ""), character,
+                                 progression_catalog=catalog)
     if not errors:
         for editor in sheet_ability_blocks(current, character, catalog)["editable"].values():
             label, separator, choice = values[f"feature.{editor['row']}"].partition(":")
@@ -574,7 +578,7 @@ async def read_play_sheet(ctx, character, form=None):
             except (ValueError, TypeError, ArithmeticError):
                 raise HTTPException(422, 'Reload the sheet to refresh equipment modifiers.') from None
         recalculate(character, values, equipment_previous=contributions(character, current), equipment_keep=keep, progression_catalog=catalog)
-    return values, errors, baseline(character, owner, campaign, gm)
+    return values, errors, baseline(character, owner, campaign, gm, progression_catalog=catalog)
 
 
 @router.post("/characters/{character_id}/play-sheet/calculate")
@@ -596,7 +600,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
     ctx = context(request, db)
     character = get_character(ctx, character_id)
     autosave = 'application/json' in request.headers.get('accept','')
-    form = await read_form(ctx, max_fields=2048)
+    form = await read_form(ctx, max_fields=3000)
     save_id = request.headers.get('x-sheet-save-id','')
     fingerprint = None
     if autosave:
@@ -621,7 +625,7 @@ async def character_play_sheet(character_id: int, request: Request, db: Session 
         return render_character(ctx, character, values, errors)
     # Store only overrides so untouched wizard values continue to follow their source.
     core = {"name", "ancestry", "class_name", "level", "notes"}
-    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation","class_ability_changes") if key in (character.play_data or {})}
+    metadata = {key:character.play_data[key] for key in ("weapon_inventory","weapon_purchase","equipment_disposal","advancement_history","backpack","backpack_gear_version","coin_operation","class_ability_changes","class_levels","favored_classes","vigilante_specialization") if key in (character.play_data or {})}
     if "backpack" in metadata:
         metadata["backpack"] = [
             {**item, "notes": values[f"gear.{row}.notes"]}
@@ -731,7 +735,6 @@ async def character_spell_options(character_id: int, request: Request, db: Sessi
 
 
 def sheet_class_ability_context(ctx, character):
-    from .class_catalog import class_key, class_profile
     from .class_abilities import class_abilities
     from .feature_links import ability_name
 
@@ -739,14 +742,12 @@ def sheet_class_ability_context(ctx, character):
     owner = ctx.db.get(User, character.owner_id)
     campaign = ctx.db.get(Campaign, character.campaign_id) if character.campaign_id else None
     values = sheet_values(character, owner, campaign, progression_catalog=catalog)
-    class_id = class_key(character, catalog)
-    entries, _ = class_abilities(catalog, [class_id] if class_id else [])
-    profile = class_profile(catalog, class_id) if class_id else {}
-    freeform = {ability_name(label) for row in profile.get('levels', [])
+    entries, profiles = class_abilities(catalog, character_classes(character, catalog))
+    freeform = {(key, ability_name(label)) for key, profile in profiles.items() for row in profile['levels']
                 for label in level_up.feature_choices(row)
                 if 'feat' not in label.casefold() and ability_name(label) != 'weapon training'}
-    options = {item['id']: {**item, 'freeform': ability_name(item['name']) in freeform}
-               for item in entries if item['class_id'] == class_id}
+    options = {item['id']: {**item, 'freeform': (item['class_id'], ability_name(item['name'])) in freeform}
+               for item in entries}
     blocks = sheet_ability_blocks(values, character, catalog)
     return catalog, owner, campaign, values, options, blocks
 
@@ -893,11 +894,74 @@ def render_level_up(ctx, character, advancement, form=None, errors=()):
     return response
 
 
+@router.get("/characters/{character_id}/classes")
+async def character_class_levels_page(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = level_up_character(ctx, character_id)
+    catalog = load_catalog(db)
+    levels = character_classes(character, catalog)
+    options = sorted(((key, class_profile(catalog, key)["name"]) for key in CLASSES), key=lambda item: item[1].casefold())
+    editable = not character.sheet_data and not (character.play_data or {}).get("advancement_history")
+    return render(ctx, "character_classes.html", title="Class Levels", character=character, levels=levels,
+                  options=options, editable=editable, can_level_up=level_up.available(
+                      character, db.get(Campaign, character.campaign_id) if character.campaign_id else None, catalog))
+
+
+@router.post("/characters/{character_id}/classes")
+async def character_class_levels_save(character_id: int, request: Request, db: Session = Depends(get_db)):
+    ctx = context(request, db)
+    character = level_up_character(ctx, character_id)
+    form = await read_form(ctx, max_fields=100)
+    if character.is_npc:
+        get_campaign(ctx, character.campaign_id, manage=True, lock=True)
+    db.refresh(character, with_for_update=True)
+    character = level_up_character(ctx, character_id)
+    verify_version(form, character)
+    data = character.play_data or {}
+    if character.sheet_data or data.get("advancement_history"):
+        raise HTTPException(409, "Use the level-up wizard to advance this character’s class levels.")
+    levels = {}
+    for key in CLASSES:
+        if form.get(f"level.{key}", "") not in ("", "0"):
+            levels[key] = integer(form, f"level.{key}", 1, 20)
+    if sum(levels.values()) != character.level:
+        raise HTTPException(422, f"Class levels must add up to character level {character.level}.")
+    if any(len(group & levels.keys()) > 1 for group in level_up.EXCLUSIVE_CLASSES):
+        raise HTTPException(422, "Choose only one version of each class.")
+    favored = field(form, "favored_class", 64)
+    second = field(form, "second_favored", 64, False)
+    if (favored not in CLASSES or second and
+            (second not in CLASSES or second == favored or character.ancestry.casefold() != "half-elf")):
+        raise HTTPException(422, "Choose valid favored classes.")
+    catalog = load_catalog(db)
+    old = character_classes(character, catalog)
+    order = {key: levels[key] for key in dict.fromkeys([*old, favored, *levels]) if key in levels}
+    previous_casters = casting_class_keys(catalog, old)
+    casters = casting_class_keys(catalog, order)
+    if previous_casters[:1] != casters[:1] and previous_casters and any(
+        value for key, value in data.items() if key.startswith(("spell.", "spellbook."))
+    ):
+        raise HTTPException(422, "Keep the first casting class while the sheet has saved spells or slots.")
+    for key in previous_casters[1:]:
+        if key not in casters and any(value for field, value in data.items() if field.startswith(f"spellbook.{key}.")):
+            raise HTTPException(422, f"Clear the saved {class_profile(catalog, key)['name']} spells and slots before removing that class.")
+    favored_classes = [favored, second] if second else [favored]
+    saved_favored = data.get("favored_classes", [])
+    if favored_classes[:len(saved_favored)] != saved_favored:
+        raise HTTPException(422, "Saved favored classes cannot be changed.")
+    character.play_data = {**data, "class_levels": list(order.items()), "favored_classes": favored_classes}
+    if order != old:
+        character.class_name = class_summary(catalog, order) if len(order) > 1 else class_profile(catalog, next(iter(order)))["name"]
+    audit(db, ctx.user, "character.classes_updated", f"Updated class levels for {character.name}.")
+    return redirect(ctx, f"/characters/{character.id}#class-progression-title", "Class levels saved.")
+
+
 @router.get("/characters/{character_id}/level-up")
 async def character_level_up_page(character_id: int, request: Request, db: Session = Depends(get_db)):
     ctx = context(request, db)
     character = level_up_character(ctx, character_id)
-    return render_level_up(ctx, character, level_up.plan(ctx, character))
+    return render_level_up(ctx, character, level_up.plan(ctx, character, request.query_params.get("class_id"),
+                                                       request.query_params.get("specialization")))
 
 
 @router.post("/characters/{character_id}/level-up")
@@ -915,7 +979,8 @@ async def character_level_up_submit(character_id: int, request: Request, db: Ses
     verify_version(form, character)
     if character.campaign_id != campaign_id or (not character.is_npc and character.owner_id != ctx.user.id):
         raise HTTPException(409, "The character's campaign or owner changed. Reload the wizard.")
-    advancement = level_up.plan(ctx, character)
+    advancement = level_up.plan(ctx, character, field(form, "class_id", 64, False),
+                                field(form, "specialization", 16, False))
     if not advancement or integer(form, "target", 2, 20) != advancement["target"]:
         raise HTTPException(409, "The character is no longer eligible for this level. Reload the wizard.")
     errors = level_up.submit(character, advancement, form)
@@ -944,8 +1009,8 @@ async def character_update(character_id: int, request: Request, db: Session = De
     form = await read_form(ctx)
     verify_version(form, character)
     values = character_values(ctx, form, character)
-    if (character.play_data or {}).get("advancement_history") and values["class_name"] != character.class_name:
-        raise HTTPException(422, "The class is fixed after completing a level-up wizard.")
+    if any((character.play_data or {}).get(key) for key in ("advancement_history", "class_levels")) and values["class_name"] != character.class_name:
+        raise HTTPException(422, "Use Class Levels on the character sheet to manage classes.")
     if character.sheet_data and any(values[key] != getattr(character,key) for key in ("ancestry","class_name")):
         raise HTTPException(422,"Use Edit creation sheet to change race or class.")
     old_speed = track(db.get(Campaign, character.campaign_id)) if character.campaign_id else "slow"

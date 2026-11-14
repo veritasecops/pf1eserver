@@ -1,15 +1,19 @@
-"""Plan and apply a single level in a character's existing class."""
+"""Plan and apply one level in a selected class."""
 import re
 from decimal import Decimal
+from fastapi import HTTPException
 
 from .advancement import XP_TRACKS, eligible, level_for, saved_xp, track
 from .deluxe_sheet import sheet_values, skill_rows
 from .equipment_effects import persist_effects
 from .feat_class_requirements import class_feat_gate
 from .models import Campaign, User
-from .class_catalog import class_key, class_profile
-from .pf1_data import ABILITIES
-from .rule_catalog import character_catalog, class_skills, load_catalog
+from .class_catalog import (
+    FIRST_LEVEL_CHOICES, casting_class_keys, character_classes, class_profile, class_progression_row, class_summary,
+    combined_class_skills, favored_class_keys,
+)
+from .pf1_data import ABILITIES, CLASSES
+from .rule_catalog import character_catalog, load_catalog
 from .feature_links import feature_targets
 from .weapons import safe_weapon_url
 from .trait_rules import fighter_weapon_groups, trained_weapon_groups, weapon_group_name
@@ -40,33 +44,96 @@ def feature_choices(level):
 
 
 def available(character, campaign, catalog):
-    return eligible(character, campaign) and class_key(character, catalog) is not None
+    return eligible(character, campaign) and bool(character_classes(character, catalog))
 
 
-def plan(ctx, character):
+EXCLUSIVE_CLASSES = ({"rogue", "rogue-unchained", "ninja"}, {"cavalier", "samurai"},
+                     {"barbarian", "barbarian-unchained"}, {"monk", "monk-unchained"},
+                     {"summoner", "summoner-unchained"})
+
+
+def class_choices(catalog, classes, alignment):
+    def allowed(key):
+        if key not in classes and any(key in group and group & classes.keys() for group in EXCLUSIVE_CLASSES):
+            return False
+        if not alignment and key in classes:
+            return True
+        if key == "paladin":
+            return alignment == "LG"
+        if key in {"monk", "monk-unchained"}:
+            return alignment.startswith("L")
+        if key in {"barbarian", "barbarian-unchained", "bard"}:
+            return not alignment.startswith("L") and bool(alignment or key in classes)
+        if key in {"druid", "shifter"}:
+            return "N" in alignment
+        if key == "antipaladin":
+            return alignment == "CE"
+        return True
+
+    options = [(key, class_profile(catalog, key)["name"], classes.get(key, 0)) for key in CLASSES
+               if allowed(key) and classes.get(key, 0) < 20]
+    return sorted(options, key=lambda item: (not item[2], item[1].casefold()))
+
+
+def plan(ctx, character, selected_class=None, specialization=None):
     db = ctx.db
     campaign = db.get(Campaign, character.campaign_id) if character.campaign_id else None
     current_catalog = load_catalog(db)
-    class_id = class_key(character, current_catalog)
+    classes = character_classes(character, current_catalog)
     speed = track(campaign)
     eligible_level = level_for(saved_xp(character, speed), speed)
-    if not class_id or eligible_level <= character.level:
+    if not classes or eligible_level <= character.level:
         return None
     owner = db.get(User, character.owner_id)
     gm = db.get(User, campaign.owner_id) if campaign else None
     values = sheet_values(character, owner, campaign, gm, progression_catalog=current_catalog)
+    options = class_choices(current_catalog, classes, values["alignment"])
+    if not options:
+        return None
+    if selected_class and selected_class not in {option[0] for option in options}:
+        raise HTTPException(422, "Choose an eligible class for this level.")
+    class_id = selected_class or next((key for key in classes if any(option[0] == key for option in options)), options[0][0])
     profile = class_profile(current_catalog, class_id)
     target = character.level + 1
-    previous, current = profile["levels"][target - 2:target]
-    sheet_input = (character.sheet_data or {}).get("input", {})
+    class_level = classes.get(class_id, 0) + 1
+    if class_id == "vigilante" and class_level == 1:
+        specialization = specialization or "stalker"
+        if specialization not in {"stalker", "avenger"}:
+            raise HTTPException(422, "Choose a vigilante specialization.")
+    else:
+        specialization = None
+    previous = class_progression_row(character, current_catalog, class_id, class_level - 1)
+    current = class_progression_row(character, current_catalog, class_id, class_level, specialization=specialization)
+    updated_classes = {**classes, class_id: class_level}
+    primary_caster = next(iter(casting_class_keys(current_catalog, updated_classes)), None)
+    casting_progression = None
+    if primary_caster:
+        casting_progression = {
+            "profile": class_profile(current_catalog, primary_caster),
+            "previous": class_progression_row(character, current_catalog, primary_caster, classes.get(primary_caster, 0)),
+            "current": class_progression_row(character, current_catalog, primary_caster, updated_classes[primary_caster]),
+            "level": updated_classes[primary_caster],
+            "class_id": primary_caster,
+            "advanced": primary_caster == class_id,
+        }
+    favored = favored_class_keys(character, classes)
+    second_favored = character.ancestry.casefold() == "half-elf" and len(favored) == 1
+    favored_options = sorted(
+        [(key, class_profile(current_catalog, key)["name"]) for key in CLASSES if key not in favored],
+        key=lambda item: item[1].casefold(),
+    ) if second_favored else []
     bab = current["bab"] - previous["bab"]
-    if class_id == "vigilante" and sheet_input.get("vigilante_specialization") == "avenger":
-        bab = 1
     features = re.split(r",\s*(?![^()]*\))", current["features"]) if current["features"] else []
     choices = ["General feat"] if target % 2 else []
     choices.extend(feature_choices(current))
+    if class_level == 1:
+        choices.extend(label for label in FIRST_LEVEL_CHOICES.get(class_id, ()) if label not in choices)
+    if class_id == "druid" and class_level == 1 and "Druidic" not in values["languages"].split(", "):
+        class_language = "Druidic"
+    else:
+        class_language = ""
     catalog = character_catalog(character)
-    trained = set(class_skills(catalog, class_id, sheet_input.get("expert_skills", ())))
+    trained = combined_class_skills(character, catalog, updated_classes)
     rows = [
         (key, item["name"] + (" (second specialty)" if key.endswith("-2") else ""),
          key.removesuffix("-2") in trained, int(Decimal(values[f"skill.{key}.ranks"] or 0)),
@@ -74,13 +141,21 @@ def plan(ctx, character):
          item.get("enabled", True))
         for key, item in skill_rows(catalog)
     ]
-    feat_bab = float(Decimal(values["bab"] or previous["bab"]) + bab)
+    old_bab = sum(class_progression_row(character, current_catalog, key, level)["bab"] for key, level in classes.items())
+    feat_bab = float(Decimal(old_bab if len(updated_classes) > 1 else values["bab"] or old_bab) + bab)
     return {
         "class_id": class_id, "profile": profile, "target": target, "values": values, "features": features,
+        "class_level": class_level, "class_options": options, "classes": updated_classes, "old_bab": old_bab,
+        "specialization": specialization,
+        "favored_classes": favored, "favored_options": favored_options,
+        "is_favored": class_id in favored,
+        "rank_bases": [class_profile(current_catalog, key)["ranks"] for key, count in classes.items() for _ in range(count)],
+        "casting_progression": casting_progression,
+        "automatic_feats": profile["automatic_feats"] if class_level == 1 else (),
+        "class_language": class_language,
         "choices": choices, "rows": rows, "bab": bab,
         "saves": [after - before for before, after in zip(previous["saves"], current["saves"])],
-        "previous": previous, "current": current,
-        "spell_levels": [int(key) for key in current.get("slots", {}) if int(key) > 0],
+        "current": current,
         "speed": speed, "threshold": XP_TRACKS[speed][target - 1], "eligible_level": eligible_level,
         "human": character.ancestry.casefold() == "human",
         "missing": [ABILITIES[key] for key in ("con", "int") if not values[f"ability.{key}.score"]]
@@ -89,15 +164,15 @@ def plan(ctx, character):
                                  if class_id == "fighter" and label.casefold().startswith("weapon training")},
         "fighter_weapon_choices": sorted(fighter_weapon_groups().keys() - trained_weapon_groups(character).keys())
                                   if class_id == "fighter" else [],
-        **feat_context(character, current_catalog, values, class_id, profile, target, feat_bab),
-        "feat_slots": {index: feat_slot(class_id, label) for index, label in enumerate(choices)
+        **feat_context(character, current_catalog, values, updated_classes, feat_bab),
+        "feat_slots": {index: feat_slot(class_id, class_level, profile, label) for index, label in enumerate(choices)
                        if "feat" in label.casefold()},
-
+        "class_summary": class_summary(current_catalog, updated_classes) if len(updated_classes) > 1 else "",
     }
 
 
 
-def feat_context(character, catalog, values, class_id, profile, target, bab):
+def feat_context(character, catalog, values, classes, bab):
     feats = catalog["feats"]
     targets = feature_targets(catalog)
     target_keys = {kind: {label.casefold(): key for key, label in entries.items()}
@@ -121,19 +196,16 @@ def feat_context(character, catalog, values, class_id, profile, target, bab):
                 owned.add((name, key))
     return {
         "feat_catalog": feats, "owned_feats": sorted(owned), "feat_targets": targets, "feat_bab": bab,
-        "blocked_class_feats": class_feat_gate(character, class_id, profile, target, bab, owned),
+        "blocked_class_feats": class_feat_gate(character, catalog, classes, bab, owned),
         "feat_scores": {key: float(Decimal(values[f"ability.{key}.score"] or 0)) for key in ABILITIES},
     }
 
 
 def sheet_feat_context(character, catalog, values):
-    class_id = class_key(character, catalog)
-    profile = class_profile(catalog, class_id) if class_id else {"levels": []}
-    bab = profile["levels"][character.level - 1]["bab"] if class_id else 0
-    if class_id == "vigilante" and (character.sheet_data or {}).get("input", {}).get("vigilante_specialization") == "avenger":
-        bab = character.level
-    return {**feat_context(character, catalog, values, class_id, profile, character.level,
-                           float(Decimal(values["bab"] or bab))), "feat_slots": {0: ""}}
+    classes = character_classes(character, catalog)
+    bab = sum(class_progression_row(character, catalog, key, level)["bab"] for key, level in classes.items())
+    return {**feat_context(character, catalog, values, classes, float(Decimal(values["bab"] or bab))),
+            "feat_slots": {0: ""}}
 
 
 def sheet_feat_options(rules):
@@ -151,8 +223,10 @@ def sheet_feat_options(rules):
             available.append({"name": name, "url": feat["url"], "choice": kind, "targets": targets if kind else []})
     return available
 
-def feat_slot(class_id, label):
+def feat_slot(class_id, class_level, profile, label):
     label = label.casefold()
+    if class_level == 1 and label == "bonus feat" and profile["bonus_feat"] == "monk":
+        return "monk"
     if "teamwork" in label:
         return "teamwork"
     if "combat" in label or (label == "bonus feat" and class_id in {"fighter", "gunslinger", "warpriest"}):
@@ -165,6 +239,7 @@ def feat_options(advancement):
         name: {
             "url": safe_weapon_url(item.get("url", "")),
             "combat": item.get("combat", False), "teamwork": "Teamwork" in item.get("categories", ()),
+            "monk": item.get("monk", False),
             "scores": {key: item[key] for key in ABILITIES if item.get(key)}, "bab": item.get("bab", 0),
             "requires": item.get("requires", ""), "repeatable": item.get("repeatable", False),
             "choice": item.get("choice", ""),
@@ -189,11 +264,11 @@ def validate_feats(advancement, selections, ability, errors, options=None):
         if not feat or slot and not feat[slot]:
             errors.append(f"Choose an available feat for {entry['feature']}.")
             continue
-        if feat["bab"] > advancement["feat_bab"] or any(
+        if slot != "monk" and (feat["bab"] > advancement["feat_bab"] or any(
             advancement["feat_scores"][key] + (key == ability) < score for key, score in feat["scores"].items()
-        ):
+        )):
             errors.append(f"{name} exceeds the character's ability score or base attack bonus.")
-        prerequisite = feat["requires"]
+        prerequisite = feat["requires"] if slot != "monk" else ""
         visited = {name}
         while prerequisite and prerequisite not in owned_names:
             if prerequisite not in selected or prerequisite in visited:
@@ -252,9 +327,16 @@ def submit(character, advancement, form):
         changes[key] = str(Decimal(changes[key]) + amount if key in changes else number(key, default) + amount)
 
     roll = whole("hit_die", 1, profile["hd"])
-    favored = form.get("favored", "")
-    if favored not in {"hp", "skill", "none"}:
-        errors.append("Choose a favored class reward.")
+    favored_classes = advancement["favored_classes"]
+    second = form.get("second_favored", "")
+    if second:
+        if second not in {key for key, _ in advancement["favored_options"]}:
+            errors.append("Choose an available second favored class.")
+        else:
+            favored_classes = [*favored_classes, second]
+    favored = form.get("favored", "none")
+    if favored not in {"hp", "skill", "none"} or (favored != "none" and advancement["class_id"] not in favored_classes):
+        errors.append("Choose a reward only for a favored class.")
     ability = form.get("ability", "") if target % 4 == 0 else ""
     if target % 4 == 0:
         if ability not in ABILITIES or not values.get(f"ability.{ability}.score"):
@@ -271,13 +353,15 @@ def submit(character, advancement, form):
     hp = max(1, roll + old_con + con_increase) + int(favored == "hp") + con_increase * (target - 1)
     add("hp.total", hp)
     add("hp.current", hp, number("hp.total"))
-    previous, current = advancement["previous"], advancement["current"]
-    add("bab", advancement["bab"], previous["bab"])
+    add("bab", advancement["bab"], advancement["old_bab"])
     changes["skill_points.base"] = str(profile["ranks"])
+    if advancement["class_language"]:
+        changes["languages"] = ", ".join(filter(None, (values["languages"], advancement["class_language"])))
 
-    before = max(1, profile["ranks"] + old_int)
     after = max(1, profile["ranks"] + old_int + int_increase)
-    budget = after + (after - before) * (target - 1) + advancement["human"] + (favored == "skill")
+    retroactive = sum(max(1, base + old_int + int_increase) - max(1, base + old_int)
+                      for base in advancement["rank_bases"])
+    budget = after + retroactive + advancement["human"] + (favored == "skill")
     allocated = 0
     for key, _, _, ranks, _, enabled in advancement["rows"]:
         if enabled and form.get(f"rank_{key}", ""):
@@ -301,10 +385,17 @@ def submit(character, advancement, form):
         if index in advancement["feat_slots"]:
             selections[-1]["target"] = text(f"target_{index}", 100)
     validate_feats(advancement, selections, ability, errors)
+    if specialization := advancement["specialization"]:
+        changes["vigilante_specialization"] = specialization
+        selections.append({"feature": "Vigilante specialization", "choice": specialization.capitalize()})
 
     existing_features = {values[f"feature.{i}"].casefold() for i in range(56)}
     free = iter(i for i in range(56) if not values[f"feature.{i}"])
-    for entry in selections:
+    automatic = [{"feature": "Automatic class feat", "choice": name} for name in advancement["automatic_feats"]
+                 if not any(name.casefold() == owned.casefold() for owned, _ in advancement["owned_feats"])]
+    if any(entry["choice"] == granted["choice"] for entry in selections for granted in automatic):
+        errors.append("Choose a feat different from the feats granted automatically by this class.")
+    for entry in [*selections, *automatic]:
         label, choice = entry["feature"], entry["choice"]
         display = choice if "feat" in label.casefold() else f"{label}: {choice}"
         if target_key := entry.get("target"):
@@ -326,7 +417,7 @@ def submit(character, advancement, form):
         add("hp.total", 1)
         add("hp.current", 1)
         hp += 1
-    for entry in selections:
+    for entry in [*selections, *automatic]:
         name = entry["choice"].casefold()
         if "feat" not in entry["feature"].casefold():
             continue
@@ -341,40 +432,49 @@ def submit(character, advancement, form):
             if key == "hp.total":
                 hp += amount
 
-    for level, slots in current.get("slots", {}).items():
-        old_slots = previous.get("slots", {}).get(level, 0)
-        key = f"spell.{level}.daily"
-        if slots != old_slots or not values[key]:
-            add(key, slots - old_slots, old_slots)
-    if current.get("slots") or current.get("known"):
-        delay = profile["caster_delay"]
-        caster_level = max(1, target - delay)
-        old_caster_level = max(1, target - 1 - delay) if previous.get("slots") or previous.get("known") else 0
-        add("caster_level", caster_level - old_caster_level, old_caster_level)
-        caster = profile["casting_ability"]
+    casting = advancement["casting_progression"]
+    if casting:
+        previous, current = casting["previous"], casting["current"]
+        slots_by_level = current.get("slots", {})
+        caster = casting["profile"]["casting_ability"]
         old_mod = (int(number(f"ability.{caster}.score", 10)) - 10) // 2
         new_mod = old_mod + int(ability == caster and int(number(f"ability.{caster}.score", 10)) % 2 == 1)
-        concentration_gain = caster_level - old_caster_level + new_mod - old_mod
-        add("concentration", concentration_gain, old_caster_level + old_mod)
-        for level in {"0", *map(str, advancement["spell_levels"])}:
-            add(f"spell.{level}.dc", new_mod - old_mod, 10 + int(level) + old_mod)
-            if level != "0":
+        if (slots_by_level or current.get("known")) and (casting["advanced"] or new_mod != old_mod):
+            delay = casting["profile"]["caster_delay"]
+            caster_level = max(1, casting["level"] - delay)
+            earlier_level = casting["level"] - casting["advanced"]
+            old_caster_level = max(1, earlier_level - delay) if previous.get("slots") or previous.get("known") else 0
+            add("caster_level", caster_level - old_caster_level, old_caster_level)
+            add("concentration", caster_level - old_caster_level + new_mod - old_mod, old_caster_level + old_mod)
+            for level, slots in slots_by_level.items():
+                old_slots = previous.get("slots", {}).get(level, 0)
+                key = f"spell.{level}.daily"
+                if slots != old_slots or not values[key]:
+                    add(key, slots - old_slots, old_slots)
+            for level in {"0", *slots_by_level}:
+                add(f"spell.{level}.dc", new_mod - old_mod, 10 + int(level) + old_mod)
+                if level == "0":
+                    continue
                 old_bonus = max(0, (old_mod - int(level)) // 4 + 1)
                 new_bonus = max(0, (new_mod - int(level)) // 4 + 1)
-                domain = int(advancement["class_id"] == "cleric")
+                domain = int(casting["class_id"] == "cleric")
                 if level in previous.get("slots", {}):
                     add(f"spell.{level}.bonus", new_bonus - old_bonus, old_bonus + domain)
                 else:
                     add(f"spell.{level}.bonus", new_bonus + domain)
 
     entry = {
-        "level": target, "class": character.class_name, "hit_die": roll, "hp": hp,
-        "favored": favored, "ability": ability, "features": advancement["features"], "choices": selections,
+        "level": target, "class": profile["name"], "class_id": advancement["class_id"],
+        "class_level": advancement["class_level"], "hit_die": roll, "hp": hp,
+        "favored": favored, "ability": ability, "features": advancement["features"], "choices": [*selections, *automatic],
     }
     if not errors:
         character.play_data = {
             **(character.play_data or {}), "calculation_version": 1,
             **persist_effects(character, values), **changes, "advancement_history": [*history, entry],
+            "class_levels": list(advancement["classes"].items()), "favored_classes": favored_classes,
         }
         character.level = target
+        if advancement["class_summary"]:
+            character.class_name = advancement["class_summary"]
     return errors

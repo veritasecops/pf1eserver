@@ -113,8 +113,9 @@ def spell_defaults():
 
 
 def character_spell_links(values, catalog):
-    names = {line.strip() for level in range(10)
-             for line in values.get(f"spell.{level}.list", "").splitlines() if line.strip()}
+    names = {line.strip() for key, value in values.items()
+             if key.startswith(("spell.", "spellbook.")) and key.endswith(".list")
+             for line in value.splitlines() if line.strip()}
     if not names:
         return {}
 

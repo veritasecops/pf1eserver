@@ -3,6 +3,7 @@ import re
 from functools import lru_cache
 
 from .feats import table_feats
+from .class_catalog import class_profile
 from .pf1_data import CLASSES
 
 CLASS_LEVEL = re.compile(r"(.+?) level (\d+)(?:st|nd|rd|th)")
@@ -22,27 +23,31 @@ def indexed_requirements():
             for name, item in table_feats().items() if item.get("class_requirements")}
 
 
-def class_feat_gate(character, class_id, profile, target, bab, owned_feats):
+def class_feat_gate(character, catalog, classes, bab, owned_feats):
     features = set()
-    for level in profile["levels"][:target]:
-        for feature in re.split(r",\s*(?![^()]*\))", level["features"]):
-            name = normalized(feature)
-            features.update((name, FEATURE_SUFFIX.sub("", name)))
+    levels_by_name = {}
+    for key, count in classes.items():
+        profile = class_profile(catalog, key)
+        for name in (profile["name"], CLASSES[key]["name"], CLASSES[key.removesuffix("-unchained")]["name"]):
+            levels_by_name[normalized(name)] = max(count, levels_by_name.get(normalized(name), 0))
+        for level in profile["levels"][:count]:
+            for feature in re.split(r",\s*(?![^()]*\))", level["features"]):
+                name = normalized(feature)
+                features.update((name, FEATURE_SUFFIX.sub("", name)))
     history = (character.play_data or {}).get("advancement_history", ())
     discoveries = {normalized(choice["choice"]) for entry in history for choice in entry["choices"]
                    if choice["feature"].casefold() == "discovery"}
-    classes = {CLASSES[key]["name"].casefold() for key in {class_id, class_id.removesuffix("-unchained")}} if class_id else set()
     owned = {normalized(name) for name, _ in owned_feats}
 
     def matches(option):
         option = option.removeprefix("the ").removesuffix(" feat")
         option, feature_required = re.subn(r"\s*class\s*feature$", "", option)
         if match := CLASS_LEVEL.fullmatch(option):
-            return match[1] in classes and target >= int(match[2])
+            return levels_by_name.get(match[1], 0) >= int(match[2])
         if match := BAB.fullmatch(option):
             return bab >= int(match[1])
         if match := DISCOVERY.fullmatch(option):
-            return (not match[2] or class_id == "alchemist") and match[1] in discoveries
+            return (not match[2] or "alchemist" in classes) and match[1] in discoveries
         return option in features or (not feature_required and option in owned)
 
     def meets(clause):

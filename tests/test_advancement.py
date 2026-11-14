@@ -3,10 +3,11 @@ import secrets
 from sqlalchemy.orm import Session
 
 from pathkeeper.advancement import level_for
+from pathkeeper.character_rules import calculate, defaults
 from pathkeeper.database import engine
 from pathkeeper.models import Character
 from .test_deluxe_sheet import SheetForm
-from .test_workspace import seed_character, char_form
+from .test_workspace import seed_campaign, seed_character, char_form
 
 
 def test_advancement_thresholds():
@@ -227,7 +228,7 @@ def test_class_feat_gate_uses_features_granted_by_the_target_level():
 
     def blocked(class_id, target):
         profile = class_profile({}, class_id)
-        return class_feat_gate(character, class_id, profile, target, profile["levels"][target - 1]["bab"], [])
+        return class_feat_gate(character, {}, {class_id: target}, profile["levels"][target - 1]["bab"], [])
 
     assert "extra bombs" not in blocked("alchemist", 1)
     assert "extra discovery" in blocked("alchemist", 1)
@@ -237,5 +238,140 @@ def test_class_feat_gate_uses_features_granted_by_the_target_level():
     assert "advanced weapon training" in blocked("fighter", 4)
     assert "advanced weapon training" not in blocked("fighter", 5)
     assert "advanced weapon training" in blocked("barbarian", 10)
-    fighter = class_profile({}, "fighter")
-    assert "extra bombs" in class_feat_gate(character, "fighter", fighter, 5, 5, [("Bomb", "")])
+    assert "extra bombs" in class_feat_gate(character, {}, {"fighter": 5}, 5, [("Bomb", "")])
+
+
+def test_multiclass_advancement_uses_class_and_character_levels(env):
+    character = seed_character(env.player, name="Fighter learning magic")
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.play_data = {
+            "experience": "23000", "alignment": "N", "hp.total": "24", "hp.current": "20",
+            "ability.con.score": "12", "ability.int.score": "13", "skill.spellcraft.ranks": "1",
+        }
+        db.commit()
+    client = env.login(env.player)
+    path = f"/characters/{character.id}"
+    wizard = client.get(path + "/level-up?class_id=wizard")
+    assert wizard.status_code == 200
+    assert "Wizard 1" in wizard.text and "CHARACTER LEVEL 4" in wizard.text
+    assert 'name="ability"' in wizard.text and "Arcane school" in wizard.text
+    assert client.get(path + "/level-up?class_id=paladin").status_code == 422
+    data = {
+        "version": SheetForm(client.get(path).text).values["version"],
+        "class_id": "wizard", "target": 4, "hit_die": 4, "ability": "int", "favored": "none",
+        "rank_spellcraft": 3, "rank_knowledge-arcana": 4, "rank_climb": 1,
+        "choice_0": "Familiar", "choice_1": "Universalist",
+    }
+    assert env.post(client, path + "/level-up", {**data, "favored": "hp"}).status_code == 422
+    assert env.post(client, path + "/level-up", data).status_code == 303
+    page = client.get(path)
+    sheet = SheetForm(page.text)
+    assert sheet.values["class_name"] == "Fighter 3 / Wizard 1"
+    assert sheet.values["level"] == "4"
+    assert sheet.values["hp.total"] == "29"
+    assert sheet.values["bab"] == "3" and "bab" in sheet.readonly
+    assert [sheet.values[f"save.{key}.base"] for key in ("fortitude", "reflex", "will")] == ["3", "1", "3"]
+    assert sheet.values["skill.spellcraft.total"] == "9"
+    assert sheet.values["caster_level"] == "1"
+    assert "Scribe Scroll" in page.text
+    assert env.post(client, path + "/play-sheet", sheet.values).status_code == 303
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        assert record.play_data["class_levels"] == [["fighter", 3], ["wizard", 1]]
+        assert record.play_data["advancement_history"][0]["class_level"] == 1
+    wizard = client.get(path + "/level-up?class_id=fighter")
+    assert "Fighter 4" in wizard.text and "CHARACTER LEVEL 5" in wizard.text
+    assert "General feat" in wizard.text and "Bonus feat" in wizard.text
+
+
+def test_legacy_multiclass_spellbooks_save_independently(env):
+    character = seed_character(env.player, name="Arcane and divine caster")
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.class_name = "Cleric of Shax 2 / Wizard 1"
+        record.play_data = {
+            "spell.1.list": "Bless", "ability.int.score": "14",
+            "ability.wis.score": "16", "ability.con.score": "10", "hp.total": "18",
+            "experience": "14000",
+        }
+        db.commit()
+    client = env.login(env.player)
+    path = f"/characters/{character.id}"
+    page = client.get(path)
+    assert "Cleric Spells" in page.text and "Wizard Spells" in page.text
+    assert "Caster level 1 · Intelligence casting · Concentration +3" in page.text
+    assert "Save DC 13" in page.text
+    sheet = SheetForm(page.text)
+    classes = {"version": sheet.values["version"], "favored_class": "cleric", "level.cleric": 2, "level.wizard": 1}
+    assert env.post(client, path + "/classes", {**classes, "level.wizard": 2}).status_code == 422
+    assert env.post(client, path + "/classes", classes).status_code == 303
+    sheet = SheetForm(client.get(path).text)
+    sheet.values.update({"spellbook.wizard.1.list": "Magic Missile", "spellbook.wizard.1.used.0": "1"})
+    assert env.post(client, path + "/play-sheet", sheet.values).status_code == 303
+    page = client.get(path)
+    assert '>Magic Missile</a>' in page.text
+    sheet = SheetForm(page.text)
+    assert sheet.values["spell.1.list"] == "Bless"
+    assert sheet.values["spellbook.wizard.1.list"] == "Magic Missile"
+    assert sheet.values["spellbook.wizard.1.used.0"] == "1"
+    assert "spell.1.used.0" not in sheet.values
+
+
+def test_npc_can_advance_in_a_second_favored_class(env):
+    campaign = seed_campaign(env.gm)
+    character = seed_character(env.gm, campaign, name="NPC arcanist")
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.is_npc = True
+        record.ancestry = "Half-Elf"
+        record.level = 1
+        record.play_data = {
+            "experience": "3000", "alignment": "N", "hp.total": "10",
+            "ability.int.score": "10", "ability.con.score": "10",
+        }
+        db.commit()
+    gm = env.login(env.gm)
+    path = f"/characters/{character.id}"
+    assert "Second favored class" in gm.get(path + "/level-up?class_id=rogue").text
+    data = {
+        "version": SheetForm(gm.get(path).text).values["version"], "class_id": "rogue",
+        "target": 2, "hit_die": 4, "favored": "hp", "second_favored": "rogue",
+        "rank_climb": 2, "rank_stealth": 2, "rank_perception": 2, "rank_bluff": 2,
+    }
+    assert env.post(gm, path + "/level-up", data).status_code == 303
+    assert SheetForm(gm.get(path).text).values["hp.total"] == "15"
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        assert record.play_data["favored_classes"] == ["fighter", "rogue"]
+
+
+def test_starting_class_reward_requires_a_favored_class():
+    creation = defaults(1)
+    creation.update(race="half-elf", class_id="fighter", favored_class="wizard", favored_bonus="hp")
+    assert calculate(creation, {})["hp"] == 10
+    creation["second_favored"] = "fighter"
+    assert calculate(creation, {})["hp"] == 11
+
+
+def test_shared_class_features_keep_both_sources(env):
+    character = seed_character(env.player)
+    with Session(engine()) as db:
+        record = db.get(Character, character.id)
+        record.level = 4
+        record.class_name = "Rogue 1 / Slayer 3"
+        db.commit()
+    client = env.login(env.player)
+    path = f"/characters/{character.id}"
+    page = client.get(path)
+    assert 'data-remove-class-ability="rogue:sneak attack"' in page.text
+    assert 'data-remove-class-ability="slayer:sneak attack"' in page.text
+    assert "+2d6" in page.text
+    version = SheetForm(page.text).values["version"]
+    assert env.post(client, path + "/class-abilities/remove", {
+        "ability": "rogue:sneak attack", "version": version,
+    }).status_code == 200
+    page = client.get(path)
+    assert 'data-remove-class-ability="rogue:sneak attack"' not in page.text
+    assert 'data-remove-class-ability="slayer:sneak attack"' in page.text
+    assert "+2d6" not in page.text and "+1d6" in page.text

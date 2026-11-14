@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% from 'components.html' import csrf_input %}
+{% block content %}
+<a class="text-button back-link" href="/characters/{{ character.id }}#class-progression-title">Back to character sheet</a>
+<div class="page-heading"><div><h1>Class Levels</h1><p>{{ character.name }} · Character level {{ character.level }}</p></div>
+{% if can_level_up %}<a class="button primary" href="/characters/{{ character.id }}/level-up">Level Up</a>{% endif %}</div>
+{% if editable %}
+<form method="post" class="card padded narrow stack">
+  {{ csrf_input(csrf) }}
+  <input type="hidden" name="version" value="{{ character.version }}">
+  <p>Enter the class levels this character already has. They must add up to {{ character.level }}. Record any class choices and existing spell lists on the character sheet.</p>
+  {% set favored = (character.play_data or {}).get('favored_classes', (levels|list)[:1]) %}
+  <label class="field"><span>Favored class</span><select name="favored_class" required>
+    <option value="">Choose a favored class</option>
+    {% for key, name in options %}<option value="{{ key }}"{% if key == favored[0] %} selected{% endif %}>{{ name }}</option>{% endfor %}
+  </select></label>
+  {% if character.ancestry|lower == 'half-elf' %}
+  <label class="field"><span>Second favored class</span><select name="second_favored">
+    <option value="">Choose later</option>
+    {% for key, name in options %}<option value="{{ key }}"{% if favored|length > 1 and key == favored[1] %} selected{% endif %}>{{ name }}</option>{% endfor %}
+  </select></label>
+  {% endif %}
+  <div class="form-grid">
+    {% for key, name in options %}
+    <label class="field"><span>{{ name }}</span><input name="level.{{ key }}" type="number" min="0" max="{{ [character.level, 20]|min }}" value="{{ levels.get(key, '') }}"></label>
+    {% endfor %}
+  </div>
+  <div><button class="button primary">Save class levels</button></div>
+</form>
+{% else %}
+<section class="card padded narrow">
+  <p>Add another class or advance an existing one in the Level Up wizard when this character reaches the next XP threshold.</p>
+  <ul>{% for key, name in options if key in levels %}<li>{{ name }} {{ levels[key] }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

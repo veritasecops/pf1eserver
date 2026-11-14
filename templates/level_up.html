@@ -17,6 +17,21 @@
 {% else %}
 {% set profile = advancement.profile %}
 {% set target = advancement.target %}
+<form method="get" class="card padded narrow">
+  <label class="field"><span>Class to advance</span><select name="class_id">
+  {% for key, name, level in advancement.class_options %}
+  <option value="{{ key }}"{% if key == advancement.class_id %} selected{% endif %}>{{ name }} ({{ 'level ' ~ level ~ ' → ' ~ (level + 1) if level else 'new class, level 1' }})</option>
+  {% endfor %}
+  </select></label>
+  {% if advancement.specialization %}
+  <label class="field"><span>Vigilante specialization</span><select name="specialization">
+    {% for value, label in [('stalker', 'Stalker'), ('avenger', 'Avenger')] %}
+    <option value="{{ value }}"{% if advancement.specialization == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select></label>
+  {% endif %}
+  <button type="submit" class="button">Load class</button>
+</form>
 {% if errors %}<div class="card padded narrow" role="alert"><h2>Review these entries</h2><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
 <nav class="pw-steps" aria-label="Level-up steps" hidden>
   {% for label in ['Hit points and abilities', 'Skill ranks', 'Class features and feats'] %}
@@ -24,19 +39,27 @@
   {% endfor %}
 </nav>
 <form method="post" class="card pw-stage-card" id="level-up-form"
-      data-ranks="{{ profile.ranks }}" data-int="{{ advancement['values']['ability.int.score'] }}" data-target="{{ target }}" data-human="{{ 1 if advancement.human else 0 }}">
+      data-ranks="{{ profile.ranks }}" data-int="{{ advancement['values']['ability.int.score'] }}" data-rank-bases="{{ advancement.rank_bases|join(',') }}" data-human="{{ 1 if advancement.human else 0 }}">
   {{ csrf_input(csrf) }}
   <input type="hidden" name="version" value="{{ character.version }}">
   <input type="hidden" name="target" value="{{ target }}">
-  <header class="pw-stage-heading"><div><span class="overline" data-level-position aria-live="polite"></span><a href="{{ profile.url }}" target="_blank" rel="noopener noreferrer">{{ profile.name }} class rules ↗</a>{{ source_note(profile.url) }}</div><span class="pw-level">LEVEL {{ target }}</span></header>
+  <input type="hidden" name="class_id" value="{{ advancement.class_id }}">
+  {% if advancement.specialization %}<input type="hidden" name="specialization" value="{{ advancement.specialization }}">{% endif %}
+  <header class="pw-stage-heading"><div><span class="overline" data-level-position aria-live="polite"></span><a href="{{ profile.url }}" target="_blank" rel="noopener noreferrer">{{ profile.name }} {{ advancement.class_level }} ↗</a>{{ source_note(profile.url) }}</div><span class="pw-level">CHARACTER LEVEL {{ target }}</span></header>
   <div class="pw-stage stack">
   <section data-level-step>
     <h2>1. Hit points and abilities</h2>
     <div class="form-grid">
       <label class="field"><span>Hit Die result (d{{ profile.hd }})</span><input name="hit_die" type="number" min="1" max="{{ profile.hd }}" required value="{{ submitted.get('hit_die', '') }}"></label>
+      {% if advancement.favored_options %}
+      <label class="field"><span>Second favored class (Half-Elf)</span><select name="second_favored">
+        <option value="">Choose later</option>
+        {% for key, name in advancement.favored_options %}<option value="{{ key }}"{% if submitted.get('second_favored') == key %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select></label>
+      {% endif %}
       <label class="field"><span>Favored class reward</span><select name="favored">
         {% for value, label in [('hp', '+1 hit point'), ('skill', '+1 skill rank'), ('none', 'None / other reward')] %}
-        <option value="{{ value }}"{% if submitted.get('favored', 'hp') == value %} selected{% endif %}>{{ label }}</option>
+        <option value="{{ value }}"{% if value != 'none' and not advancement.is_favored %} data-requires-favored{% if submitted.get('second_favored') != advancement.class_id %} disabled{% endif %}{% endif %}{% if submitted.get('favored', 'hp' if advancement.is_favored else 'none') == value %} selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select></label>
       {% if target % 4 == 0 %}
@@ -61,7 +84,8 @@
   </section>
   <section data-level-step>
     <h2>3. Class features and feats</h2>
-    {% if advancement.features %}<ul>{% for feature in advancement.features %}<li>{{ feature }}</li>{% endfor %}</ul>{% else %}<p>No new features appear in this class’s level {{ target }} table.</p>{% endif %}
+    {% if advancement.features %}<ul>{% for feature in advancement.features %}<li>{{ feature }}</li>{% endfor %}</ul>{% else %}<p>No new features appear in this class’s level {{ advancement.class_level }} table.</p>{% endif %}
+    {% if advancement.class_level == 1 and profile.choices %}<p>{{ profile.choices }}</p>{% endif %}
     {% for label, stat in advancement.current.get('statistics', {}).items() %}<p>{{ label }} · {{ stat }}</p>{% endfor %}
     {% if advancement.feat_slots %}<p>Feat choices are filtered by the prerequisites recorded in the catalog. Open the feat name for any additional rules.</p>{% endif %}
     {% if advancement.choices %}
@@ -91,7 +115,7 @@
   <section class="stack">
     <h3>Spells and formulae</h3>
     {% if advancement.current.get('slots') %}
-    <p>Base slots at level {{ target }} · {% for level, slots in advancement.current.slots|dictsort %}{{ level }}: {{ slots }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    <p>Base slots at {{ profile.name }} {{ advancement.class_level }} · {% for level, slots in advancement.current.slots|dictsort %}{{ level }}: {{ slots }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
     {% endif %}
     {% if advancement.current.get('prepared') %}
     <p>Spells prepared · {% for level, count in advancement.current.prepared|dictsort %}{{ level }}: {{ count }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
@@ -116,4 +140,4 @@
 }|tojson }}</script>
 {% endif %}
 {% endblock %}
-{% block page_scripts %}<script src="/static/level-up.js?v=20261107-sheet-spells" defer></script>{% endblock %}
+{% block page_scripts %}<script src="/static/level-up.js?v=multiclass" defer></script>{% endblock %}

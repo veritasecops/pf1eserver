@@ -2,10 +2,11 @@
 from decimal import Decimal, InvalidOperation
 from math import floor
 
-from .class_catalog import class_key, class_save_bonuses, creation_class
+from .class_catalog import (character_classes, class_key, class_progression_row, class_save_bonuses,
+                            combined_class_skills, creation_class, first_level_favored_bonus)
 from .equipment_effects import EQUIPMENT_AC_FIELDS
 from .pf1_data import ABILITIES, RACES
-from .rule_catalog import character_catalog, class_skills as skill_list, effect_total
+from .rule_catalog import character_catalog, effect_total
 from .trait_rules import class_skill_bonus, racial_skill_bonus
 from .treasure import COINS
 from .gear_backpack import GEAR_SLOTS, project_backpack
@@ -33,6 +34,8 @@ def calculated_fields(character, values, progression_catalog=None):
         locked.update({f'save.{save}.total',f'save.{save}.ability'})
     if class_save_bonuses(character, progression_catalog if progression_catalog is not None else catalog) is not None:
         locked.update(f'save.{save}.base' for save in ('fortitude','reflex','will'))
+    if len(character_classes(character, progression_catalog or catalog)) > 1:
+        locked.add("bab")
     for kind in ('cmb','cmd'):
         locked.update(f'{kind}.{part}' for part in ('bab','str'))
     locked.add('cmd.dex')
@@ -99,38 +102,48 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
             value = number(f'ability.{ability}.{score}')
             write(f'ability.{ability}.{mod}',None if value is None else floor((value-10)/2))
     cls = class_record(character, catalog)
-    class_id = class_key(character, catalog)
+    progression = progression_catalog or catalog
+    classes = character_classes(character, progression)
     snapshot = character.sheet_data or {}
-    level = int(values.get("level") or character.level)
     race_id = race.get('name', '').casefold()
     starting_race = snapshot.get('input', {}).get('race') if snapshot.get('computed') else None
     if int(values.get("level") or character.level) == 1 and snapshot.get('computed') and cls:
         con = modifier('con')
         inputs = snapshot.get('input',{})
         feats = snapshot['computed'].get('feats',[])
-        extra_hp = int(inputs.get('favored_bonus') == 'hp') + effect_total(feats + [{'name':name} for name in snapshot['computed'].get('automatic_feats',[])],catalog,'hp')
+        extra_hp = int(first_level_favored_bonus(inputs) == 'hp') + effect_total(feats + [{'name':name} for name in snapshot['computed'].get('automatic_feats',[])],catalog,'hp')
         write('hp.total',None if con is None else max(Decimal(1),Decimal(cls['hd'])+con)+extra_hp)
         write('bab',snapshot['computed'].get('bab',cls['bab']))
         write('skill_points.base',cls['ranks'])
-    save_bonuses = class_save_bonuses(character, progression_catalog if progression_catalog is not None else catalog)
+    if len(classes) > 1:
+        write("bab", sum(class_progression_row(character, progression, key, level)["bab"]
+                         for key, level in classes.items()))
+    save_bonuses = class_save_bonuses(character, progression)
     if save_bonuses is not None:
         for save, bonus in zip(('fortitude','reflex','will'), save_bonuses):
             write(f'save.{save}.base', bonus)
     dex,strength,intelligence = modifier('dex'),modifier('str'),modifier('int')
     write('initiative.dex',dex)
     from .class_abilities import removed_class_ability
-    active = lambda name: not removed_class_ability(character, name, class_id)
-    initiative_bonus = (modifier('wis') or 0) if class_id == 'inquisitor' and level >= 2 and active('Cunning Initiative') else 0
+    def active(key, name, minimum=1):
+        return classes.get(key, 0) >= minimum and not removed_class_ability(character, name, key)
+
+    initiative_bonus = (modifier('wis') or 0) if active('inquisitor', 'Cunning Initiative', 2) else 0
     total('initiative.total',['initiative.dex'],['initiative.misc'],initiative_bonus)
     for save,ability in [('fortitude','con'),('reflex','dex'),('will','wis')]:
         write(f'save.{save}.ability',modifier(ability))
         bonus = int(race_id == 'halfling') - int(starting_race == 'halfling')
-        grace = active('Divine Grace' if class_id == 'paladin' else 'Unholy Resilience' if class_id == 'antipaladin' else 'Towering Ego')
-        if grace and level >= 2 and (class_id in {'paladin', 'antipaladin'} or class_id == 'mesmerist' and save == 'will'):
+        if (active('paladin', 'Divine Grace', 2) or active('antipaladin', 'Unholy Resilience', 2)
+                or save == 'will' and active('mesmerist', 'Towering Ego', 2)):
             bonus += max(0, modifier('cha') or 0)
         total(f'save.{save}.total',[f'save.{save}.base',f'save.{save}.ability'],[f'save.{save}.magic',f'save.{save}.misc'],bonus)
     for kind in ('cmb','cmd'):
-        write(f'{kind}.bab',level if kind == 'cmb' and class_id == 'monk' and level >= 3 and active('Maneuver Training') else number('bab'))
+        bab = number('bab')
+        if kind == 'cmb' and active('monk', 'Maneuver Training', 3):
+            monk_level = classes['monk']
+            monk_bab = class_progression_row(character, progression, 'monk', monk_level)["bab"]
+            bab = (monk_bab if bab is None else bab) - monk_bab + monk_level
+        write(f'{kind}.bab', bab)
         write(f'{kind}.str',strength)
     write('cmd.dex',dex)
     size = SIZE_MODIFIERS.get(str(values.get('size') or race.get('size', '')).casefold())
@@ -150,7 +163,7 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
     parts = [number(part,Decimal(0)) for part in ac_parts if part not in {'ac.dex','ac.dodge'}]
     ac_dex = number('ac.dex',Decimal(0))
     write('ac.flat',None if ac_dex is None or any(p is None for p in parts) else Decimal(10)+sum(parts)+min(Decimal(0),ac_dex))
-    class_skills = set(skill_list(catalog, snapshot.get('input',{}).get('class_id',''), snapshot.get('input',{}).get('expert_skills',()))) if snapshot else set(cls.get('skills',[]))
+    class_skills = combined_class_skills(character, catalog, classes)
     for key,meta in SKILLS.items():
         for row in (key,key+'-2') if key in {'craft','perform','profession'} else (key,):
             write(f'skill.{row}.ability',modifier(meta['ability']))
@@ -160,11 +173,11 @@ def recalculate(character, values, equipment_previous=None, equipment_keep=(), *
             if not row.endswith('-2'):
                 # First-level wizard snapshots already include these racial bonuses.
                 bonus -= racial_skill_bonus(starting_race, key)
-            skill_feature = {'bard': 'Bardic Knowledge', 'skald': 'Bardic Knowledge', 'inquisitor': 'Stern Gaze',
-                             'mesmerist': 'Consummate Liar', 'rogue': 'Trapfinding', 'rogue-unchained': 'Trapfinding',
-                             'investigator': 'Trapfinding'}.get(class_id, '')
-            if active(skill_feature):
-                bonus += class_skill_bonus(class_id, level, key)
+            features = {'bard': 'Bardic Knowledge', 'skald': 'Bardic Knowledge', 'inquisitor': 'Stern Gaze',
+                        'mesmerist': 'Consummate Liar', 'rogue': 'Trapfinding', 'rogue-unchained': 'Trapfinding',
+                        'investigator': 'Trapfinding'}
+            bonus += max((class_skill_bonus(class_id, level, key) for class_id, level in classes.items()
+                          if active(class_id, features.get(class_id, ''))), default=0)
             if key == 'stealth' and size is not None:
                 bonus += 4 * size
             total(f'skill.{row}.total',[f'skill.{row}.ability'],[f'skill.{row}.ranks',f'skill.{row}.misc'],bonus)

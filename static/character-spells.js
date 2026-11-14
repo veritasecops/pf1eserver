@@ -9,20 +9,21 @@
   const error = dialog.querySelector('[data-spell-error]');
   const more = dialog.querySelector('[data-spell-more]');
   const custom = dialog.querySelector('[data-spell-custom]');
-  let catalog, level = 0, limit = 50, loading;
+  let catalog, level = 0, spellbook = '', limit = 50, loading;
+  let classNames = [];
   const spellLinks = new Map();
   const spellKey = name => name.trim().toLowerCase().replaceAll('’', "'").replace(/\s+/g, ' ');
   for (const link of sheet.querySelectorAll('[data-spell-entries] a')) {
     spellLinks.set(spellKey(link.textContent), link.href);
   }
-  const field = number => sheet.elements.namedItem(`spell.${number}.list`);
-  const names = number => field(number).value.split('\n').map(name => name.trim()).filter(Boolean);
+  const field = (number, book) => sheet.elements.namedItem(book ? `spellbook.${book}.${number}.list` : `spell.${number}.list`);
+  const names = (number, book) => field(number, book).value.split('\n').map(name => name.trim()).filter(Boolean);
   const fail = message => { error.textContent = message; error.hidden = false; };
 
-  function renderList(number) {
-    const list = sheet.querySelector(`[data-spell-entries="${number}"]`);
+  function renderList(number, book, launcher) {
+    const list = sheet.querySelector(`[data-spell-entries="${book ? book + '-' : ''}${number}"]`);
     list.replaceChildren();
-    const entries = names(number);
+    const entries = names(number, book);
     entries.forEach((name, index) => {
       const row = document.createElement('li');
       const key = spellKey(name);
@@ -41,13 +42,13 @@
       remove.textContent = 'Remove';
       remove.setAttribute('aria-label', `Remove ${name}`);
       remove.addEventListener('click', () => {
-        const current = names(number);
+        const current = names(number, book);
         current.splice(index, 1);
-        field(number).value = current.join('\n');
-        field(number).dispatchEvent(new Event('input', {bubbles: true}));
-        renderList(number);
+        field(number, book).value = current.join('\n');
+        field(number, book).dispatchEvent(new Event('input', {bubbles: true}));
+        renderList(number, book, launcher);
         const buttons = list.querySelectorAll('button');
-        (buttons[Math.min(index, buttons.length - 1)] || sheet.querySelector(`[data-add-spells="${number}"]`)).focus();
+        (buttons[Math.min(index, buttons.length - 1)] || launcher).focus();
       });
       row.append(label, remove);
       list.append(row);
@@ -59,17 +60,18 @@
     }
   }
 
+  let launcher;
   function add(name) {
     name = name.trim();
     if (!name || /[\r\n]/.test(name)) return fail('Enter one spell name.');
-    const current = names(level);
+    const current = names(level, spellbook);
     if (current.some(item => item.toLowerCase() === name.toLowerCase())) return fail('That spell is already in this list.');
     const value = [...current, name].join('\n');
-    if (value.length > field(level).maxLength) return fail('This spell list is full.');
-    field(level).value = value;
-    field(level).dispatchEvent(new Event('input', {bubbles: true}));
+    if (value.length > field(level, spellbook).maxLength) return fail('This spell list is full.');
+    field(level, spellbook).value = value;
+    field(level, spellbook).dispatchEvent(new Event('input', {bubbles: true}));
     error.hidden = true;
-    renderList(level);
+    renderList(level, spellbook, launcher);
     render();
   }
 
@@ -78,7 +80,7 @@
     if (!catalog) { status.textContent = 'Loading spells…'; more.hidden = true; return; }
     const query = search.value.trim().toLowerCase();
     const selectedClass = classes.value;
-    const existing = new Set(names(level).map(name => name.toLowerCase()));
+    const existing = new Set(names(level, spellbook).map(name => name.toLowerCase()));
     const matches = catalog.spells.filter(item => item.name.toLowerCase().includes(query) &&
       (selectedClass ? (item.levels[selectedClass] || []).includes(level) : Object.values(item.levels).some(levels => levels.includes(level))));
     status.textContent = `${matches.length} matching spells`;
@@ -107,9 +109,12 @@
 
   for (const button of sheet.querySelectorAll('[data-add-spells]')) {
     const number = Number(button.dataset.addSpells);
-    renderList(number);
+    const book = button.dataset.spellbook || '';
+    renderList(number, book, button);
     button.addEventListener('click', async () => {
       level = number;
+      spellbook = book;
+      launcher = button;
       limit = 50;
       search.value = custom.value = '';
       error.hidden = true;
@@ -126,14 +131,15 @@
             for (const item of data.spells) {
               if (item.url) spellLinks.set(spellKey(item.name), item.url);
             }
-            const choices = [...new Set(data.spells.flatMap(item => Object.keys(item.levels)))].sort();
-            classes.replaceChildren(new Option('All classes', ''), ...choices.map(name => new Option(name, name)));
-            classes.value = choices.includes(data.class_name) ? data.class_name : '';
-            window.PathkeeperDropdown?.refresh(classes);
+            classNames = [...new Set(data.spells.flatMap(item => Object.keys(item.levels)))].sort();
+            classes.replaceChildren(new Option('All classes', ''), ...classNames.map(name => new Option(name, name)));
             catalog = data;
           }).finally(() => { loading = null; });
           await loading;
         }
+        const name = button.dataset.castingClass || catalog.class_name;
+        classes.value = classNames.includes(name) ? name : '';
+        window.PathkeeperDropdown?.refresh(classes);
         render();
       } catch (failure) { status.textContent = ''; fail(failure.message); }
     });

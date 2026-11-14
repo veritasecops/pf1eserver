@@ -28,13 +28,13 @@ Class choices include the outline's core and base classes plus Ninja and Samurai
 
 Vigilantes explicitly choose Stalker or Avenger; the Avenger's first-level base attack bonus is applied from that choice rather than inferred from notes.
 
-Choose +1 HP, +1 skill rank, or another/not-favored-class benefit. Custom favored-class benefits require GM review. Record these benefits, domains, schools, bloodlines, mysteries, companions, talents, orders, and other class choices in Character notes under Description. These are saved choices, not an automated companion or archetype builder.
+Choose a favored class. Half-elves choose two. If the starting class is favored, choose +1 HP, +1 skill rank, or no automatic reward. Custom favored-class benefits require GM review. Record these benefits, domains, schools, bloodlines, mysteries, companions, talents, orders, and other class choices in Character notes under Description. These are saved choices, not an automated companion or archetype builder.
 
 The source outline's Samurai wealth table differs from the official legacy PRD. The wizard uses the official Samurai starting wealth of 5d6 × 10 gp, average 175 gp.
 
 ## Skills and feats
 
-The skill budget includes the class base, Intelligence modifier with the minimum class allotment, the human bonus rank, and the chosen favored-class rank. Allocate all available ranks. Each listed skill can have at most one rank at first level. Trained class skills add +3. Select any catalog skill by assigning a rank. Every class can assign ranks to any catalog skill. The selected class determines the fixed class-skill list; assigning ranks does not change that list. Multiclassing is not implemented.
+The skill budget includes the class base, Intelligence modifier with the minimum class allotment, the human bonus rank, and the chosen favored-class rank. Allocate all available ranks. Each listed skill can have at most one rank at first level. Trained class skills add +3. Select any catalog skill by assigning a rank. Every class can assign ranks to any catalog skill. The selected class determines the fixed class-skill list; assigning ranks does not change that list. Use Level Up on the completed character sheet to add another class.
 
 Craft, Perform, and Profession specialties and conditional bonuses are recorded in skill notes. Their additional independent specialties, conditional racial benefits, archetypes, and other special cases need GM review. The displayed totals include standard ability modifiers, class training, supported racial bonuses and feats, and equipped armor check penalties.
 

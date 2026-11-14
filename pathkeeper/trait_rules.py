@@ -89,7 +89,7 @@ def weapon_group_name(name):
 
 def trained_weapon_groups(character):
     from .class_abilities import removed_class_ability
-    if removed_class_ability(character, 'Weapon Training'):
+    if removed_class_ability(character, 'Weapon Training', 'fighter'):
         return {}
     groups = {}
     for entry in (character.play_data or {}).get("advancement_history", []):
@@ -97,7 +97,7 @@ def trained_weapon_groups(character):
             if choice["feature"].casefold().startswith("weapon training"):
                 group = weapon_group_name(choice["choice"])
                 if group:
-                    groups.setdefault(group, entry["level"])
+                    groups.setdefault(group, entry.get("class_level", entry["level"]))
     return groups
 
 

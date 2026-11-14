@@ -1,5 +1,6 @@
 """Plain-language descriptions of the formulas the play sheet actually uses."""
 from .gear_backpack import GEAR_SLOTS
+from .class_catalog import character_classes
 from .pf1_data import ABILITIES
 from .rule_catalog import character_catalog
 from .sheet_calculations import calculated_fields, base_speed_race
@@ -15,7 +16,7 @@ def sheet_formulas(character, values, progression_catalog=None):
         'load.total':'Add the weights of the gear shown here. The total stays blank while an entry has an unknown weight.',
         'speed.base':speed_source,
         'player':'The name of the account that owns this character.',
-        'class_name':'The class recorded for this character.',
+        'class_name':'The class or combination of classes recorded for this character.',
         'initiative.total':'Initiative = Dexterity modifier + miscellaneous modifier + Wisdom modifier for Inquisitors with Cunning Initiative.',
         'initiative.dex':'Use the Dexterity modifier. If a temporary Dexterity score is entered, use its modifier instead.',
         'cmb.total':'Combat maneuver bonus = base attack bonus + Strength modifier + combat maneuver size modifier + miscellaneous modifier.',
@@ -33,6 +34,8 @@ def sheet_formulas(character, values, progression_catalog=None):
         'hp.total':'First-level hit points = the class’s full Hit Die + Constitution modifier (minimum 1), then add the recorded favored-class hit point bonus and supported feat hit point bonuses. A temporary Constitution score uses its temporary modifier.',
         'bab':'The first-level base attack bonus saved by the character creation wizard for this class.',
     }
+    if len(character_classes(character, progression_catalog or character_catalog(character))) > 1:
+        formulas['bab'] = 'Add the base attack bonus from each class at its recorded class level.'
     for ability,label in ABILITIES.items():
         formulas[f'ability.{ability}.mod']=f'{label} modifier = ({label} score − 10) ÷ 2, rounded down. For example, a score of 9 gives −1.'
         formulas[f'ability.{ability}.temp_mod']=f'Temporary {label} modifier = (temporary {label} score − 10) ÷ 2, rounded down. Leave the temporary score blank when no temporary score applies.'
@@ -40,12 +43,12 @@ def sheet_formulas(character, values, progression_catalog=None):
         formulas[f'{kind}.bab']='Use the character’s base attack bonus.'
         formulas[f'{kind}.str']='Use the Strength modifier, or its temporary modifier when a temporary Strength score is entered.'
         formulas[f'{kind}.size']='Use the combat maneuver size modifier, the opposite of the Armor Class size modifier: Small −1, Medium 0, Large +1, and so on.'
-    formulas['cmb.bab'] = "Use base attack bonus, or class level for a standard Monk with Maneuver Training."
+    formulas['cmb.bab'] = "Use base attack bonus. Maneuver Training uses the monk’s class level in place of the monk’s share of base attack bonus."
     formulas['cmd.dex']=formulas['initiative.dex']
     for save,ability in [('fortitude','Constitution'),('reflex','Dexterity'),('will','Wisdom')]:
         formulas[f'save.{save}.total']=f'{save.capitalize()} save = class save bonus + {ability} modifier + magic modifier + miscellaneous modifier + applicable standing ancestry and class bonuses.'
         formulas[f'save.{save}.ability']=f'Use the {ability} modifier, or its temporary modifier when a temporary {ability} score is entered.'
-        formulas[f'save.{save}.base']=f'The fixed {save.capitalize()} save bonus from the class’s Level Progression row for the character’s current level.'
+        formulas[f'save.{save}.base']=f'Add the base {save.capitalize()} save bonus from each class at its recorded class level.'
     for skill,meta in character_catalog(character)['skills'].items():
         ability=ABILITIES[meta['ability']]
         for row in (skill,skill+'-2') if skill in {'craft','perform','profession'} else (skill,):

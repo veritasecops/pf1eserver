@@ -14,6 +14,7 @@
   const error = form.querySelector('[data-level-error]');
   const rules = JSON.parse(document.getElementById('level-up-feats').textContent);
   const limits = new WeakMap();
+  const rankBases = form.dataset.rankBases.split(',').filter(Boolean).map(Number);
   let step = 0;
 
   function selected(slot) {
@@ -26,14 +27,15 @@
 
   function eligible(slot, name) {
     const feat = Object.hasOwn(rules.options, name) ? rules.options[name] : null;
-    if (!feat || (slot.dataset.featKind && !feat[slot.dataset.featKind]) || feat.bab > rules.bab) return false;
-    if (Object.entries(feat.scores).some(([key, score]) =>
-      rules.scores[key] + Number(form.elements.ability?.value === key) < score)) return false;
+    if (!feat || (slot.dataset.featKind && !feat[slot.dataset.featKind])) return false;
+    const monkBonus = slot.dataset.featKind === 'monk';
+    if (!monkBonus && (feat.bab > rules.bab || Object.entries(feat.scores).some(([key, score]) =>
+      rules.scores[key] + Number(form.elements.ability?.value === key) < score))) return false;
     const taken = rules.owned.concat(slots.filter(other => other !== slot).map(other => [selected(other).value, target(other).value]));
     if (taken.some(([other]) => other === name) && !feat.repeatable) return false;
     if (feat.choice && !Object.keys(rules.targets[feat.choice] || {}).some(key =>
       !taken.some(([other, used]) => other === name && used === key))) return false;
-    return !feat.requires || taken.some(([other]) => other === feat.requires);
+    return monkBonus || !feat.requires || taken.some(([other]) => other === feat.requires);
   }
 
   function featLink(name) {
@@ -137,10 +139,12 @@
   const countRanks = () => {
     const base = Number(form.dataset.ranks);
     const score = Number(form.dataset.int);
-    const before = Math.max(1, base + Math.floor((score - 10) / 2));
-    const after = Math.max(1, base + Math.floor((score - 10 + (form.elements.ability?.value === 'int' ? 1 : 0)) / 2));
+    const before = Math.floor((score - 10) / 2);
+    const after = Math.floor((score - 10 + (form.elements.ability?.value === 'int' ? 1 : 0)) / 2);
     const favored = Number(form.elements.favored.value === 'skill');
-    const total = after + (after - before) * (Number(form.dataset.target) - 1) + Number(form.dataset.human) + favored;
+    const retroactive = rankBases.reduce((sum, ranks) =>
+      sum + Math.max(1, ranks + after) - Math.max(1, ranks + before), 0);
+    const total = Math.max(1, base + after) + retroactive + Number(form.dataset.human) + favored;
     const assigned = ranks.reduce((sum, input) => sum + Number(input.value), 0);
     for (const input of ranks) {
       const row = input.closest('tr');
@@ -190,6 +194,13 @@
   back.addEventListener('click', () => show(step - 1));
   next.addEventListener('click', forward);
   form.addEventListener('input', countRanks);
+  form.elements.second_favored?.addEventListener('change', () => {
+    const eligible = form.elements.second_favored.value === form.elements.class_id.value;
+    for (const option of form.querySelectorAll('[data-requires-favored]')) option.disabled = !eligible;
+    if (form.elements.favored.selectedOptions[0]?.disabled) form.elements.favored.value = 'none';
+    window.PathkeeperDropdown?.refresh(form.elements.favored);
+    countRanks();
+  });
   form.addEventListener('invalid', event => {
     const invalidStep = steps.findIndex(section => section.contains(event.target));
     if (invalidStep !== -1 && steps[invalidStep].hidden) show(invalidStep, false);

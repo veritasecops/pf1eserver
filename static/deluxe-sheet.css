@@ -202,3 +202,9 @@
 .ds-ability-heading { display:flex; flex-wrap:wrap; align-items:center; gap:8px; justify-content:space-between; margin:20px 0 10px; }
 .ds-ability-heading h3 { flex:1; margin:0; }
 @media print { #add-class-ability { display:none !important; } }
+
+.ds-class-progression { margin:12px 0; }
+.ds-class-actions { margin-top:8px; }
+.ds-additional-spellbook { margin-top:18px; }
+.ds-additional-spellbook .ds-spell-heading h4 { margin:0; }
+@media print { .ds-class-actions { display:none; } }

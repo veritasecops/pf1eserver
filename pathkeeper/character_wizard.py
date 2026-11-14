@@ -68,6 +68,7 @@ def display_wizard(ctx, draft):
     image_url = portrait_url(ctx.db,draft)
     boot = {"deities":deities,"catalog_version":catalog_record.version if catalog_record else 0,"portrait_url":image_url,"draft_id":draft.id,"version":draft.version,"data":data,"step":draft.step if draft.step in STEPS else next(iter(STEPS)),"rolls":list(rolls.values()),
             "computed":calculate(data,rolls,load_catalog(ctx.db)),"mode":draft.mode,"role":ctx.user.role,"user_id":ctx.user.id,
+            "favored_classes_locked":draft.mode == "edit" and bool(data.get("favored_class")),
             "steps":STEPS,"step_order":list(STEPS),"abilities":ABILITIES,"ability_order":list(ABILITIES),"races":RACES,
             "classes":{key:{**creation_class(catalog,key),"skills":class_skills(catalog,key)} for key in CLASSES},"skills":catalog["skills"],"feats":catalog["feats"],"equipment":equipment(catalog),"alignments":ALIGNMENTS,
             "point_cost":POINT_COST,"monk_bonus":[name for name,meta in catalog["feats"].items() if meta.get("monk") and meta.get("enabled",True)],
@@ -284,6 +285,13 @@ async def finish(draft_id: str,request: Request,db: Session = Depends(get_db)):
     if computed["errors"]: return JSONResponse({"detail":"Complete the highlighted steps.","errors":computed["errors"]},422)
     existing = get_character(ctx,draft.editing_id) if draft.mode == "edit" else None
     if existing and existing.version != draft.existing_version: raise HTTPException(409,"The character changed after this draft began. Start a fresh editing draft.")
+    original = (existing.sheet_data or {}).get("input", {}) if existing else {}
+    if original.get("favored_class") and any(data[key] != original.get(key, "") for key in ("favored_class", "second_favored")):
+        raise HTTPException(422, "Favored classes are fixed once the character is created.")
+    if not existing and data["race"] == "half-elf" and not data["second_favored"]:
+        return JSONResponse({"detail": "Choose two favored classes for a half-elf.",
+                             "errors": [{"step": 4, "message": "Choose a second favored class."}]}, 422)
+    data["favored_class"] = data["favored_class"] or data["class_id"]
     values = character_values(ctx,{"name":data["name"],"owner_id":str(data["owner_id"]),"campaign_id":str(data["campaign_id"] or ""),
                                   "ancestry":RACES[data["race"]]["name"],"class_name":creation_class(load_catalog(db), data["class_id"])["name"],"level":"1","notes":data["notes"]},
                               existing, npc_campaign_id=draft.npc_campaign_id)

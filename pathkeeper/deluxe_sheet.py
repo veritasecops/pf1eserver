@@ -10,6 +10,9 @@ from .advancement import XP_SOURCE, apply_advancement, saved_xp, track
 from .sheet_calculations import class_record, calculated_fields, recalculate, base_speed_race
 from .sheet_formulas import sheet_formulas
 from .rule_catalog import character_catalog, equipment as catalog_equipment, class_skills, effect_total
+from .class_catalog import (
+    casting_class_keys, character_classes, class_profile, class_progression_row, combined_class_skills, favored_class_keys,
+)
 from .weapons import safe_weapon_url
 
 WEAPON_COLUMNS = [('name','Weapon'),('quantity','Quantity'),('equipped','Equipped'),('attack','Attack bonus'),
@@ -97,20 +100,29 @@ def skill_rows(catalog):
     return rows
 
 
-def fields_for(catalog):
+def fields_for(catalog, character=None, progression_catalog=None):
     fields = {key:value for key,value in FIELDS.items() if not key.startswith('skill.')}
     for key,meta in skill_rows(catalog):
         for part,title in [('total','Total'),('ability','Ability modifier'),('ranks','Ranks'),('misc','Miscellaneous modifier')]:
             fields[f'skill.{key}.{part}'] = {'label':meta['name']+': '+title,'kind':'number','maximum':200}
         if key.removesuffix('-2') in {'craft','perform','profession'}:
             fields[f'skill.{key}.specialty'] = {'label':meta['name']+' specialty','kind':'text','maximum':200}
+    if character is not None:
+        classes = progression_catalog or catalog
+        for key in casting_class_keys(classes, character_classes(character, classes))[1:]:
+            for level in range(10):
+                fields[f"spellbook.{key}.{level}.list"] = FIELDS[f"spell.{level}.list"]
+                for slot in range(4 if level == 0 else 8):
+                    suffix = f"{level}.used.{slot}"
+                    fields[f"spellbook.{key}.{suffix}"] = FIELDS[f"spell.{suffix}"]
     return fields
 
 
-def baseline(character, owner, campaign=None, gm=None):
+def baseline(character, owner, campaign=None, gm=None, *, progression_catalog=None):
     """Seed existing creation data without changing a saved creation snapshot."""
     catalog = character_catalog(character)
-    FIELDS, SKILL_ROWS, EQUIPMENT = fields_for(catalog), skill_rows(catalog), catalog_equipment(catalog)
+    FIELDS = fields_for(catalog, character, progression_catalog)
+    SKILL_ROWS, EQUIPMENT = skill_rows(catalog), catalog_equipment(catalog)
     data = {key:'' for key in FIELDS}
     data.update(name=character.name,ancestry=character.ancestry,class_name=character.class_name,level=str(character.level),notes=character.notes,
                 player=owner.name,campaign=campaign.name if campaign else '',gm=gm.name if gm else '')
@@ -186,15 +198,17 @@ def baseline(character, owner, campaign=None, gm=None):
         data[f'spell.{level}.known'] = len(inputs.get(key,[]))
     if values.get('caster'):
         mod = mods.get(values['caster'],0)
-        data['caster_level'] = character.level
-        data['concentration'] = character.level+mod
+        key = inputs.get("class_id")
+        level = character_classes(character, catalog).get(key, character.level)
+        data['caster_level'] = level
+        data['concentration'] = level+mod
         for level in range(10): data[f'spell.{level}.dc'] = 10+level+mod
     return {key:str(value) for key,value in data.items()}
 
 
 def sheet_values(character, owner, campaign=None, gm=None, *, progression_catalog=None):
-    FIELDS = fields_for(character_catalog(character))
-    values = baseline(character,owner,campaign,gm)
+    FIELDS = fields_for(character_catalog(character), character, progression_catalog)
+    values = baseline(character, owner, campaign, gm, progression_catalog=progression_catalog)
     saved = character.play_data or {}
     values.update({key:value for key,value in saved.items() if key in FIELDS})
     for item in saved.get("backpack", []):
@@ -224,9 +238,9 @@ def sheet_values(character, owner, campaign=None, gm=None, *, progression_catalo
     return recalculate(character, values, progression_catalog=progression_catalog)
 
 
-def parse_sheet(form, locked=None, catalog=None, deity_catalog=None, current_deity=''):
+def parse_sheet(form, locked=None, catalog=None, deity_catalog=None, current_deity='', character=None, *, progression_catalog=None):
     from .rule_catalog import default_catalog
-    FIELDS = fields_for(catalog or default_catalog())
+    FIELDS = fields_for(catalog or default_catalog(), character, progression_catalog)
     locked = locked or {}
     unknown = set(form)-{'csrf','version'}-set(FIELDS)
     missing = {key for key,meta in FIELDS.items() if meta['kind'] != 'checkbox'}-set(form)-set(locked)
@@ -274,7 +288,6 @@ def parse_sheet(form, locked=None, catalog=None, deity_catalog=None, current_dei
 
 def view_context(character, owner, campaign=None, gm=None, values=None, errors=(), deity_catalog=None, progression_catalog=None):
     catalog = character_catalog(character)
-    cls = class_record(character, catalog)
     values = values if values is not None else sheet_values(character,owner,campaign,gm,progression_catalog=progression_catalog)
     from .deities import deity_choices
     choices,selected=deity_choices(deity_catalog if deity_catalog is not None else catalog.get('deities',{}),values.get('deity',''))
@@ -286,10 +299,25 @@ def view_context(character, owner, campaign=None, gm=None, values=None, errors=(
     from .equipment_effects import contributions
     groups = equipment_groups(character, values)
     live_skills = (progression_catalog if progression_catalog is not None else catalog)['skills']
-    live_class = class_record(character, progression_catalog) if progression_catalog is not None else cls
+    live_catalog = progression_catalog or catalog
+    levels = character_classes(character, live_catalog)
+    favored = favored_class_keys(character, levels)
+    class_rows = []
+    for key, level in levels.items():
+        profile = class_profile(live_catalog, key)
+        row = class_progression_row(character, live_catalog, key, level)
+        ability = profile["casting_ability"]
+        modifier = values.get(f"ability.{ability}.mod")
+        caster_level = max(1, level - profile["caster_delay"]) if row.get("slots") or row.get("known") else None
+        class_rows.append(dict(id=key, name=profile["name"], url=safe_weapon_url(profile["url"]),
+                               level=level, favored=key in favored, bab=row["bab"], saves=row["saves"],
+                               casting=ability, slots=row.get("slots", {}), known=row.get("known", {}),
+                               caster_level=caster_level, casting_modifier=int(modifier) if modifier else None))
     skill_links = {key: safe_weapon_url(live_skills.get(key, meta).get('url', ''))
                    for key, meta in catalog['skills'].items()}
-    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=groups,combat_gear_rows=combat_gear_rows(character,groups),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog),sheet_label=sheet_label,readonly_fields=calculated_fields(character,values,progression_catalog),
-                abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),skill_links=skill_links,class_skills=class_skills(catalog, (character.sheet_data or {}).get('input',{}).get('class_id',''), (character.sheet_data or {}).get('input',{}).get('expert_skills',())) if character.sheet_data else cls.get('skills',[]),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
-                class_url=safe_weapon_url(live_class.get('url', '')),weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,gear_slots=GEAR_SLOTS,faction_columns=FACTION_COLUMNS,
+    casters = [row for row in class_rows if row["casting"]]
+    return dict(xp_speed=track(campaign), xp_source=XP_SOURCE, equipment_effects=contributions(character,values),equipment_groups=groups,combat_gear_rows=combat_gear_rows(character,groups),deity_options=choices,sheet_formulas=sheet_formulas(character,values,progression_catalog),coin_types=COIN_TYPES,treasure_gp=treasure_gp,deluxe=values,sheet_fields=fields_for(catalog, character, progression_catalog),sheet_label=sheet_label,readonly_fields=calculated_fields(character,values,progression_catalog),
+                abilities=ABILITIES,alignments=ALIGNMENTS,save_rows=SAVES,skill_rows=skill_rows(catalog),skill_links=skill_links,class_skills=combined_class_skills(character, catalog, levels),trained_only={key for key,meta in catalog['skills'].items() if meta.get('trained')},
+                class_url=class_rows[0]["url"] if len(class_rows) == 1 else "", class_rows=class_rows, casters=casters,
+                weapon_columns=WEAPON_COLUMNS,armor_columns=ARMOR_COLUMNS,gear_columns=GEAR_COLUMNS,gear_slots=GEAR_SLOTS,faction_columns=FACTION_COLUMNS,
                 sheet_errors=errors)

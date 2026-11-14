@@ -5,7 +5,7 @@ from math import floor
 from fastapi import HTTPException
 
 from .trait_rules import racial_skill_bonus
-from .class_catalog import class_profile, creation_class
+from .class_catalog import class_profile, creation_class, first_level_favored_bonus
 from .pf1_data import ABILITIES, ALIGNMENTS, CLASSES, EQUIPMENT, FEATS, MONK_BONUS, POINT_COST, RACES, SKILLS
 
 
@@ -13,6 +13,7 @@ def defaults(owner_id):
     return {"name":"", "owner_id":owner_id, "campaign_id":None, "method":"point_buy", "point_budget":15,
             "abilities":{key:10 for key in ABILITIES}, "ability_roll":"", "assignments":list(range(6)),
             "race":"human", "flex_ability":"str", "class_id":"", "favored_bonus":"hp", "vigilante_specialization":"stalker",
+            "favored_class":"", "second_favored":"",
             "skills":{}, "expert_skills":[], "skill_specialties":"", "feats":[], "bonus_feat":{},
             "adaptability":"perception", "wealth_method":"average", "wealth_roll":"", "manual_gold":0,
             "equipment":{}, "equipment_prices":{}, "armor":"", "shield":"", "weapon":"", "extra_spending":0,
@@ -42,7 +43,8 @@ def clean(payload, owner_id, catalog=None):
             raise HTTPException(422, f"{key.replace('_',' ').capitalize()} is too long or invalid.")
         data[key] = data[key].strip()
     for key, choices in {"method":{"point_buy","standard","classic","heroic","manual"}, "race":RACES,
-                         "class_id":{"",*CLASSES}, "flex_ability":ABILITIES, "favored_bonus":{"hp","skill","none"},
+                         "class_id":{"",*CLASSES}, "favored_class":{"",*CLASSES}, "second_favored":{"",*CLASSES},
+                         "flex_ability":ABILITIES, "favored_bonus":{"hp","skill","none"},
                          "wealth_method":{"average","rolled","manual"}, "vigilante_specialization":{"stalker","avenger"}, "alignment":ALIGNMENTS}.items():
         if not isinstance(data[key], str) or data[key] not in choices:
             raise HTTPException(422, f"Choose a valid {key.replace('_',' ')}.")
@@ -171,8 +173,13 @@ def calculate(data, rolls, catalog=None):
     if bonus == "monk" and data["bonus_feat"].get("name") not in MONK_BONUS: error(6, "Choose one of the first-level monk bonus feats.")
     if bonus in {"teamwork","technique"}: warnings.append(f"Confirm the class {bonus} feat and its prerequisites with your GM.")
     effects = lambda target, choice=None: effect_total(feat_entries + [{"name":name} for name in automatic], catalog, target, choice)
-    hp = max(1, (cls["hd"] if cls else 0) + modifiers["con"]) + (data["favored_bonus"] == "hp") + effects("hp")
-    skill_budget = max(1,(cls["ranks"] if cls else 0) + modifiers["int"]) + (data["race"] == "human") + (data["favored_bonus"] == "skill")
+    favored = data.get("favored_class") or data["class_id"]
+    second = data.get("second_favored")
+    if second and (data["race"] != "half-elf" or second == favored):
+        error(4, "Choose a different second favored class for a half-elf.")
+    favored_bonus = first_level_favored_bonus(data)
+    hp = max(1, (cls["hd"] if cls else 0) + modifiers["con"]) + (favored_bonus == "hp") + effects("hp")
+    skill_budget = max(1,(cls["ranks"] if cls else 0) + modifiers["int"]) + (data["race"] == "human") + (favored_bonus == "skill")
     for key,ranks in data['skills'].items():
         if ranks and not SKILLS[key].get('enabled',True): error(5,f"{SKILLS[key]['name']} is archived; remove its rank.")
     for entry in feat_entries:
